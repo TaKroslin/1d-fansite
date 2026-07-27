@@ -54,6 +54,14 @@ $(document).ready(function() {
 	$('button.menu').on('click', function(e) {
 		$('button.menu i').toggleClass('hide');
 		$('header, footer').toggleClass('mobilised');
+		// Keep the page itself from scrolling while the nav overlay is open on mobile
+		if ($('header#nav').hasClass('mobilised')) {
+			$('body').addClass('mobilised-scroll-lock');
+			// Reset overlay scroll to the top each time it opens
+			$('header#nav.mobilised nav#main').scrollTop(0);
+		} else {
+			$('body').removeClass('mobilised-scroll-lock');
+		}
 	});
 
 	$(window).on('resize', function() {
