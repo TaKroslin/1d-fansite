@@ -1,0 +1,25 @@
+# Local dev / housekeeping scripts
+_fix_*.py
+_http_audit.py
+*.pyc
+__pycache__/
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+
+# Don't commit build/cache if any local tooling is added later
+node_modules/
+dist/
+.cache/
