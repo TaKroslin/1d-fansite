@@ -38,29 +38,44 @@ A Mainland China Directioner hub built on top of the archived One Direction webs
 ├── js/isotope.pkgd.min.js
 ├── images/
 │   ├── gfx/                         # 39 official assets (logos, filmstrips, hero, album covers)
+│   │   └── 5guys/                   # FIVE GUYS ONE DIRECTION branding (logos)
 │   ├── media/article-images/        # Journal + music article images
 │   ├── media/article-logos/         # Album logos
 │   ├── media/gallery-images/        # Gallery cover images
 │   └── tour/                        # Tour images
+├── tools/                           # Build & maintenance scripts
+│   ├── build_blog.py                # Markdown → HTML builder (run after editing article.md)
+│   ├── extract_articles.py          # HTML → Markdown converter (one-shot migration)
+│   └── templates/                   # Jinja-style HTML templates for build_blog.py
+│       ├── article.html
+│       └── blog_list.html
 ├── pages/                           # All non-home pages live here
 │   ├── music.html
 │   ├── journal.html
 │   ├── band.html
 │   ├── tour.html
 │   ├── shop.html
-│   ├── blog.html                    # New — editorial index
-│   ├── gallery.html                 # New — collection index
-│   ├── this-is-us.html              # New — fan-account directory
-│   ├── about.html                   # New — project statement
+│   ├── blog.html                    # Auto-generated — blog listing (do not edit by hand)
+│   ├── gallery.html
+│   ├── this-is-us.html
+│   ├── about.html
 │   ├── music/albums/                # 5 album pages + 20 sub-pages + 65 song pages
 │   ├── tour/                        # Tour archive (433 dates)
-│   ├── blog/                        # New — 4 essays at pages/blog/YYYY-MM-DD/slug/
+│   ├── blog/                        # 4 essays at pages/blog/YYYY-MM-DD/slug/
 │   │   └── 2026-07-27/
-│   │       ├── why-this-site-exists/index.html
-│   │       ├── ten-years-of-story-of-my-life/index.html
-│   │       ├── louis-and-the-quiet-revolution/index.html
-│   │       └── where-do-broken-hearts-go-a-defense/index.html
-│   └── gallery/                     # New — 5 category pages at pages/gallery/<category>/
+│   │       ├── why-this-site-exists/
+│   │       │   ├── article.md       # ✏️  Edit this
+│   │       │   └── index.html       # 🤖  Auto-generated
+│   │       ├── every-july-23rd-we-come-home/
+│   │       │   ├── article.md
+│   │       │   └── index.html
+│   │       ├── why-i-love-1d-so-bad/
+│   │       │   ├── article.md
+│   │       │   └── index.html
+│   │       └── ready-to-run/
+│   │           ├── article.md
+│   │           └── index.html
+│   └── gallery/                     # 5 category pages at pages/gallery/<category>/
 │       ├── members/index.html
 │       ├── on-stage/index.html
 │       ├── behind-the-scenes/index.html
@@ -88,31 +103,64 @@ Or use any other static server (`npx serve`, VS Code Live Server, etc.). No buil
 
 > **All submissions, edits, account additions, and corrections go by email to [takionkroslin@icloud.com](mailto:takionkroslin@icloud.com).** That is the only channel — there is no CMS, no comment form, no admin login. This is deliberate; the whole site is plain HTML so it can be reviewed and updated in plain text by hand.
 
-### 1. Add a new blog post
+### 1. Add a new blog post (Markdown workflow)
 
-1. Create a folder: `pages/blog/YYYY-MM-DD/<slug>/` (e.g. `pages/blog/2026-08-01/steal-my-girl-ten-years/index.html`)
-2. Copy `pages/blog/2026-07-27/why-this-site-exists/index.html` as the template
-3. Update: `<title>`, all `og:*` meta, the `panel-header` date and section, the `h2` headline, the body `.text` paragraphs
-4. Update the depth-correct relative paths:
-   - CSS: `../../../../css/styles.css` (depth 4)
-   - JS: `../../../../js/jquery.min.js` and `../../../../js/main.js`
-   - Logo link: `href="../../../../index.html"`
-   - Footer About link: `href="../../../../about.html"`
-5. Add a card to `pages/blog.html`:
-   ```html
-   <div class="panel journal-news homepage-news">
-     <div class="inline"></div>
-     <div class="panel-header">
-       <div class="title">1st August 2026</div>
-       <div class="section-name"><a href="blog/2026-08-01/steal-my-girl-ten-years/index.html">Blog</a></div>
-     </div>
-     <h2><span class="scaler" style="font-size: 60%;"><a href="blog/2026-08-01/steal-my-girl-ten-years/index.html">Steal My Girl, Ten Years On</a></span></h2>
-     <div class="info">
-       <a href="blog/2026-08-01/steal-my-girl-ten-years/index.html" class="more">Read more</a>
-     </div>
-   </div>
+Blog posts are authored in Markdown and then built into static HTML — no hand-editing HTML required.
+
+**Step 1: Create the article**
+
+1. Create a folder: `pages/blog/YYYY-MM-DD/<slug>/`
+2. Write `article.md` with front matter at the top:
+   ```md
+   <!--
+   title: Your Post Title
+   date: 2026-08-01
+   slug: your-post-slug
+   date_display: 1st August 2026
+   author: Takion Kroslin
+   header_img: ../../../../images/gfx/5guys/logo-black.png
+   header_img_size: 50% contain
+   header_img_position: center
+   description: A one-sentence summary for SEO and cards.
+   keywords: One Direction, keyword, another keyword
+   og_image: ../../../../images/gfx/hero-2015-rect-sml.jpg
+   scaler: 60%
+   -->
+   
+   Your first paragraph here.
+   
+   Your second paragraph here.
    ```
-6. Add a card to the home page `index.html` in the "Latest from the Blog" `.panel-group` block.
+3. Write the body in plain Markdown (paragraphs separated by blank lines, `*italic*`, `**bold**`, `> blockquote`, `[links]()`).
+
+**Step 2: Register the post**
+
+Add an entry to `META` and `SCALERS` in `tools/build_blog.py`:
+```python
+"2026-08-01/your-post-slug": {
+    "title": "Your Post Title",
+    "date_display": "1st August 2026",
+    "author": "Takion Kroslin",
+    "description": "A one-sentence summary.",
+    "keywords": "One Direction, keyword, another keyword",
+    "og_image": "../../../../images/gfx/hero-2015-rect-sml.jpg",
+},
+```
+
+**Step 3: Build**
+
+```bash
+python tools/build_blog.py
+```
+
+This auto-generates:
+- `pages/blog/YYYY-MM-DD/<slug>/index.html` — the full article page
+- `pages/blog.html` — the blog listing page (with cards)
+- `posts.json` — metadata for the home page "Latest" section
+
+All generated HTML is pure static — no JS rendering, works perfectly on Cloudflare Pages.
+
+To edit an existing post, just edit its `article.md` and re-run `python tools/build_blog.py`.
 
 ### 2. Add a new gallery category
 

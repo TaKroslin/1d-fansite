@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html class="no-js" lang="en">
+<script>document.documentElement.className=document.documentElement.className.replace("no-js","js");</script>
+<head>
+    <title>{{title}} — FIVE GUYS ONE DIRECTION</title>
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=2.0, user-scalable=0" name="viewport" />
+	<meta charset="utf-8" />
+
+    <meta property="og:title" content="{{title}} — FIVE GUYS ONE DIRECTION" />
+    <meta property="og:site_name" content="FIVE GUYS ONE DIRECTION" />
+    <meta property="og:type" content="article" />
+    <meta property="og:image" content="{{og_image}}" />
+    <meta property="og:url" content="{{canonical_url}}" />
+    <meta property="og:description" content="{{description}}" />
+    <meta name="description" content="{{description}}" />
+    <meta name="keywords" content="{{keywords}}" />
+    <meta name="author" content="{{author_html}}" />
+
+	<link href="https://fonts.googleapis.com/css?family=Playfair+Display:700|Codystar|Cousine:400,700|Source+Code+Pro:300,400,500,600,700|Source+Sans+Pro:400|Oswald:400,700|Vampiro+One|Six+Caps&display=swap" rel="stylesheet" type="text/css" />
+	<link href="{{css_href}}" rel="stylesheet" type="text/css" />
+
+</head>
+
+<body class="duo blog-section">
+
+<div class="header-spacer"></div>
+
+
+<header id="sticky">
+	<h1 class="logo">
+		<a href="{{root}}index.html">FIVE GUYS ONE DIRECTION</a>
+	</h1>
+	<div class="button-holder"><button class="menu"><i class="icon-menu"></i><i class="icon-close hide"></i></button></div>
+</header>
+<header id="nav" class="">
+	<nav id="main">
+		<ul class="menu">
+			<li class="alpha hover-cycle"><a class="menu1" href="{{root}}index.html">Home</a></li>
+			<li class="hover-cycle"><a class="menu2" href="{{root}}pages/music.html">Music</a></li>
+			<li class="hover-cycle"><a class="menu3" href="{{root}}pages/journal.html">Journal</a></li>
+			<li class="hover-cycle"><a class="menu4" href="{{root}}pages/band.html">Band</a></li>
+			<li class="hover-cycle"><a class="menu5" href="{{root}}pages/tour.html">Tour</a></li>
+			<li class="hover-cycle active"><a class="menu6" href="{{root}}pages/blog.html">Blog</a></li>
+			<li class="hover-cycle"><a class="menu1" href="{{root}}pages/gallery.html">Gallery</a></li>
+			<li class="hover-cycle"><a class="menu2" href="{{root}}pages/this-is-us.html">This Is Us</a></li>
+			<li class="hover-cycle"><a class="menu3" href="{{root}}pages/about.html">About</a></li>
+		</ul>
+		<span></span>
+	</nav>
+</header>
+
+
+<div class="panel journal-article">
+
+	<div class="panel-header">
+		<div class="title">{{date_display}}</div>
+		<div class="section-name"><a href="{{root}}pages/blog.html">Blog</a></div>
+	</div>
+
+
+	<div class="article-cover"><img src="{{cover_src}}" alt="" style="display:block;width:100%;height:auto;"></div>
+
+	<div class="article-holder">
+
+		<h2><span class="scaler" style="font-size: 100%;">{{title}}</span></h2>
+
+		<div class="text">
+{{body_html}}
+		</div>
+
+	</div>
+
+</div>
+
+<footer>
+
+	<div id="back-to-top"><a href="#">Back to top <i class="icon-up-arrow"></i></a></div>
+
+	<nav id="social">
+		<ul>
+			<li class="twitter"><a target="_blank" href="https://twitter.com/5guys1direction"><i class="icon-twitter"></i><span>Twitter</span></a></li>
+			<li class="instagram"><a target="_blank" href="https://instagram.com/5guys1direction"><i class="icon-instagram"></i><span>Instagram</span></a></li>
+			<li class="youtube"><a target="_blank" href="https://www.youtube.com/@5guys1direction"><i class="icon-youtube"></i><span>YouTube</span></a></li>
+			<li class="spotify"><a target="_blank" href="https://open.spotify.com/user/5guys1direction"><i class="icon-spotify"></i><span>Spotify</span></a></li>
+		</ul>
+	</nav>
+
+	<nav id="credits">
+		<ul>
+			<li><a target="_blank" href="{{about_href}}">About</a></li>
+			<li>&copy; <span id="footerDate"></span> <a target="_blank" href="{{about_href}}">Takion Kroslin &amp; 5 GUYS 1 DIRECTION</a></li>
+			<li><a href="mailto:takionkroslin@icloud.com">Contact</a></li>
+		</ul>
+		<span></span>
+	</nav>
+
+</footer>
+
+<div class="screen"></div>
+
+<script src="{{js_href}}"></script>
+<script src="{{main_js_href}}"></script>
+
+</body>
+
+</html>

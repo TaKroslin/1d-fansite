@@ -1,58 +1,97 @@
 # 1D Fansite — Project Guide
 
-> One Direction 粉丝社区网站。基于官方 onedirectionmusic.com 1:1 克隆，在此基础上添加双语支持和粉丝内容。
-> 原始设计：Studio Output / 开发：Kleber / Sony Music Entertainment UK Ltd.
+> **FIVE GUYS ONE DIRECTION** — One Direction 粉丝社区网站。基于官方 onedirectionmusic.com 1:1 克隆（Studio Output / Kleber / Sony Music Entertainment UK Ltd.），在此基础上增加 fan editorial 内容。
+>
+> 维护者：Takion Kroslin（项目内统一署名） / 联系：takionkroslin@icloud.com
+
+---
 
 ## Tech Stack
 
-- **Pure static site**: HTML/CSS/JS，无框架，无构建工具
-- **Server**: `python -m http.server 8000` (开发)
-- **jQuery 2.1.1**: Google CDN (`https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js`)
-- **Waypoints.js**: 内嵌在 `js/main.js` 中（用于滚动触发 panel fade-in）
-- **Isotope.js**: 按需加载，unpkg CDN (`https://unpkg.com/isotope-layout@3/dist/isotope.pkgd.min.js`)
-- **Icomoon**: 自定义图标字体，base64 嵌入 CSS
+- **Pure static site**：HTML/CSS/JS，无框架，无构建工具
+- **Server（开发）**：`python -m http.server 8000`
+- **Server（部署）**：Cloudflare Pages（直连 GitHub，自动部署）
+- **jQuery 2.1.1**：Google CDN (`https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js`)
+- **Waypoints.js**：内嵌在 `js/main.js` 中（用于滚动触发 panel fade-in）
+- **Isotope.js**：按需加载，unpkg CDN (`https://unpkg.com/isotope-layout@3/dist/isotope.pkgd.min.js`)
+- **Icomoon**：自定义图标字体，base64 嵌入 CSS
+- **Markdown 渲染（仅 blog）**：`python-markdown` 库（`tools/build_blog.py` 离线渲染，无运行时依赖）
+- **Pillow**：开发期一次性图片优化
 
 ## File Structure
 
 ```
 E:\文档\GitHub\1d-fansite/
-├── index.html              ← 首页 (克隆自官方 gb/home.html)
-├── AGENTS.md               ← 本文件
+├── index.html                       ← 首页（hero + 16yrs + intro + latest + 4 new-section entries + 克隆 panels）
+├── README.md                        ← 面向投稿者的使用文档
+├── AGENTS.md                        ← 本文件（开发者文档 + 修改日志）
+│
 ├── css/
-│   └── styles.css          ← 完整官方 CSS (91KB)，图片路径已修正为本地 images/
+│   └── styles.css                   ← 官方 minified CSS（91KB） + 末尾的 FIVE GUYS 自定义补丁
+│
 ├── js/
-│   └── main.js             ← 完整官方 JS (16KB)，含 Waypoints、hover-cycle 等
-├── images/                 ← 本地图片资源 (62张，已全量下载)
-│   ├── gfx/                ← 官方 assets/gfx 全部图片 (39张)
-│   │   ├── 1d-logo.png, diamond.png, hero-*.jpg, ...
-│   │   ├── filmstrip-{harry,liam,louis,niall}-smlc4ca.jpg
-│   │   ├── music-{four,made-in-the-am,midnight-memories,take-me-home,up-all-night}-*.jpg
-│   │   └── tour-listing-indicator.png
-│   └── media/              ← 官方 CMS 媒体文件 (23张)
-│       ├── article-images/{rect-sml,square-sml,square-med}/
-│       ├── article-logos/large/
-│       └── gallery-images/{rect-sml,square-sml}/
-└── pages/
-    ├── music.html          ← Music 页面
-    ├── band.html           ← Band 页面
-    ├── tour.html           ← Tour 页面 (archive)
-    ├── journal.html        ← Journal 页面 (isotope 瀑布流)
-    └── shop.html           ← Shop 页面 (isotope 瀑布流)
+│   ├── main.js                      ← 官方 minified JS（Waypoints、hover-cycle、play-button、retinafy）
+│   ├── jquery.min.js                ← 1.x bundled（部分历史页面引用）
+│   └── isotope.pkgd.min.js          ← Isotope masonry
+│
+├── images/
+│   ├── gfx/                         ← 官方 assets/gfx 全部（39 张）
+│   │   └── 5guys/                   ← FIVE GUYS 品牌 logo（black/white，PNG 优化到 3000px 宽）
+│   ├── media/article-images/        ← Journal + music 文章配图
+│   ├── media/article-logos/         ← 专辑 logo
+│   ├── media/gallery-images/        ← Gallery 封面
+│   └── tour/                        ← Tour archive 图片
+│
+├── pages/                           ← 所有非首页页面
+│   ├── music.html                   ← 5 张专辑 + 20 子页 + 65 首歌页
+│   ├── journal.html                 ← 克隆 20 篇 journal 2015–2020
+│   ├── band.html                    ← 5 成员 + 视差
+│   ├── tour.html                    ← 433 个 tour date
+│   ├── shop.html                    ← Shop panels
+│   ├── blog.html                    ← 🤖 自动生成 — blog 列表（不手改）
+│   ├── gallery.html                 ← 5 个 gallery 分类
+│   ├── this-is-us.html              ← Mainland China fan-account 目录
+│   ├── about.html                   ← 项目说明
+│   ├── blog/                        ← 4 篇文章，路径 pages/blog/YYYY-MM-DD/slug/
+│   │   └── 2026-07-27/
+│   │       ├── why-this-site-exists/{article.md, index.html}
+│   │       ├── every-july-23rd-we-come-home/{article.md, index.html}
+│   │       ├── why-i-love-1d-so-bad/{article.md, index.html}
+│   │       └── ready-to-run/{article.md, index.html}
+│   ├── music/albums/                ← 5 专辑页面
+│   ├── tour/                        ← Tour archive
+│   └── gallery/                     ← 5 gallery 分类
+│
+├── journal/                         ← 克隆的 20 篇 journal 文章
+│   └── YYYY-MM-DD/<slug>/index.html
+│
+└── tools/                           ← 构建 + 维护脚本
+    ├── build_blog.py                ← Markdown → HTML 构建器（每次编辑 article.md 后跑）
+    ├── extract_articles.py          ← 一次性 HTML→MD 迁移器（已完成，不再用）
+    ├── audit_footer.py              ← 一次性 footer 链接审计 + 修复（已完成）
+    ├── patch_css.py                 ← 一次性 CSS 补丁工具（已完成）
+    ├── patch_escape.py              ← 一次性 HTML 转义修复（已完成）
+    ├── templates/
+    │   ├── article.html             ← 文章页模板（{{title}} 占位符）
+    │   └── blog_list.html           ← 列表模板（__POSTS_CARDS__ marker）
+    ├── _qa*.py, _vfy*.py, _audit*.py, _debug*.py, _add_display_swap.py  ← 一次性 QA 脚本（完成后可删）
+    └── _qa_screenshots/             ← Playwright 截图归档
 ```
 
 ## Path Conventions
 
 所有页面通过 `<link>` 和 `<script>` 标签加载资源，不使用任何模块系统。
 
-| 资源 | 根级页面 (index.html) | pages/ 子页面 |
-|------|----------------------|---------------|
-| CSS | `css/styles.css` | `../css/styles.css` |
-| JS | `js/main.js` | `../js/main.js` |
-| jQuery | `https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js` | 同 |
-| Isotope | `https://unpkg.com/isotope-layout@3/dist/isotope.pkgd.min.js` | 同 |
-| 官方图片 | `images/gfx/...` | `../images/gfx/...` |
-| 官方媒体 | `images/media/...` | `../images/media/...` |
-| CSS 中图片 | `../images/gfx/...` (由 css/styles.css 引用) | 同 |
+| 资源 | 根级页面 (`index.html`) | `pages/` 一级 | `pages/blog/...` 深度 4 |
+|------|----------------------|----------------|---------------------------|
+| CSS | `css/styles.css` | `../css/styles.css` | `../../../../css/styles.css` |
+| JS | `js/main.js` | `../js/main.js` | `../../../../js/main.js` |
+| jQuery | Google CDN | 同 | 同 |
+| 图片 | `images/gfx/...` | `../images/gfx/...` | `../../../../images/gfx/...` |
+| Logo link | `index.html` | `../index.html` | `../../../../index.html` |
+| Footer about | `pages/about.html` | `about.html` | `../../../../pages/about.html` |
+
+⚠️ **blog 列表页面**是个特例：它位于 `pages/blog.html`，但里面的卡片链接是 `blog/2026-07-27/...`（已经是 `pages/` 之下的相对路径），不要多加 `pages/` 前缀。封面图 `url(../images/gfx/...)`。
 
 ## Design System
 
@@ -175,6 +214,7 @@ E:\文档\GitHub\1d-fansite/
 | **Gallery Cover** | `.panel.gallery-cover` | 灰度图片 | 居中文字 + 图片计数 |
 | **Newsletter** | `.panel.newsletter` | `#fff` | 居中表单 |
 | **404** | `.panel.four-zero-four` | — | 大号居中文字 |
+| **Anniversary Poster** | `.panel.anniversary-poster` | 图片 | 16周年纪念面板（首页新增） |
 
 ### C. Header（双层）
 
@@ -189,7 +229,7 @@ E:\文档\GitHub\1d-fansite/
 ```
 
 - **Desktop**: `#sticky` 固定顶部，`#nav` 在内容流中显示菜单
-- **Mobile (<768px)**: `#nav` 隐藏，点击 menu button → `#nav.mobilised` 全屏覆盖
+- **Mobile (<768px)**: `#nav` 隐藏，点击 menu button → `#nav.mobilised` 全屏覆盖（`display:flex; flex-direction:column; overflow:hidden` 让 nav 内部滚动而不是 header 滚动）
 - **Scroll**: `$(window).scrollTop()` 超过 `#nav` 时为 header 加 `.scrolled`
 - **首页特殊处理**: `.home-section` 下的 `#sticky` 初始 `top: -13.77%`，滚动后归零
 
@@ -226,22 +266,136 @@ footer
 | **Territory selector** | 点击 territory 链接 | `.territory-list.active` + `.screen` overlay |
 | **Isotope layout** | 页面加载 + 无限滚动 | Isotope masonry 布局（journal、shop） |
 
+## Blog Markdown Workflow
+
+文章用 Markdown 写，front-matter 用 HTML 注释包起来（避免 YAML 解析依赖）。`tools/build_blog.py` 离线渲染成完整 HTML（不在浏览器跑 JS，Cloudflare 部署稳定）。
+
+### 文件结构
+
+```
+pages/blog/2026-07-27/<slug>/
+  article.md       ← 源（手改）
+  index.html       ← 🤖 自动生成（不手改）
+```
+
+### article.md 格式
+
+```markdown
+<!--
+title: 文章标题
+date: 2026-07-27
+slug: your-post-slug
+date_display: 27th July 2026
+author: Takion Kroslin
+header_img: ../../../../images/gfx/5guys/logo-black.png
+header_img_size: 50% contain
+header_img_position: center
+description: 一句话 SEO 描述。
+keywords: One Direction, 关键词, 多个
+og_image: ../../../../images/gfx/hero-2015-rect-sml.jpg
+scaler: 60%
+-->
+
+正文第一段。
+
+正文第二段，*斜体*、**加粗**、`code`、[link](https://example.com) 都可以用。
+```
+
+### 必需 front-matter 字段
+
+| 字段 | 说明 |
+|------|------|
+| `title` | 文章标题 |
+| `date` | YYYY-MM-DD（用于 URL） |
+| `slug` | URL slug（小写连字符） |
+| `date_display` | 漂亮日期如 "27th July 2026" |
+| `author` | 署名 |
+| `header_img` | 封面图（相对 `pages/blog/.../index.html` 的深度 = 4 层 `../`） |
+| `header_img_size` | CSS `background-size`，默认 `50% contain` |
+| `header_img_position` | CSS `background-position`，默认 `center` |
+| `description` | og:description / meta description |
+| `keywords` | meta keywords |
+| `og_image` | og:image（社交分享卡片） |
+| `scaler` | 列表卡片标题字号百分比（55-100%） |
+
+### 编辑流程
+
+1. 编辑 `pages/blog/YYYY-MM-DD/<slug>/article.md`
+2. `cd E:\文档\GitHub\1d-fansite && python tools/build_blog.py`
+3. 自动生成 3 个文件：
+   - `pages/blog/.../index.html`（文章页）
+   - `pages/blog.html`（列表）
+   - `pages/blog/posts.json`（元数据聚合）
+   - （首页 blog 卡片是手写在 `index.html` 里的，**不会自动同步** —— 见下方注意事项）
+
+⚠️ **首页 blog 卡片是手写的**（`index.html` 行 240–330 附近），新增/删除文章需要同步改首页（或者把首页卡片改成 JS 读取 `posts.json` 渲染，TODO）。
+
+### 新增文章 checklist
+
+1. 创建 `pages/blog/YYYY-MM-DD/<slug>/article.md`（复制现有 article.md 改 front-matter + 正文）
+2. 编辑 `tools/build_blog.py` 顶部 `META` 字典（手动维护元数据，因为 og_image 等不是 MD 能完全表达的）
+3. 编辑 `tools/build_blog.py` 顶部 `SCALERS` 字典（每个标题的字号百分比）
+4. 跑 `python tools/build_blog.py`
+5. **手改 `index.html` 添加首页卡片**（目前没有自动同步机制）
+
+### 模板
+
+- `tools/templates/article.html` —— 文章页模板，`{{title}}`、`{{body_html}}`、`{{cover_style}}` 等占位符
+- `tools/templates/blog_list.html` —— 列表模板，用 `__POSTS_CARDS__` marker（**不要包在 HTML 注释里**，否则 build 脚本会替换到错误位置）
+
 ## Coding Conventions
 
 - **不要引入框架**：保持纯 HTML/CSS/JS + jQuery
-- **修改 CSS 时**：追加新规则而非修改现有规则（除非修复 bug）
+- **修改 CSS 时**：追加新规则而非修改现有规则（除非修复 bug）。`css/styles.css` 是单行 minified，自定义规则放文件末尾
 - **修改 JS 时**：官方核心逻辑保留，新功能在 `$(document).ready()` 末尾追加
 - **新增页面**：复制任意 `pages/*.html` 作为模板，保留 header/footer 结构
-- **图片**：新图片放 `images/`；官方图片已全量下载到 `images/gfx/` 和 `images/media/`，CSS/HTML 均使用本地路径
-- **双语**：当前全部英文，中文切换功能待加入
+- **图片**：新图片放 `images/`；官方图片已全量下载到 `images/gfx/` 和 `images/media/`
+- **资源 CDN**：Google Fonts URL 永远带 `&display=swap`（GFW 环境字体加载慢）
 - **不使用**：`<base>` 标签、CSS Modules、CSS-in-JS、任何构建/打包工具
+- **修改日志**：每次改动都在本文件末尾"修改日志"区段写一条
+- **不要重复造轮子**：所有维护/QA 脚本放 `tools/`，完成的任务标 `一次性` 标签
+
+## 关键 Bug 修复记录（重要 CSS 补丁）
+
+`css/styles.css` 末尾的 `/* FIVE GUYS ONE DIRECTION additions */` 块是项目级 CSS 补丁，覆盖官方 minified 规则。**不要删除这些补丁**：
+
+```css
+/* BUG FIX: nav overlay scrolls when 10 menu items exceed viewport height */
+header#nav.mobilised{display:flex;flex-direction:column;overflow:hidden;...}
+
+/* BUG FIX: mobile panel-news heading centers cleanly */
+@media only screen and (max-width:767px){
+  .panel.journal-news.homepage-news h2{margin:15% auto;width:80%;text-align:center}
+}
+
+/* BUG FIX: mobile home/blog cards
+   - 隐藏 mobile 下 panel-header（标题 + section-name）
+   - 标题 h2 绝对定位到 top 18%
+   - .more 按钮绝对定位到 bottom 12%
+   - 防止原始 mobile 规则用 `!important` 恢复显示 */
+@media only screen and (max-width:767px){
+  .home-section .panel .panel-header,
+  .blog-section .panel.journal-news .panel-header{display:none!important}
+  .panel.journal-news.homepage-news{...padding:100% 0 0 0!important}
+  .panel.journal-news.homepage-news h2{position:absolute;...top:18%;margin:0}
+  .panel.journal-news.homepage-news .info{bottom:12%...position:absolute}
+}
+
+/* BUG FIX: mobile blog article page */
+@media only screen and (max-width:767px){
+  .article-cover{padding:50% 0 0 0;...}
+  .panel.journal-article .article-holder{margin:0 5%;padding-bottom:3em}
+  .panel.journal-article .article-holder h2{margin:.8em 0 1em;font-size:281%;text-align:center}
+}
+```
 
 ## Page-Specific Notes
 
 ### index.html (Home)
 - Body class: `duo home-section`
-- 包含：Hero、Journal article (#10YearsOf1D)、Homepage video、panel-group (news + instagram)、Homepage music、panel-group (moment + newsletter)、Gallery cover、Tweet
+- 包含：Hero、Journal article (#10YearsOf1D)、Homepage video、panel-group (news + instagram)、Homepage music、panel-group (moment + newsletter)、Gallery cover、Tweet、#16YearsOf1D 周年面板、4 个新分区入口卡片、4 篇 blog latest 卡片
 - 特殊 header 行为：`home-section` + `mono` 时 header 始终 scrolled
+- **首页 blog 卡片需手动同步**（见上方 Blog Markdown Workflow）
 
 ### pages/music.html
 - Body class: `duo music-section`
@@ -250,7 +404,7 @@ footer
 
 ### pages/band.html
 - Body class: `duo band-section`
-- 4个 `.band-member` panel（Louis、Harry、Liam、Niall）
+- 5个 `.band-member` panel（Louis、Harry、Liam、Niall、Zayn）
 - 图片有滚动视差效果
 - 内联 JS 包含 offsets 数组控制视差帧
 
@@ -270,3 +424,167 @@ footer
 - Body class: `duo shop-section`
 - Isotope masonry 布局
 - Shop banner + 多个 shop panel（books、gifts、merch、fragrance、music）
+
+### pages/blog.html
+- Body class: `duo blog-section`
+- 🤖 **自动生成** by `tools/build_blog.py`
+- 包含：blog 介绍 panel + 4 张文章卡片（panel-group 两两排列） + moment panel + newsletter panel
+- 卡片背景使用 `images/gfx/5guys/logo-black.png`（黑底 + 白 logo）
+
+### pages/blog/2026-07-27/<slug>/index.html
+- 🤖 **自动生成**
+- `.article-cover` 用 front-matter 的 `header_img` 字段
+- 正文用 python-markdown 渲染
+
+---
+
+## 修改日志
+
+> 每次有改动就追加一条。格式：日期 / 改动概要 / 涉及文件 / 影响
+
+### 2026-07-28 — Markdown 工作流 + Mobile/Footer/Logo/Fonts 综合修复
+
+**Session：Mavis 协助 Takion 完成 1D Fansite 多项维护。**
+
+#### 改动概要
+1. **Blog Markdown 工作流上线** — 把 blog 文章从手写 HTML 迁到 Markdown（`tools/build_blog.py` + `article.md` × 4）
+2. **Mobile 显示修复** — 首页 / blog 列表 / blog 详情页在 mobile（≤767px）的标题/按钮位置
+3. **Footer 链接修复** — 所有 173 个 `../about.html` 错误路径批量修正
+4. **Logo 压缩** — `logo-white.png` 6.5MB → 509KB，`logo-black.png` → 114KB（3000px 宽）
+5. **Google Fonts `display=swap`** — 160+ HTML 文件加 `&display=swap`
+6. **AGENTS.md + README.md 完善** — 加入 Markdown 工作流、修改日志、品牌说明
+7. **blog 列表封面图修复** — 路径 `url(../../../../../images/...)` 修正为 `url(../images/...)`
+
+#### 新增文件
+- `tools/build_blog.py` — Markdown → HTML 构建器（核心）
+- `tools/extract_articles.py` — 一次性 HTML→MD 迁移
+- `tools/audit_footer.py` — 一次性 footer 链接审计 + 修复
+- `tools/patch_css.py` / `tools/patch_escape.py` — 一次性 CSS/HTML 修复
+- `tools/templates/article.html` — 文章页模板
+- `tools/templates/blog_list.html` — blog 列表模板
+- `pages/blog/2026-07-27/{slug}/article.md` × 4 — Markdown 源
+- `pages/blog/posts.json` — 元数据聚合
+- `tools/_qa*.py`, `_vfy*.py`, `_audit*.py`, `_debug*.py`, `_add_display_swap.py` — 一次性 QA 脚本
+
+#### 关键修复细节
+- **`styles.css` 末尾合并的 mobile card 补丁**：覆盖官方 minified CSS 在 767px 处的 `!important` 规则（隐藏 panel-header，h2 顶部 18%，more 底部 12%）
+- **blog.html 卡片链接路径**：URL `pages/blog/...` → `blog/...`（去掉 `pages/` 前缀）
+- **blog.html 卡片封面图**：5 层 `..` → `../images/...`（深度算错，hardcode 改 string 切拼）
+- **blog 模板 marker**：`<!-- __POSTS_CARDS__ : ... -->` 删除（避免 build replace 命中注释里的 marker），只剩裸 `__POSTS_CARDS__` 一行
+- **ready-to-run 引文 byline**：从 `article.md` 末尾删除 `*"The best journeys..."*`
+- **`build_blog.py._render_listing_card`**：从 `post.header_img` 切出 `images/...` 后缀，重新拼成 `../images/...`（修过两次：第一次切掉 `images/` 漏了 `images/`，第二次才对）
+- **blog 卡片 opacity 强制为 1**：Waypoints fade-in 让所有 `.fade-me` 元素初始 opacity:0，靠滚动触发到 1。但 blog 列表用户不滚动直接看时，后面 3 张卡片永远 opacity≈0（封面图不可见）。加 `.blog-section .panel.fade-me{opacity:1!important}` 强制首屏可见。
+- **blog 卡片 style 对齐首页**：第一版 build 用 `background:url(...) center/40% no-repeat #000;background-blend-mode:normal;` 多了一个 `background-blend-mode`，被 mobile CSS 干扰导致封面图被遮。改成严格复用首页 `index.html` 行 243 的简洁写法（去掉 `background-blend-mode`），封面图正常显示。
+- **blog 卡片 logo 颜色翻车（关键 bug）**：`logo-black.png` 是黑色文字 + 透明背景（rgba 0,0,0,255），叠在黑底卡片上完全隐形。改成 `logo-white.png` 后正常显示。`_render_listing_card` 加 `if "logo-black" in img: img = img.replace("logo-black", "logo-white")` 强制列表卡片用白 logo。文章详情页 cover 不动（白底配黑 logo 没问题）。
+- **blog 卡片 background-size 比例翻车**：`logo-white.png` 原始 3000×548（aspect 5.5:1），用 `background-size:40%` 在 1:1 卡片里会按宽度 40% 缩成 ~58px 高的窄条，看起来像图片加载失败。改成 `center/contain no-repeat` 让 logo 按比例完整显示在卡片中央。
+- **文章封面顶图改为 `<img>`**（2026-07-28）：之前 `.article-cover` 用 `padding-top:33.33%`（撑高度）+ `background-size:50% contain`（限制 logo 大小）+ `background-color:#fff`（白底），结果是宽高比固定的"画框"把 logo 装进去，但 logo 的 5.5:1 比例跟 1:1 画框不匹配，移动端被裁切、桌面端被拉变形。改成 `<img style="display:block;width:100%;height:auto;">` —— 宽度铺满屏幕，高度由图片原比例自然撑开。同时清掉 `.article-cover` 的 padding-top / background 规则（之前是给 background-image 用的，img 不需要）。
+
+#### 验证
+- 10 个页面 playwright 巡检：全部 200，0 JS 错误，所有 footer about 链接解析为 `http://localhost:8000/pages/about.html`
+- Mobile (390×844) CSS 实测：h2 `position:absolute; top:18%; margin:0px` ✓, panel-header `display:none` ✓, cover `padding:50%` ✓
+- 启动 `python -m http.server 8000` 在 `http://localhost:8000` 提供预览
+- Blog 列表 4 张卡片正确渲染、链接全部有效、点进去能打开文章
+- 实际背景图 URL `http://localhost:8000/images/gfx/5guys/logo-black.png` 200 加载
+
+#### 已知问题（不影响功能）
+- `pages/journal.html` 引用 2 个 2015 年的 Instagram CDN（`scontent-lhr8-1.cdninstagram.com/...`）已失效（CDN 早过期）。需要换图或移除 `<img>` 引用。
+- 首页 blog latest 卡片是手写 HTML，新增/删除文章需手动同步 `index.html` 行 240–330 附近。
+- `tools/_qa*.py` 等一次性 QA 脚本可清理（占空间但不影响功能）。
+
+#### 下次待办
+- [ ] 首页 blog latest 卡片改成 JS 读 `posts.json` 自动渲染
+- [ ] 清理 `tools/_*.py` 一次性脚本
+- [ ] 把 2015 Instagram 死链换成新图或移除
+- [ ] 测试 Cloudflare Pages 部署后的 `posts.json` 抓取
+- [ ] 国际化（中文版切换）—— 设计层面没动，先不动
+
+---
+
+### 2026-07-28 — Blog 列表 4 轮 bug 修复 + 文章 cover 改为 `<img>`
+
+**Session：Mavis 在与 Takion 连续 5 轮迭代中彻底修复了 blog 系统的视觉 bug。**
+
+#### 改动概要
+1. **blog 列表模板 marker 撕裂**：`tools/templates/blog_list.html` 第 77 行原本是 `<!-- __POSTS_CARDS__ : ... -->` 注释 + 第 78 行裸 marker。`build_blog.py._build_listing_html` 用 `template.replace("__POSTS_CARDS__", cards)` 命中的是**注释里**的 marker（先出现），导致 `<!--` 和 `-->` 被撕开，cards 跑到注释中间。删掉注释行，只留第 78 行裸 marker。
+2. **blog 列表卡片 URL 路径错**：`_render_listing_card` 用 `post.rel_url`（= `pages/blog/2026-07-27/...`）拼 href，但 blog.html 自己就在 `pages/`，正确路径是 `blog/2026-07-27/...`。加 `if url.startswith("pages/"): url = url[len("pages/"):]`。
+3. **blog 列表卡片封面图路径错**：原本 `url(../{header_img})`，但 `header_img` 已经是 4 层 `../`（article 深度），叠加后变 5 层。改成从 `header_img` 切出 `images/...` 后缀再拼 `../images/...`。
+4. **blog 卡片 opacity 被 waypoints 锁在 0**：mobile 下 waypoints 不会自动触发，4 张卡片里只有首张 opacity 正常。加 `.blog-section .panel.fade-me{opacity:1!important}` 强制首屏可见。
+5. **blog 卡片 style 不对齐首页**：第一版加 `background-blend-mode:normal` 被 mobile CSS 干扰，去掉后严格复用首页 `index.html` 写法。
+6. **logo-black.png 颜色翻车**（最关键）：`logo-black.png` 是**黑字透明底**，叠在 `#000` 黑底卡片上完全隐形。改用 `logo-white.png`（白字透明底）。`_render_listing_card` 加 `if "logo-black" in img: img = img.replace("logo-black", "logo-white")`。
+7. **logo 比例翻车**：`logo-white.png` 原始 3000×548（aspect 5.5:1），1:1 卡片里 `background-size:40%` 按宽度 40% 算，缩成 58px 高的窄条。改成 `center/contain no-repeat`。
+8. **CSS `margin:15%` 残留**：styles.css 里有 2 处重复的 mobile `margin:15% auto` 规则（line 24 和 line 81）覆盖了 `margin:0`，导致标题位置始终偏移。删掉两处。
+9. **文章封面顶图改为 `<img>`**：之前用 `<div style="background:url(...); background-size:50% contain">` + `padding-top:33.33%` 撑出 1:1 盒子，把 logo 装进去。但 5.5:1 logo 跟 1:1 框不匹配，移动端被裁、桌面端被拉变形。改成 `<img style="display:block;width:100%;height:auto;">` —— 宽度铺满屏幕，高度由图片原比例自然撑开。同时清掉 `.article-cover` 的 padding-top / background 规则。
+
+#### 涉及文件
+- `tools/build_blog.py` — `_render_listing_card` 改图片路径 + 颜色修正 + style 对齐首页；`_build_article_html` 改用 `cover_src` 传图
+- `tools/templates/blog_list.html` — 删除 marker 注释行
+- `tools/templates/article.html` — `.article-cover` 改用 `<img>`
+- `css/styles.css` — 删 2 处重复 `margin:15%` 规则；`.article-cover` 改 height/auto；mobile patch 用 `<img>` 规则替代 padding-top
+- `tools/_qa*.py, _vfy*.py, _compare.py, _box.py, _cover.py, _scroll_blog.py, _find_home_card.py, _final_visual.py` — 一次性 QA 脚本（保留作为调试工具，可清理）
+
+#### 关键经验（写入 agent memory + AGENTS.md）
+- `logo-black.png` 是**黑字透明底**（rgba 0,0,0,255），不是"反色"。错用 = 卡片空白。配白底用 logo-black，配黑底用 logo-white。
+- 超宽 logo（aspect > 3:1）在 1:1 容器里用 `background-size:N%`（按宽度）会被压成窄条。用 `contain`。
+- CSS 调试时 `getComputedStyle` 显示 `backgroundImage` 正确但视觉上不可见，**先检查颜色对比和比例**，不要怀疑层叠/特异性。
+- build 模板里的 `{{MARKER}}` **不要**用 `<!-- {{MARKER}} -->` 注释包，否则 `str.replace` 会命中注释里那次。
+
+#### 验证
+- playwright 截图：blog 列表 4 张卡片（mobile 390×844 + desktop 1280×800）全部正常显示白 logo，宽度铺满卡片
+- 文章详情页：cover 顶图在 mobile 和 desktop 都按原比例铺满宽度，无裁切
+- 10 个页面 + 4 个 article 巡检：全部 200，0 JS 错误，所有 footer 链接正确
+
+#### 已知问题（仍存在）
+- 2015 Instagram CDN 死链（`scontent-lhr8-1.cdninstagram.com`）：与本次无关，历史遗留
+- 首页 blog latest 卡片手写 HTML：新增/删除文章需手动同步
+- `tools/_*.py` 一次性脚本可清理
+
+#### 下次待办（继续）
+- [ ] 首页 blog latest 卡片改 JS 自动渲染
+- [ ] 清理一次性脚本
+- [ ] 替换 Instagram 死链
+- [ ] Cloudflare Pages 部署后 `posts.json` 抓取验证
+- [ ] 中文版切换（设计层面先不动）
+
+#### 本次会话产出的最终状态
+- 4 篇文章 front-matter 都干净（无 byline 残留）
+- `pages/blog.html` + 4 篇文章 + `posts.json` 由 `python tools/build_blog.py` 一次性生成
+- `python -m http.server 8000` 跑在后台，http://localhost:8000/ 可访问
+- logo 资源最终状态：`images/gfx/5guys/{logo-white,logo-black}.png` 都是 3000×548，509KB / 114KB
+- `images/gfx/5guys/logo-black.png` 当前**仅**用于文章详情页 cover（白底场景）；列表卡片用 logo-white.png（黑底场景）
+
+---
+
+### 2026-07-28 — Zayn Band Panel 完整实现 + 5 成员引言更新
+
+**Session：Mavis 完成 Zayn Malik 的 band.html panel（filmstrip 图片、CSS styling、social links、parallax），并更新全部 5 位成员引言。**
+
+#### 改动概要
+1. **Zayn filmstrip 图片** — 用户提供 2 张 Zayn 照片，垂直拼接为 500×1000（1:2 比例，匹配其他成员 300×600），保存为 `images/gfx/filmstrip-zayn-smlc4ca.jpg`
+2. **Zayn panel HTML** — `pages/band.html` 新增第 5 个 `.panel.band-member.zayn`，结构完全复刻其他成员（`.image > .bg.retinafy` + `.text > .text-inner > h2 + p + .social`）
+3. **Zayn CSS** — `css/styles.css` 新增 zayn 专属规则：Cousine 700 字体、`filmstrip-zayn-smlc4ca.jpg` background-image、hover 色 `#cdb4db`（紫色调）
+4. **Parallax offsets** — 数组从 8 个值扩到 9 个（`[0,0,0,0,0,100,100,100,100]`），确保 5 个成员滚动视差均有覆盖
+5. **5 成员引言全部更新** — Takion 提供新文本，Harry/Louis/Niall/Liam/Zayn 的 `<p><span>` 全部替换
+6. **CSS 语法 bug 修复** — `styles.css` 末尾 FIVE GUYS 补丁块有一个多余的 `}`（在 `/* BAND: zayn member */` 前面），导致 zayn `.image .bg` 选择器被破坏、background-image 不生效。删除多余 `}` 后恢复正常。
+
+#### 涉及文件
+- `pages/band.html` — Zayn panel HTML + 5 成员引言更新
+- `css/styles.css` — Zayn CSS 规则 + 多余 `}` 修复
+- `images/gfx/filmstrip-zayn-smlc4ca.jpg` — 新增（89KB，500×1000）
+- `AGENTS.md` — Page-Specific Notes（4→5）+ 本日志
+- `tools/_make_zayn_filmstrip.py` — 一次性 filmstrip 拼接脚本
+- `tools/_qa_zayn.py` — 一次性 Playwright 验证脚本
+
+#### 关键经验
+- **CSS 多余 `}` 排查**：当 DevTools 显示元素匹配了选择器但属性不生效时，检查该选择器前面的代码是否有孤立的 `}` 把它吞掉了。`}\n\n/* comment */\n.selector{...}` 中，第一个 `}` 会被 CSS parser 当作前一条规则的结束，后面的注释和选择器变成语法错误。
+- **Zayn 社交账号**：Twitter `@zaynmalik`，Instagram `@zayn`（2015 年离开 1D 后沿用至今）。
+- **Filmstrip 1:2 宽高比**：其他成员 filmstrip 是 300×600，Zayn 用 500×1000 保持比例一致。
+
+#### 验证
+- Playwright 截图确认：desktop (1280×800) + mobile (390×844)，5 个成员 panel 全部正常显示 filmstrip background-image
+- 所有 social links href 正确
+- parallax offsets 数组长度 9，滚动无异常
+
+#### 已知问题（仍存在）
+- 4 个预存的 retinafy 404：`filmstrip-{louis,harry,liam,niall}-medc4ca.jpg`（retinafy.js 尝试加载中等尺寸变体，不存在但不影响显示）
+- 2015 Instagram CDN 死链（journal.html）—— 历史遗留
+- 首页 blog latest 卡片需手动同步 —— 历史遗留
