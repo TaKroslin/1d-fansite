@@ -96,3 +96,88 @@ body.mobilised-scroll-lock{overflow:hidden}
 .panel.band-member.zayn .text h2{font-family:'Cousine',monospace;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-left:-.045em}
 .panel.band-member.zayn .text a:hover,.panel.band-member.zayn .text a:visited:hover{color:#cdb4db!important}
 
+/* =============================================================
+   FIVE GUYS ONE DIRECTION: Bilingual Translation System
+   =============================================================
+   5GUYS1DIRECTION 中英翻译切换系统。
+   - 按钮风格:沿用 .more(Source Code Pro uppercase 边框)
+   - 切换:opacity fade 250ms,localStorage 持久化
+   - 歌词板块:点按后双语对照,其他内容:中英替换
+   - 默认英文,仅翻译内容(博客/about/band/music),不动页眉页脚
+   ============================================================= */
+
+/* Chinese font stack — system CJK fonts, no extra network */
+.zh{font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei','Source Han Sans CN','Noto Sans CJK SC','WenQuanYi Micro Hei',sans-serif;font-weight:400;letter-spacing:.02em}
+
+/* =================================================================
+   FIVE GUYS: Translation Toggle
+   ================================================================= */
+
+/* Default state: hide Chinese, show English */
+.zh{display:none}
+html.lang-zh .en{display:none}
+html.lang-zh .zh{display:inline}
+
+/* Smooth fade between language states */
+[data-translate]{transition:opacity .25s ease-in-out}
+html.lang-fading [data-translate]{opacity:0}
+
+/* Translate button — base (reset browser button styles) */
+.translate-btn{
+  display:inline-block;
+  font-family:'Source Code Pro',monospace;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+  cursor:pointer;
+  -webkit-appearance:none;
+  appearance:none;
+  background:none;
+  border:none;
+  padding:0;
+  margin:0;
+  line-height:inherit;
+  color:inherit;
+  vertical-align:middle;
+  transition:opacity .25s ease;
+}
+
+/* Label toggle for non-lyrics pages */
+.translate-btn .label-en,.translate-btn .label-zh{display:inline}
+html.lang-zh .translate-btn .label-en{display:none}
+html.lang-en .translate-btn .label-zh{display:none}
+
+/* ── Header-integrated button (inside #sticky, top-left) ── */
+header#sticky .translate-btn--header{
+  position:absolute;
+  left:0;
+  top:50%;
+  transform:translateY(-50%);
+  font-size:60%;
+  color:#fff;
+  padding:.35em .8em;
+  opacity:.8;
+  z-index:100;
+}
+header#sticky .translate-btn--header:hover,
+header#sticky .translate-btn--header:focus{opacity:1;outline:none}
+
+/* On-scroll: header background becomes white, button must go dark */
+header#sticky.scrolled .translate-btn--header{color:#000}
+
+/* ── Bilingual lyrics layout (stacked: en then zh) ── */
+.lyric-line{display:block;margin:0;padding:0}
+.lyric-line .zh{display:none;opacity:.7;font-size:88%;margin:0 0 .35em 0;line-height:1.4}
+
+/* Bilingual mode: show both en and zh stacked */
+html.lang-bilingual .lyric-line .en,
+html.lang-bilingual .lyric-line .zh{display:block}
+html.lang-bilingual .lyric-line .en{margin-bottom:.15em}
+
+/* Pure-zh mode on lyrics: hide en */
+html.lang-zh .lyric-line .en{display:none}
+html.lang-zh .lyric-line .zh{display:block}
+
+/* Headings: keep Chinese weight consistent */
+.panel.journal-article h2 .zh,.panel.band-member h2 .zh{font-weight:700}
+

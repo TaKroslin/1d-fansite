@@ -1,8 +1,12 @@
-# Local dev / housekeeping scripts
-_fix_*.py
-_http_audit.py
+# Local dev / housekeeping scripts (one-off QA, extraction, debug)
+_*.py
+_*.json
+_*.txt
+_*.md
 *.pyc
 __pycache__/
+_http_audit.py
+tools/_qa_screenshots/
 
 # OS junk
 .DS_Store

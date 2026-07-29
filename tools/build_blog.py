@@ -73,6 +73,7 @@ class Post:
     keywords: str = ""
     og_image: str = ""
     body_md: str = ""  # raw markdown (after front matter)
+    body_zh: str = ""  # raw Chinese markdown (loaded from sibling article.zh.md)
     extra: dict[str, str] = field(default_factory=dict)
 
     @property
@@ -140,6 +141,13 @@ def _load_post(md_path: Path) -> Post:
         og_image=fm.get("og_image", fm.get("header_img", "")),
         body_md=body,
     )
+    # Optional Chinese sibling: <slug>/article.zh.md (no front matter — just body)
+    zh_path = md_path.parent / "article.zh.md"
+    if zh_path.exists():
+        try:
+            post.body_zh = zh_path.read_text(encoding="utf-8").strip("\n")
+        except OSError:
+            post.body_zh = ""
     # Stash any unknown keys so authors can add custom metadata later.
     for k, v in fm.items():
         if k not in {
@@ -174,6 +182,130 @@ def _render_markdown(body_md: str) -> str:
     return "\n" + indented + "\n\t\t"
 
 
+def _wrap_bilingual(en_html: str, zh_md: str) -> str:
+    """Render Chinese markdown and pair the two HTML trees for the toggle UI.
+
+    We pair top-level block elements (p, h1-h6, ul, ol, blockquote, hr, table)
+    so each pair can be wrapped in inline <span class="en"> / <span class="zh">
+    siblings. This way the CSS rule `html.lang-zh .en{display:none}` cleanly
+    swaps each paragraph without breaking the layout of the surrounding <p>.
+
+    Falls back to a side-by-side div render if block counts don't match (e.g.
+    the user translated only part of the post — the rest stays English).
+    """
+    if not zh_md or not zh_md.strip():
+        return en_html
+    zh_html = _render_markdown(zh_md)
+    en_blocks = _split_top_level(en_html)
+    zh_blocks = _split_top_level(zh_html)
+    if not en_blocks or len(en_blocks) != len(zh_blocks):
+        return (
+            '\n\n			<div class="en">'
+            + en_html.strip("\n")
+            + '\n			</div>\n\n			<div class="zh">'
+            + zh_html.strip("\n")
+            + '\n			</div>\n\n\t\t'
+        )
+    paired: list[str] = []
+    for en_block, zh_block in zip(en_blocks, zh_blocks):
+        paired.append(_pair_block(en_block, zh_block))
+    body = "\n\n			".join(paired)
+    return "\n\n			" + body + "\n\n\t\t"
+
+
+def _pair_block(en_block: str, zh_block: str) -> str:
+    """Pair one English block with one Chinese block.
+
+    For a block like `<p class="foo">Hello</p>`, we produce
+    `<p class="foo"><span class="en">Hello</span><span class="zh">你好</span></p>`.
+
+    For self-closing blocks like `<hr />` we just keep the English one and let
+    the Chinese side render nothing (the swap still works because the .hr
+    doesn't need translation).
+    """
+    en = en_block.strip()
+    zh = zh_block.strip()
+    # Find the first opening tag's `>` and the last `</` for the closing tag
+    open_end = en.find(">")
+    if open_end < 0:
+        return en  # not a block element
+    last_close = en.rfind("</")
+    if last_close < 0:
+        # Self-closing or void element
+        return en
+    # Closing tag name
+    close_tag = en[last_close + 2:-1] if en.endswith(">") else ""
+    # Skip the closing tag of nested elements (we want the outermost)
+    # The last </ close in a block is the matching outer close
+    inner_en = en[open_end + 1:last_close]
+    # For zh, find the corresponding inner content
+    zh_open_end = zh.find(">")
+    zh_last_close = zh.rfind("</")
+    if zh_open_end < 0 or zh_last_close < 0:
+        return en
+    inner_zh = zh[zh_open_end + 1:zh_last_close]
+    # Build the paired block: keep the English opening tag, replace inner with
+    # paired spans, and use the original closing tag
+    opening = en[:open_end + 1]
+    closing = en[last_close:]
+    return (
+        f'{opening}<span class="en">{inner_en}</span><span class="zh">{inner_zh}</span>{closing}'
+    )
+
+
+_BLOCK_OPEN_RE = re.compile(
+    r"<(p|h[1-6]|ul|ol|blockquote|hr|table)\b[^>]*?(/?)>",
+    re.IGNORECASE,
+)
+
+
+def _split_top_level(html: str) -> list[str]:
+    """Split an HTML fragment by top-level block-element tags.
+
+    A "top-level" block is one not nested inside another block. We do a simple
+    depth-count walk: at depth 0, each block-opening tag starts a new chunk;
+    we find the matching closing tag for that block and emit the chunk.
+
+    Self-closing tags (hr) and void elements end their chunk immediately.
+    """
+    out: list[str] = []
+    pos = 0
+    for m in _BLOCK_OPEN_RE.finditer(html):
+        if m.start() < pos:
+            continue  # nested; skip
+        # Find the matching close for this tag
+        tag_name = m.group(1).lower()
+        is_self_close = m.group(2) == "/" or tag_name == "hr"
+        if is_self_close:
+            out.append(html[pos:m.end()].strip())
+            pos = m.end()
+            continue
+        # Find the matching </tagname> by scanning forward, accounting for nesting
+        depth = 1
+        cursor = m.end()
+        open_re = re.compile(rf"<{tag_name}\b[^>]*?(/?)>", re.IGNORECASE)
+        close_re = re.compile(rf"</{tag_name}\s*>", re.IGNORECASE)
+        while depth > 0:
+            nxt_open = open_re.search(html, cursor)
+            nxt_close = close_re.search(html, cursor)
+            if not nxt_close:
+                break  # malformed
+            if nxt_open and nxt_open.start() < nxt_close.start():
+                if nxt_open.group(1) != "/":
+                    depth += 1
+                cursor = nxt_open.end()
+            else:
+                depth -= 1
+                cursor = nxt_close.end()
+        out.append(html[pos:cursor].strip())
+        pos = cursor
+    # Trailing text
+    tail = html[pos:].strip()
+    if tail:
+        out.append(tail)
+    return [c for c in out if c]
+
+
 # ---------------------------------------------------------------------------
 # HTML rendering
 # ---------------------------------------------------------------------------
@@ -194,6 +326,7 @@ def _build_article_html(post: Post) -> str:
     main_js_href = f"{root_prefix}js/main.js"
 
     body_html = _render_markdown(post.body_md)
+    body_html = _wrap_bilingual(body_html, post.body_zh)
 
     # Cover image: use a real <img> tag (not background) so the image's
     # natural aspect ratio drives the cover's height — it always spans
