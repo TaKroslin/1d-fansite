@@ -110,16 +110,16 @@
 
 ---
 
-## 4. 部署规则（Cloudflare Pages / git）
+## 4. 部署规则（Cloudflare Workers 静态资源 / git 集成）
 
-1. **Cloudflare Pages 直连 GitHub，自动部署**：本地 `git push` 到 main 分支即触发线上构建。
-2. **推送前检查**：
+1. **Cloudflare Workers git 集成拉取 GitHub main 分支部署**：本地 `git push` 到 main 后，Workers 构建（`npx wrangler deploy`，静态资源模式 `assets.directory: "."`）→ 线上 `https://www.5guys1direction.asia/`。
+2. **wrangler.jsonc 必须留在 main 根目录**：构建环境无交互，若仓库缺 wrangler.jsonc，wrangler 会自动生成默认配置并把 `.git/` 当资源上传（147MiB pack > 25MiB 上限 → `Asset too large` 构建失败）。`assets.exclude` 已排除 `.git` / `AGENTS` / `tools` / `README` / `onedirectionmusiccom-ukprod`。
+3. **推送前检查**：
    - `git status`：确认**所有引用的新图片/新文件都已 `git add`**。⚠️ 引用未跟踪目录 = 线上 404（血泪教训：`images/media/article-images/square-sml/`、`images/yt-thumbs/`、`images/media/gallery-images/`、`images/gfx/*-lrg.jpg` 都曾是未跟踪的）。
    - `.gitignore` 应包含 `onedirectionmusiccom-ukprod/`（3.9MB 死克隆，防止 `git add -A` 误纳入）。
-   - 不要在本地跑 Cloudflare 构建；线上构建失败看 GitHub Actions / Pages 日志。
-3. **推送后**：等 CI 完成，验证线上 URL（可抓取 `https://<project>.pages.dev/` 首页 + 关键资源）。
-4. **改 CSS 记得 bump `?v=`**（见 §2.2）。
-5. 未完成事项见 `AGENTS/LOG.md` 最新条目"待办"，不要重复创建任务。
+4. **推送后**：Workers 控制台（项目 `5guys1direction`）看构建日志；构建成功验证 `https://www.5guys1direction.asia/` 首页 + 关键资源 200。构建失败最常见原因：wrangler.jsonc 缺失（见 §4.2）、单文件 >25MiB。
+5. **改 CSS 记得 bump `?v=`**（见 §2.2）。
+6. 未完成事项见 `AGENTS/LOG.md` 最新条目"待办"，不要重复创建任务。
 
 ---
 

@@ -1,0 +1,25 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "5guys1direction",
+  "compatibility_date": "2026-08-01",
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "directory": ".",
+    "exclude": [
+      ".git",
+      ".git/**",
+      ".github/**",
+      ".wrangler/**",
+      "onedirectionmusiccom-ukprod/**",
+      "AGENTS/**",
+      "tools/**",
+      "README.md",
+      "AGENTS.md"
+    ]
+  },
+  "compatibility_flags": [
+    "nodejs_compat"
+  ]
+}
