@@ -8,6 +8,17 @@ __pycache__/
 _http_audit.py
 tools/_qa_screenshots/
 
+# Official-site dead clone cache (3.9MB, never commit)
+onedirectionmusiccom-ukprod/
+
+# tools/ one-off task files (QA probes, scrapers, downloads, review artifacts)
+tools/_*.ps1
+tools/_*.html
+tools/_*.jpg
+tools/_*.md
+tools/review/
+tools/CODEX_TASK_*.md
+
 # OS junk
 .DS_Store
 Thumbs.db

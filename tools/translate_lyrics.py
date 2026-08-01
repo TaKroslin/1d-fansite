@@ -60,18 +60,48 @@ def _zh_text(entry) -> str:
     return str(entry)
 
 
-def build_bilingual_lines(en_lines: list[str], zh_lines: list | None) -> str:
+def _is_passage(zh_data) -> bool:
+    """Passage mode: zh_data is a single free-translation string for the whole song.
+
+    Line-by-line literal mode: zh_data is a list of (en, zh) tuples.
+    """
+    return isinstance(zh_data, str)
+
+
+def build_bilingual_lines(en_lines: list[str], zh_data) -> str:
     """Build a string of `<span class="lyric-line">` blocks.
 
-    `zh_lines` may be a list of (en, zh) tuples or plain strings; each entry's
-    Chinese text is extracted.  Lines that have no Chinese translation get a
-    `[待译: <english>]` placeholder so the user can fill in later.
+    Two modes:
+
+    * **Passage mode** (`zh_data` is a str): render every English line as
+      `<span class="lyric-line"><span class="en">…</span></span>` (no per-line
+      zh), then append a `<div class="lyric-passage"><span class="zh">…</span></div>`
+      at the end holding the whole-song free translation.
+
+    * **Literal mode** (`zh_data` is a list of (en, zh) tuples or plain strings):
+      per-line `<span class="lyric-line"><span class="en">…</span><span class="zh">…</span></span>`.
+      Lines that have no Chinese translation get a `[待译: <english>]` placeholder.
     """
-    out: list[str] = []
-    if not zh_lines:
-        zh_lines = []
+    if _is_passage(zh_data):
+        out: list[str] = []
+        for en in en_lines:
+            if not en.strip():
+                out.append('<span class="lyric-line">&nbsp;</span>')
+            else:
+                out.append(
+                    f'<span class="lyric-line"><span class="en">{en}</span></span>'
+                )
+        out.append(
+            f'<div class="lyric-passage"><span class="zh">{zh_data}</span></div>'
+        )
+        return "\n".join(out)
+
+    # literal / line-by-line mode
+    out = []
+    if not zh_data:
+        zh_data = []
     for i, en in enumerate(en_lines):
-        zh = _zh_text(zh_lines[i]) if i < len(zh_lines) else ""
+        zh = _zh_text(zh_data[i]) if i < len(zh_data) else ""
         if not en and not zh:
             # Pure blank line — keep as a blank line for spacing
             out.append('<span class="lyric-line">&nbsp;</span>')

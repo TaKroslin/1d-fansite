@@ -9,7 +9,7 @@ header_img_size: 50% contain
 header_img_position: center
 description: The origin story of FIVE GUYS ONE DIRECTION — a Mainland China fan project that refuses to let the One Direction archive go dark.
 keywords: One Direction, fan project, China, archive, FIVE GUYS ONE DIRECTION
-og_image: ../../../../images/gfx/hero-2015-rect-sml.jpg
+og_image: ../../../../images/gfx/hero-2015-rect-lrg.jpg
 scaler: 70%
 -->
 There are already countless places to find One Direction online.

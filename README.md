@@ -123,7 +123,7 @@ Blog posts are authored in Markdown and then built into static HTML — no hand-
    header_img_position: center
    description: A one-sentence summary for SEO and cards.
    keywords: One Direction, keyword, another keyword
-   og_image: ../../../../images/gfx/hero-2015-rect-sml.jpg
+   og_image: ../../../../images/gfx/hero-2015-rect-lrg.jpg
    scaler: 60%
    -->
    
@@ -143,7 +143,7 @@ Add an entry to `META` and `SCALERS` in `tools/build_blog.py`:
     "author": "Takion Kroslin",
     "description": "A one-sentence summary.",
     "keywords": "One Direction, keyword, another keyword",
-    "og_image": "../../../../images/gfx/hero-2015-rect-sml.jpg",
+    "og_image": "../../../../images/gfx/hero-2015-rect-lrg.jpg",
 },
 ```
 

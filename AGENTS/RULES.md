@@ -1,0 +1,186 @@
+# 1D Fansite — 操作规范（RULES）
+
+> 本文件是**模型的行为准则**：规定"怎么干活、先干什么、怎么验证、怎么收尾"，把踩过的坑固化为流程，避免重复犯错、浪费 token。
+>
+> 优先级：根 `AGENTS.md`（入口）→ 本文件（怎么做）→ `AGENTS/AGENTS.md`（是什么）→ `METHODS.md`（坑明细）→ `COMMANDS.md`（命令）。
+
+---
+
+## 0. 核心原则（最高优先级）
+
+1. **先查证，后动手**：改任何东西之前，先读相关文件确认现状；不确定就 grep / 查文档，不猜。
+2. **小步改，快验证**：每次改动保持最小范围，改完立即跑对应验证，不要攒一堆改动再验证。
+3. **非必要不用视觉模型/截图**：能用脚本、HTTP 请求、文本 grep 验证的，绝不启动浏览器截图。**只有需要确认"视觉呈现"（布局、颜色、动画、响应式）时才用 Playwright 截图 + 视觉确认。** 普通的功能正确性（链接 200、图片存在、JS 无错误）一律用低成本检查。
+4. **批量操作先写脚本**：涉及 10+ 文件的同类修改，写一次性 Python 脚本（放 `tools/`），脚本要幂等、可重跑，改完验证输出。不要手工逐个文件改。
+5. **改完必写日志**：`AGENTS/LOG.md` 追加一条（规范见 §6）。经验教训沉淀到 `METHODS.md` / 本文件。
+
+---
+
+## 1. 会话启动流程（每次开工必做）
+
+1. 读根 `AGENTS.md`（入口 + 文档地图，约 1 分钟）
+2. 按任务类型读对应文件：
+   - **所有任务**：`AGENTS/RULES.md`（本文件）
+   - **改页面/样式/组件**：`AGENTS/AGENTS.md` 的设计系统、组件目录、路径约定
+   - **图片/资源相关**：`AGENTS/METHODS.md` 图片类坑 + `COMMANDS.md` 审计命令
+   - **blog 相关**：`AGENTS/AGENTS.md` 的 Blog Markdown Workflow
+   - **歌词/翻译相关**：`AGENTS/AGENTS.md` 翻译说明 + `METHODS.md` 翻译类坑
+3. 确认本地 server 状态（QA 需要）：`python -m http.server 8000` 后台跑起来
+4. 读 `AGENTS/LOG.md` 最近 1-3 条，了解"上次做到哪、遗留什么"
+
+> 不要每读一个文件就汇报一次。文档读完直接干活，结尾汇报。
+
+---
+
+## 2. 开发规则
+
+### 2.1 通用
+
+- **不引入框架**；纯 HTML/CSS/JS + jQuery。
+- **新增页面**：复制现有同类型页面作模板（保留 header/footer/nav/资源引用），再改内容。不手写骨架。
+- **改 HTML 时**：注意 body class、`data-translate`、资源相对路径深度（见 AGENTS/AGENTS.md 路径表）。
+- **不要删除官方克隆的结构/资源**：除非确认是死代码（如失效 CDN 引用，替换为本地文件）。
+
+### 2.2 CSS
+
+- `css/styles.css` 是单行 minified（91KB）。**新规则追加到文件末尾 `/* FIVE GUYS ONE DIRECTION additions */` 块内**，绝不重排/重写现有行。
+- 修 bug 才动现有规则；加样式一律追加。
+- **改完 CSS 必须 bump 版本参数**：相关页面 `<link href="css/styles.css?v=YYYYMMDD">` 更新日期。纯静态站无 cache-control，浏览器启发式缓存会让用户一直看到旧 CSS——这是"改了但看不到效果"的头号原因。
+- 与 inline style 或 JS 写入的 z-index 打架时，直接 `z-index:9999!important`，别用 200/100 这类中间值。
+
+### 2.3 JS
+
+- 官方 `js/main.js` 保持不动；新功能放页面底部 `<script>` 或独立 JS 文件。
+- **独立 JS 文件必须加全局守卫**防重复绑定：
+  ```js
+  if (window.__5GUYS_XXX__) return; window.__5GUYS_XXX__ = true;
+  ```
+- 页面 `<script>` 引用只写一次（重复引用 = 事件绑定两次 = 行为翻倍，教训见 METHODS.md）。
+- 新增交互 JS 时检查：jQuery 是否已加载（页面用 Google CDN 的 2.1.1）。
+
+### 2.4 Python 脚本（tools/）
+
+- 脚本放 `tools/`，一次性任务文件名加 `_` 前缀（如 `_fix_xxx.py`），完成后标注可清理。
+- 读文件统一 `encoding='utf-8'`（Windows 下 PowerShell 默认 ANSI，Python 默认也可能出问题）；JSON 中间文件可能带 BOM，用 `utf-8-sig` 读。
+- **不要用 `dict.get(key, default)` 传需要求值的默认值**（`default` 会先求值，key 缺失时直接抛错）。用 `d[k] if k in d else fallback`。
+- 批量替换用 `str.replace` 时，模板里的 marker 必须是**裸文本**，不要包在 HTML 注释 `<!-- -->` 里（replace 会命中注释里的那次）。
+- 脚本要幂等：重复跑结果一致；输出带统计（改了 N 个文件）。
+- 用正则处理 HTML 时，注意 `.` 不匹配换行、`*` 贪婪匹配等陷阱；复杂的多段拼接用独立 capture group 再重组，别用 group(1) 直接粘（教训见 METHODS.md）。
+
+### 2.5 歌词/翻译
+
+- 歌词页结构：`.lyric-line` 双语（en + `<span class="zh">`），页面带 `data-translate="true"`，并引用 translate.js。
+- 注入歌词用 `tools/translate_lyrics.py`（从 `lyric_translations.py` 字典读），**不要手工改 67 个歌页 HTML**。
+- 翻译字典结构：`{album: {song: [(en, zh), ...]}}`，en 必须与 HTML 原文严格 1:1（顺序对应），zh 可为 `[待译: <english>]` 占位。
+- 非单曲歌词页（MIA 14 首）：Song 类型 + Written by + prev/next 相邻曲目；无 release-buy/release-video。
+
+---
+
+## 3. 检测 / QA 规则（分层检测，从便宜到贵）
+
+**原则：能用便宜的手段就不用贵的。视觉确认是最后手段，不是默认手段。**
+
+### 第 1 层：静态检查（每次改动后必做，秒级）
+- 修改的 HTML/JS 语法自查（读一遍，看引用/闭合/路径）。
+- `grep` 确认没有残留错误引用（如 `onedirectionmusiccom-ukprod` 页面级引用、`.jpg.jpg`、重复 `<script>` 行）。
+- 相对路径深度对照 AGENTS/AGENTS.md 路径表自查。
+
+### 第 2 层：HTTP 级验证（本地 server + 脚本，分钟级）
+- 启动 `python -m http.server 8000`（127.0.0.1:8000）。
+- 全站图片审计：`python tools/_audit_site_images.py` → 目标 `Broken: 0`。
+- 页面 200 / 资源 200 检查：写一次性 Python 脚本 `requests.get` 或 `urllib` 遍历。
+- **QA 图片路径必须用真实 HTTP urljoin + 请求验证，不能用 `Path.resolve()`**（HTTP 的 `..` 超过根会被截断，文件系统 resolve 会误报）。
+
+### 第 3 层：浏览器验证（仅当需要确认视觉呈现时才用）
+- 需要确认**布局/颜色/动画/响应式/交互行为**时才启动 Playwright。
+- 典型场景：CSS 改动后的视觉效果、mobile 断点、slideshow 翻页交互、hover 动画。
+- 截图归档到 `tools/_qa_screenshots/`。
+- **Playwright 脚本结束时用 `os._exit(0)`**，否则 chromium 不释放、命令挂起报 timeout（结果其实已产出）。
+- 优先 headless；真实浏览器问题（如缓存）需 channel=chrome + `?v=` 版本参数排查。
+
+### 各场景默认验证方案
+| 场景 | 默认验证 | 是否要视觉 |
+|------|---------|-----------|
+| 改文本/链接/路径 | 第 1+2 层 | 否 |
+| 加图片 | 第 2 层（审计 0 断链） | 否 |
+| 改 CSS 布局/颜色 | 第 1+2 层 + 第 3 层截图确认 | 是（截图确认视觉） |
+| 改 JS 交互 | 第 3 层（Playwright 点击/键盘/滑动断言） | 是（必要时截图） |
+| 改 blog/重建页面 | 第 1+2 层 | 否 |
+| 批量重建页面 | 脚本幂等检查 + 第 2 层全量审计 | 抽查 1-2 张截图 |
+
+---
+
+## 4. 部署规则（Cloudflare Pages / git）
+
+1. **Cloudflare Pages 直连 GitHub，自动部署**：本地 `git push` 到 main 分支即触发线上构建。
+2. **推送前检查**：
+   - `git status`：确认**所有引用的新图片/新文件都已 `git add`**。⚠️ 引用未跟踪目录 = 线上 404（血泪教训：`images/media/article-images/square-sml/`、`images/yt-thumbs/`、`images/media/gallery-images/`、`images/gfx/*-lrg.jpg` 都曾是未跟踪的）。
+   - `.gitignore` 应包含 `onedirectionmusiccom-ukprod/`（3.9MB 死克隆，防止 `git add -A` 误纳入）。
+   - 不要在本地跑 Cloudflare 构建；线上构建失败看 GitHub Actions / Pages 日志。
+3. **推送后**：等 CI 完成，验证线上 URL（可抓取 `https://<project>.pages.dev/` 首页 + 关键资源）。
+4. **改 CSS 记得 bump `?v=`**（见 §2.2）。
+5. 未完成事项见 `AGENTS/LOG.md` 最新条目"待办"，不要重复创建任务。
+
+---
+
+## 5. 效率 / 成本规则（token 节约）
+
+1. **不要重复读文件**：本次会话读过的文件不重读（除非怀疑被改动）。
+2. **并行调用**：无依赖的读/查/检查放同一个回合并行执行。
+3. **不做无关检查**：验证只覆盖改动影响面 + 全站审计（审计脚本一次跑完），不逐页点开。
+4. **用 grep 定位，不整文件读**：大文件（styles.css 91KB、index.html）只读相关片段。
+5. **批量操作写脚本**：脚本一次跑完，不循环手工操作。
+6. **报告要短**：交付时给结论 + 关键证据（数字/路径），不贴大段日志。
+7. **翻译/长文本生成**：用后台 agent 并行（BYOK），别占用主会话上下文。
+8. **非必要不用视觉**（见 §3）：截图 = token 贵，能脚本验证就不截图。
+
+---
+
+## 6. 日志书写规范（写入 AGENTS/LOG.md）
+
+每次任务完成后**必须**写一条。放在文件顶部（最新在上）。
+
+### 6.1 条目模板
+
+```markdown
+## YYYY-MM-DD — <一句话标题>
+
+- **模型**：Mavis / Codex / 其他（多模型协作写 "X + Y 复核"）
+- **目的**：这次改什么、为什么改
+- **结果**：改了什么、怎么改的（关键文件 + 关键手法，3-8 条要点）
+- **验证**：怎么验证的（命令 + 结果数字，如 "Broken: 0"）
+- **Token 消耗**：约 X 万（估算，主会话 + 后台 agent 分开写）；历史未记录写"未记录"
+- **用时**：约 X 分钟（估算）
+- **经验总结**：1-3 条最关键的经验（简短）；详细版写到 RULES.md / METHODS.md
+- **遗留/待办**：未完成事项（要能在下次会话直接续做）
+```
+
+### 6.2 要求
+
+- **模型名**：必填。多模型接力时写清楚谁做了什么。
+- **Token 消耗**：估算即可（输入+输出），后台 agent 分开列。
+- **经验总结**：LOG 里只写简短结论；**详细的坑（现象/根因/处理/预防）写到 METHODS.md**，可复用的流程规则写到 RULES.md。一个坑不要同时在三个文件重复全文。
+- **新增坑**：日志写完顺手在 METHODS.md 补一条（若确是新坑）。
+- 历史日志按此规范迁移过一次（见 LOG.md 顶部说明）。
+
+---
+
+## 7. 数据源与外部资源规则
+
+- **官网图片**：`www.onedirectionmusic.com/assets/gfx/<name>-lrg.jpg`（高清原图）；⚠️ 不要用 `assets/images/`（同名文件是 3617 字节占位/错误页）。
+- **官网 gallery 照片**：`www.onedirectionmusic.com/onedirectionmusiccom-ukprod/media/gallery-images/{rect-sml,rect-med,rect-lrg}/<hash>.jpg`（600×400 / 1200×800 / 1500×1000）。
+- **iTunes Search API**（无 key，可靠）：`https://itunes.apple.com/search?term=<query>&entity=song`。找**单曲封面**必须过滤 `collectionName` 含 `- Single` 且 `trackName` 含歌名，或 `collectionName == trackName`；没有就用标准版专辑封面兜底。`artworkUrl100` 的 `100x100bb` 换 `600x600bb` 得高清。
+- **YouTube 缩略图**：`https://img.youtube.com/vi/<vid>/hqdefault.jpg`（GFW 可直连；404 试 `0.jpg`/`mqdefault.jpg`），本地化到 `images/yt-thumbs/`。
+- **歌词源**：官网 > Genius > AZLyrics > lyrics.ovh（免费无 key 最可靠；`api.lyrics.ovh` 需 URL 编码空格，歌名变体可能决定命中）。
+- **已死数据源**：`cdn.smehost.net` 全死；Instagram CDN（scontent-lhr8-1.cdninstagram.com）失效；Wayback Machine 慢且不稳。
+- **web_search 可能 402**（plan 余额用完）：此时用后台 agent（BYOK）替代，或直接访问已知 URL。
+
+---
+
+## 8. 沟通 / 交付规则
+
+- 用中文汇报（用户默认中文）。
+- 交付给结论 + 关键证据，不贴大段日志。
+- 完成的改动报：改了哪些文件（关键）、验证结果（数字）、是否已写日志。
+- 需要用户决策时给**建议 + 理由**，不列 pros/cons 让用户选。
+- 发现与任务无关但明显坏掉的东西（死链、错误路径），顺手修或在汇报里提一句，不假装没看见。
