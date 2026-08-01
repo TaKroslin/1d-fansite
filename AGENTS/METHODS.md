@@ -229,6 +229,12 @@
 - **处理**：`git log --oneline -- <path>` 找 blob → `git show <blob>:<path>` 恢复。
 - **预防**：批量替换图片前先 `git status` 确认原始文件状态；可疑操作先备份。
 
+### M37. Workers 构建失败：`.git/` 被当静态资源上传（Asset too large）
+- **现象**：Workers git 集成构建报 `✘ [ERROR] Asset too large`，指向 `.git/objects/pack/*.pack`（147MiB > 25MiB 上限），`✨ Read 745 files` 里含 .git。
+- **根因**：main 上没有 wrangler.jsonc 时，wrangler 非交互模式自动生成 `assets.directory: "."`，把整个仓库（含 `.git/`）当静态资源；首次加 `assets.exclude` 修复无效——**wrangler 4.118 不认 `assets.exclude`**（日志 `▲ [WARNING] Unexpected fields found in assets field: "exclude"`，静默忽略）。
+- **处理**：`wrangler.jsonc` 加 `"build": { "command": "rm -rf .git" }`，让 wrangler deploy 在扫描 assets 前先删掉 `.git`（构建环境每次全新 clone，删 .git 不影响后续）。若 `build.command` 也不生效，备选：把控制台 deploy command 改为 `rm -rf .git && npx wrangler deploy`。
+- **预防**：wrangler.jsonc 必须常驻 main 根目录；任何 `assets.*` 新字段先确认当前 wrangler 版本支持（4.118 仅支持 directory/binding/html_handling/not_found_handling/run_worker_first/experimental_serve_directly）。
+
 ---
 
 ## 九、其他

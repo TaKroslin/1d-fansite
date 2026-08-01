@@ -6,20 +6,12 @@
     "enabled": true
   },
   "assets": {
-    "directory": ".",
-    "exclude": [
-      ".git",
-      ".git/**",
-      ".github/**",
-      ".wrangler/**",
-      "onedirectionmusiccom-ukprod/**",
-      "AGENTS/**",
-      "tools/**",
-      "README.md",
-      "AGENTS.md"
-    ]
+    "directory": "."
   },
   "compatibility_flags": [
     "nodejs_compat"
-  ]
+  ],
+  "build": {
+    "command": "rm -rf .git"
+  }
 }

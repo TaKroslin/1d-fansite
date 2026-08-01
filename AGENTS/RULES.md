@@ -113,7 +113,7 @@
 ## 4. 部署规则（Cloudflare Workers 静态资源 / git 集成）
 
 1. **Cloudflare Workers git 集成拉取 GitHub main 分支部署**：本地 `git push` 到 main 后，Workers 构建（`npx wrangler deploy`，静态资源模式 `assets.directory: "."`）→ 线上 `https://www.5guys1direction.asia/`。
-2. **wrangler.jsonc 必须留在 main 根目录**：构建环境无交互，若仓库缺 wrangler.jsonc，wrangler 会自动生成默认配置并把 `.git/` 当资源上传（147MiB pack > 25MiB 上限 → `Asset too large` 构建失败）。`assets.exclude` 已排除 `.git` / `AGENTS` / `tools` / `README` / `onedirectionmusiccom-ukprod`。
+2. **wrangler.jsonc 必须留在 main 根目录，且禁止 `assets.exclude`**：构建环境无交互，若仓库缺 wrangler.jsonc，wrangler 会自动生成默认配置并把 `.git/` 当资源上传（147MiB pack > 25MiB 上限 → `Asset too large` 构建失败）。⚠️ wrangler 4.118 **不认 `assets.exclude` 字段**（报 `Unexpected fields`，静默忽略），正确做法是 `"build": { "command": "rm -rf .git" }` 在部署前删掉 `.git`（详见 M37）。
 3. **推送前检查**：
    - `git status`：确认**所有引用的新图片/新文件都已 `git add`**。⚠️ 引用未跟踪目录 = 线上 404（血泪教训：`images/media/article-images/square-sml/`、`images/yt-thumbs/`、`images/media/gallery-images/`、`images/gfx/*-lrg.jpg` 都曾是未跟踪的）。
    - `.gitignore` 应包含 `onedirectionmusiccom-ukprod/`（3.9MB 死克隆，防止 `git add -A` 误纳入）。
