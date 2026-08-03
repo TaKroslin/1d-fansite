@@ -37,6 +37,27 @@
 
 ---
 
+## 2026-08-03 — 补全 article-images 缺 lrg 变体（26 张，成功 20）
+
+- **模型**：Mavis
+- **目的**：`images/media/article-images/` 下部分图只有 sml/med 变体，缺 lrg；补全官方 lrg 版本。
+- **结果**：
+  - 扫描出缺 lrg 的 26 张（square-sml/square-med → square-lrg 21 张；rect-sml → rect-lrg 3 张；另 2 张 -col 彩版）。
+  - 新脚本 `tools/_dl_article_images_lrg.py`（幂等，并发 4，超时 120s，SOF 段读尺寸校验，不依赖 Pillow）。
+  - 成功下载 20 张到 `square-lrg/`（+16）和 `rect-lrg/`（+4），均为真实高清（750×750 ~ 2400×1200）。
+  - 6 张失败：官网 `square-lrg/` 对这些 hash 只返回小尺寸（350×350 ~ 598×598），**数据源本身无更大版本**，非 URL 问题（5 种变体路径均 200 同尺寸）。
+- **验证**：`file` 抽查 3 张尺寸正确；全部下载经过 SOF 段解析 + 最小尺寸校验。
+- **Token 消耗**：约 1.5 万
+- **用时**：约 30 分钟
+- **经验总结**：
+  1. 官方 article-images 的 `square-lrg` 变体**不是所有 hash 都有**，部分原图就小；先下载再校验尺寸，别信 200。
+  2. Pillow 在项目环境不可用，JPEG 尺寸校验用 SOF 段解析（标准库零依赖）更稳。
+  3. 官网响应慢（单张可达 30s+），下载脚本必须并发 + 长超时，串行会超时。
+- **遗留/待办**：
+  - 6 张官网无 lrg 的 hash（105b607f、1da9a62c、4ae83e1a、bb8dc980、bdb015b4、be3f9cd1）：如后续需要大图，走 Wayback Machine 或找官方高清源，否则维持现状。
+
+---
+
 ## 2026-08-03 — Gallery「分专辑」集合入口 albums.html（5 album × 13 photosets）
 
 - **模型**：Mavis
