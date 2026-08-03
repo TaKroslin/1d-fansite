@@ -37,6 +37,130 @@
 
 ---
 
+## 2026-08-03 — Gallery「分专辑」集合入口 albums.html（5 album × 13 photosets）
+
+- **模型**：Mavis
+- **目的**：在 gallery 下新建一个分专辑的集合入口页，把 music 5 个 photos 页全部 13 个图集聚合到一处，风格与 gallery 契合。
+- **结果**：
+  - **新页 `pages/gallery/albums.html`**（`tools/_build_albums_page.py` 自动生成，幂等）：用官方 `panel.release-header-mono.header-<slug>`（沿用 music 页 5 个 album 背景图，CSS 已有 5 条规则无需新增）作为分段标题，每个 album 下接 1-4 个 `panel.gallery-cover`（与 music photos 页同构：rect-lrg 封面、灰度 hover、count 徽章、"View images"按钮），按专辑年代顺序：Up All Night 3 → Take Me Home 3 → Midnight Memories 4 → Four 2 → Made In The A.M. 1，共 13 张。
+  - 13 个"View images"按钮全部跳回原 music album 的 slideshow 详情页（`../music/albums/<slug>/photos/<song>.html`），不做重复内容。
+  - **主页 `pages/gallery.html`** 顶部新增 Albums 入口面板（6 个分类第 1 个，与 music photos 风格一致，count=13），intro 文案改为"六个分类 + Albums 汇总了 5 个 album 时代所有官方 photoset"。
+  - **新工具**：`tools/_build_albums_page.py`（从 5 个 `photos.html` 解析 panel，自动出页）+ `tools/_qa_albums_aggregator.cjs`（DOM 断言 + 13 链接 + 13 图片 HEAD 200）。
+  - **路径坑第一版**：`../css`、`../js`、`url(../images/...)` 都少一层 `../`（albums.html 在 `pages/gallery/` 是 2 层深，应为 `../../`）→ 修脚本 + 重跑 0 错。
+- **验证**：
+  - DOM 断言 ALL PASS：5 release-header / 13 cover / 13 count / 13 h2 / 13 more / 0 panel-group；desktop 1280×640 2:1 / mobile 390×390 1:1；13/13 链接 HTTP 200；**13/13 cover 图片 HEAD 200**。
+  - 全站图片审计 `tools/_audit_site_images.py` → Broken: 0（298 refs，比上次多 13 个新 cover）。
+  - 截图：`tools/_qa_screenshots/gallery/albums_{desktop,desktop_full,mobile}.png`。
+- **Token 消耗**：约 3 万
+- **用时**：约 40 分钟
+- **经验总结**：
+  1. **新页路径深度核对清单**：模板套用要分清 `pages/` 一级（`../`）、`pages/gallery/<cat>/` 3 层（`../../../`）、`pages/gallery/` 2 层（`../../`）、`pages/music/albums/<a>/` 3 层（`../../../`）——同名层级的"../"层数全靠 `pages/.../index.html` 中 `pages` 后的子目录数判定，最稳的办法是写完跑一遍 200 + 资源 HEAD 验证。
+  2. **官方 `release-header-mono.header-<slug>` 已具备 5 个 album 背景图规则**（up-all-night/take-me-home/midnight-memories/four/made-in-the-am），复用 0 CSS 增量，albums.html 直接照搬 `.panel.release-header.release-header-mono.header-<slug>` class 即可拿到官方字体大标题。
+  3. **fetch 断言里 relative URL 处理**：用 `new URL(m[2], location.href).href` 解析而**不要** `replace(/^\.+\//, '')`（后者会把 `../../` strip 成空导致 URL 拼成 host 根无 path），抓 13 张图全 false negative。
+- **遗留/待办**：
+  - albums 页"View images"链接目前跳回原 music album 的 slideshow 详情页（保留官方原数据）；如未来要做 13 个独立聚合版（每张图一个独立 url）跟用户对齐。
+  - 主页 Albums 入口的 cover 暂用 `filmstrip-harry-sml` 占位图（与 Members 重复），后续换独立封面图（建议用 `music-<slug>-logo` 或首张 photoset 封面）。
+
+## 2026-08-03 — Gallery 页面重构（music photos 样式）+ 子页样式创建
+
+- **模型**：Mavis
+- **目的**：gallery.html 排版混乱（panel-group 每排 2 个方块）→ 改成 music photos 页样式；创建 5 个分类子页的样式框架（不放图，用户稍后补）。
+- **结果**：
+  - `pages/gallery.html`：去掉 3 个 `panel-group`（50% 宽 2 列）→ 5 个全宽 `gallery-cover` + moment 面板连续排列，每卡加旋转 `count` 徽章（数字 = 子页卡片数：6/4/4/4/3），与 up-all-night/photos.html 结构 1:1 对齐。
+  - 5 个子页（members/on-stage/behind-the-scenes/press/fan-art）：`journal-news homepage-news` 2 列 → `gallery-cover` 全宽面板，`.bg` 留 `background:#000` 占位 + 注释提示填图路径，保留双语标题/年份/count 徽章/View images 按钮；fan-art 保留 moment 面板 + mailto。
+  - **修复子页资源路径深度 bug**：原文件全是 2 层 `../`（应为 3 层），导致子页 CSS/JS/导航全 404、页面无样式。`tools/_fix_gallery_paths.py` 幂等修复 5 个文件（css/js/index/nav/footer 11 种替换），复跑 0 changes。
+  - 新增 `tools/_qa_gallery_assert.cjs`（DOM 布局断言）+ `tools/_qa_gallery_restructure.cjs`（截图，Playwright 走系统 Chrome）。
+- **验证**：
+  - DOM 断言 6 页 ALL PASS：cover/count/h2/more/bg 数量全等，`panel-group=0`，desktop 每卡 2:1（1280×640）单列，mobile 1:1（390×390），无 JS 错误。
+  - `tools/_audit_site_images.py` → Broken: 0（285 refs）；6 页 HTTP 200，CSS/JS 无 404。
+  - 幂等：`_fix_gallery_paths.py` 复跑 0 files changed。
+- **Token 消耗**：约 4 万
+- **用时**：约 50 分钟
+- **经验总结**：
+  1. `gallery-cover` 无 `panel-group` 包裹时是**全宽 2:1 大面板**（`width:100%` + `padding-top:50%`）；"每排两个"只来自 `panel-group{width:50%}`——这是 music photos 与旧 gallery 的视觉差异核心。
+  2. 视觉模型/截图会因 plan 余额 402（账单限制，重试无用）→ 布局验证改用 Playwright **DOM 断言**（宽高比/元素数/JS 错误），免费且可量化。
+  3. 新建深层页面必须对照 AGENTS 路径深度表逐项核对：`pages/gallery/<cat>/index.html` 是 3 层，资源须 `../../../`；原模板照抄 2 层导致子页 CSS 404 无样式（详见 AGENTS.md 路径表新增行）。
+- **遗留/待办**：
+  - 子页图片待用户补齐：`.bg` 已留 `background:#000` 占位，按注释替换路径即可。
+  - 子页卡片 `href="#"` 待补图时同步指向详情页（可参照 music photos slideshow 结构）。
+  - retinafy 对 `-sml` 图请求 med/lrg 会产生无害 404（HEAD 失败自动保留原图，原页面即有，非本次引入）。
+
+## 2026-08-03 — tour 全部地名翻译 + 首页双翻译按钮修复
+
+- **模型**：Mavis
+- **目的**：
+  1. 执行 `tools/_translate_tour.py` 完成 tour.html 全部地名中文化；
+  2. 修复"部分页面左上角翻译按钮不显示"——实为首页顶部 + 全站滚动后按钮隐形两个问题。
+- **结果**：
+  - tour.html：脚本补包裹 15 处空前缀 location（无内容可翻，跳过合理）；**关键发现**：418 个已包裹 location 是通用脚本（_translate_pages.py）先译的，其中 30 处 zh 与专用词表冲突（专有名被意译：ITV1→独立电视台一频道、Paramount Theatre→派拉蒙剧院、Channel 4→第四频道、The O2→O2 体育馆、Westfield/Selfridges/Atlantico Pavilion/Festive Grand™ 等；译名不统一：休斯敦/休斯顿、菲尼克斯/凤凰城、华盛顿/华盛顿特区）。给 `_translate_tour.py` 增加第 2 遍已包裹校正逻辑（`en.strip() in M and zh != M[...]` 才替换），30 处全部对齐词表，幂等 ✓
+  - 翻译按钮根因（全站 200 页都有 #sticky + button-holder，注入逻辑本身没坏）：
+    - **首页**：`body.home-section` 的 header 初始在视口外（`top:-13.77%`，滚动超 746px 才滑入），顶部看不到按钮 → 按用户要求加 **hero 按钮**：`.panel.hero` 左上角注入第二个 `translate-btn--hero`（深色半透明底 + 圆角，白字清晰），滚动后 header 滑入由 header 按钮接替 → 首页双按钮
+    - **全站滚动后按钮隐形**：原 CSS `header#sticky.scrolled .translate-btn--header{color:#000}` 假设滚动后 header 变白，但原版克隆 header 背景恒为 `#000` → 黑字黑底隐形。删除该规则，按钮全状态保持白色 ✓
+  - `injectHeaderButton()` 全局 guard `document.querySelector("[data-translate-btn]")` 改为只查 `#sticky` 内部，允许 hero 按钮共存
+  - CSS `?v=` 全站 bump：20260801 → 20260803 → 20260803b（196 文件 + build_blog.py + blog_list.html 模板同步，幂等脚本批量）
+- **验证**：
+  - Playwright（系统 Chrome）：首页顶部 2 按钮（hero 可见 / header 视口外）→ 滚动 2000 后 hero 滚出、header 可见；tour/gallery/blog 滚动后按钮 `color:#fff` 可见；歌词页 CN/EN 模式不受影响；非首页仍单按钮 ✓
+  - 健康检查：200 html 双重包裹 0 / 导航包裹 0 / title 污染 0；`tools/_audit_site_images.py` Broken: 0（303 refs）
+  - 幂等：重跑 `_translate_tour.py` 后 `md5` 不变 ✓
+- **Token 消耗**：约 5 万
+- **用时**：约 90 分钟
+- **经验总结**：
+  1. 页面级专用脚本必须加"已包裹校正"第二遍——通用脚本先译的 zh 可能与专用词表（专有名保留英文）冲突，只处理未包裹会漏掉 30 处
+  2. 按钮"不显示"先查视觉层而非注入层：`color` 与背景同为 `#000` 是隐形元凶；`re.subn` 返回的计数是匹配次数不是修改次数，幂等验证要用 md5
+  3. 首页 header 初始在视口外是原版设计（hero 全屏沉浸），顶部需要按钮时用 hero 面板内嵌按钮方案，不动原版 header 动画
+- **遗留/待办**：
+  - blog 文章页日期（27th July 2026）是否翻译，等用户确认
+  - Playwright 日志中有少量 404：深层页 favicon `images/gfx/1d-logo.png` 相对路径错误 + article-images 个别缺图，下次做图片审计时一并处理
+
+## 2026-08-02 — 翻译工程收尾：修复 45 个脏文件 + 全站标题意译中文化
+
+- **模型**：Mavis
+- **目的**：① 修复 `_translate_pages.py` 历史 bug 造成的 45 个页面脏状态（双重包裹 span / 导航误翻译 / `<title>` 被塞 span）；② 按用户要求把全站标题意译成中文（不直译）。
+- **结果**：
+  - `tools/_fix_overwrap.py` 重写（顺序敏感：先解双重包裹循环到稳定 → 再还原导航 → 最后还原 title）：44 files fixed、44 个导航项还原、34 个 title 清理；二次跑修复 5 个复数嵌套形态（`<span class="en"><span class="en">Video</span><span class="zh">视频</span>s</span><span class="zh">视频</span>`）。
+  - `tools/_translate_pages.py` 幂等修复：`wrapped_at()` occurrence 精确检查（`class="(?:en|zh)"\s*>$`）替代 60 字符窗口 `already_wrapped`；新增 `skip_ranges()` 跳过 `<nav id="main">` 与 `<title>` 区间；`wrap_pair` 同步改造。重跑第一遍补漏 39 files / 77 pairs，第二遍 0 files changed（幂等成立）。
+  - 标题意译：4 篇 article.md 加 `title_zh`（Every July 23rd→每年 7 月 23 日，我们回家；Ready to Run→Ready to Run——选择彼此的声音；Why I Love 1D So Bad→我为什么这么爱 1D；Why This Site Exists→为什么会有这个网站）；`build_blog.py` Post 加 `title_zh` → `title_html`（空则纯英文）；模板 `article.html` h2 改用 `{{title_html}}`；列表卡片 `_render_listing_card` 标题 + "Blog/博客" + "Read more/阅读更多" 双语（与首页卡片一致）；`<title>`/og:title 保持英文（SEO）。
+  - 环境：新建项目内 `.venv/` 装 `markdown`（系统 Python PEP 668 拒绝直接 pip install），已加 `.gitignore`。
+- **验证**：`grep` 全站复查：双重包裹 0 / 导航被包裹 0 / title 含 span 0 / 损坏 translate.js 引用行 0；4 篇 h2 与 blog.html 4 张卡片标题均为 en/zh 对；`build_blog.py` 重跑幂等；`git status` 64 个变更、无未跟踪图片。
+- **Token 消耗**：约 8 万
+- **用时**：约 90 分钟
+- **经验总结**：幂等判断必须按 occurrence 精确匹配，窗口截断必翻车；批量脚本函数间传内存 content 禁止重读磁盘；blog 标题改动必须走 `build_blog.py` + 模板重建，别手改生成 HTML（详见 METHODS M39/M40/M41）。
+- **遗留/待办**：文章页日期 `27th July 2026` 未翻（如需与音乐页格式统一，走 `date_display` front matter）。
+
+---
+
+## 2026-08-02 — E 阶段收尾：journal/this-is-us 翻译 + shop 永久禁改
+
+- **模型**：Mavis
+- **目的**：E 阶段收尾（journal.html + this-is-us.html 双语化）；用户明确指令：**shop.html 任何时候都不要动**。
+- **结果**：
+  - `tools/_translate_journal.py`（新，幂等）：journal.html 全部 8 个日期（`23rd July 2020` → `2020年7月23日`，先例格式）、section-name Journal→日志 / Moment→时刻 / Gallery→图库 / Video→视频（Instagram/Twitter 品牌名保留英文）、Moment 面板 `Buy Made In The A.M.`→入手《Made In The A.M.》/ `FOUR is out now`→《FOUR》现已发行、`See the shoot`→查看拍摄现场、`News Archive`→新闻存档，共 24 对；补 `../js/translate.js` 引用。官方文章标题（#10YearsOf1D、A Whole Lotta History... 等）与 tweet/Instagram 正文保留英文（存档约定）。
+  - this-is-us.html：顶部标题 This Is Us→这就是我们（先例）+ 描述段整段双语 + 7 个平台按钮 `Open on X`→在 X 打开（微博/哔哩哔哩/小红书/抖音/Instagram/X/YouTube）。
+  - shop.html：先翻译了几处后被用户叫停，**已 `git checkout` 完全回滚**；`AGENTS/AGENTS.md` 文件结构表标记 `shop.html ← 🚫 禁止改动`。
+- **验证**：两脚本重跑幂等（第二遍 0）；全站复查 双重包裹 0 / 导航 0 / title 污染 0 / 损坏引用行 0；journal/this-is-us HTTP 200；图片审计 303 refs Broken: 0。
+- **Token 消耗**：约 3 万
+- **用时**：约 30 分钟
+- **经验总结**：`re.sub` 循环内拼接 `c[:m.start()]` 有偏移 bug（改一个少一个），必须用 `re.subn` 回调一次性替换；用户明确划线的页面（shop.html）永久不碰，回滚 + 文档标记 + 记忆沉淀三重保险。
+- **遗留/待办**：无（E 阶段除 shop 外全部完成；blog 文章页日期翻译待用户确认）。
+
+---
+
+## 2026-08-02 — 新 MacBook 环境初始化：修复跨平台 git 假 diff
+
+- **模型**：Mavis
+- **目的**：新 MacBook 上认识项目 + 环境就绪检查；处理工作区 6 个文件"未提交修改"（实为跨平台迁移造成的假 diff）。
+- **结果**：
+  - 定位假 diff 根因：项目目录（含 `.git/`）从 Windows 整目录复制而来，6 个被跟踪文件为 CRLF 行尾 + index stat 缓存失效（`git diff` 空但 status 显示 M）。
+  - 批量转 LF（`perl -pi`）+ `rm .git/index && git reset -q` 重建 index → `git status` working tree clean。
+  - 新坑沉淀：METHODS.md 新增 M38（跨平台迁移假 diff：现象/根因/处理/预防）。
+- **验证**：`git status --short` 空；`git diff -w` 空；`git hash-object` 与 HEAD blob 一致；3 秒后复查仍 clean。
+- **Token 消耗**：约 1 万
+- **用时**：约 20 分钟
+- **经验总结**：跨机器搬项目别搬 `.git`（clone 优先）；假 diff 排查顺序 = 行尾（`grep $'\r'`）→ 权限（`filemode`）→ index stat（重建即愈）。
+- **遗留/待办**：新机器缺 `python-markdown`（blog 构建依赖）与 `Pillow`（图片优化），待用户自行安装；建议根目录加 `.gitattributes`（`* text=auto eol=lf`）防双平台行尾复发；确认"项目"目录不在百度网盘同步列表。
+
+---
+
 ## 2026-08-01 — 全量同步 git：新资源/新页面/AGENTS 文档入库
 
 - **模型**：Mavis

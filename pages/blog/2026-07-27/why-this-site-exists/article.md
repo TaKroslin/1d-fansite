@@ -1,5 +1,6 @@
 <!--
 title: Why This Site Exists
+title_zh: 为什么会有这个网站
 date: 2026-07-27
 slug: why-this-site-exists
 date_display: 27th July 2026

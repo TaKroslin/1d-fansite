@@ -214,6 +214,29 @@
 - **处理**：匹配率 <15% 时丢弃旧翻译，重新翻译。
 - **预防**：翻译前先核对 en 行与 HTML 原文 1:1。
 
+### M39. 批量翻译脚本必须操作内存 content，禁止重读磁盘
+- **现象**：`add_translate_js()` 内部 `open(path)` 重读磁盘文件，把内存中已翻译的结果整个覆盖丢弃——45 个文件翻译 0 生效，只写入了坏的 translate.js 引用行。
+- **根因**：脚本先翻译、后补引用，但补引用函数按"文件路径"而非"传入内容"设计，重读时用的是磁盘旧版本。
+- **处理**：函数签名改为 `add_translate_js(content)`，只操作传入的字符串；写盘统一在循环末尾一次完成。
+- **预防**：批量脚本里任何"读-改-写"三步，函数间传递内存内容，不要各自 open 文件。
+
+### M40. 幂等包裹判断用 occurrence 精确检查，不用窗口截断
+- **现象**：`already_wrapped()` 用 60 字符窗口 + `after[gt+1:].strip()` 判断，词紧贴 `>` 后时窗口截断 → 误判未包裹 → 同一词被二次包裹成 `<span class="en"><span class="en">Video</span><span class="zh">视频</span>s</span><span class="zh">视频</span>`（复数 s 也被夹进中间）；44 个文件的导航菜单被误翻。
+- **根因**：窗口长度假设文本在 60 字符内闭合，实际不成立。
+- **处理**：① `wrapped_at()` 改为精确检查 `text[:pos]` 是否以 `class="en">` / `class="zh">` 结尾（正则 `class="(?:en|zh)"\s*>$`）；② 导航 `<nav id="main">…</nav>` 和 `<title>…</title>` 区间整体跳过；③ 已污染文件用 `tools/_fix_overwrap.py` 修复（先解双重包裹循环到稳定，再还原导航，最后还原 title——顺序敏感）。
+- **预防**：写"是否已包裹"判断时逐 occurrence 精确匹配，别用长度窗口；`<title>` 是 RCDATA，被塞 span 会在浏览器标签页字面显示，翻译脚本必须跳过 title 区间。
+
+### M41. 文章标题双语走 build_blog.py 的 title_zh，不要手改 HTML
+- **现象**：文章页 h2 标题（`{{title}}`）保持英文，首页卡片标题已意译——两处不一致。
+- **处理**：article.md front matter 加 `title_zh`，`build_blog.py` Post 增加 `title_zh` 字段 → `title_html` 变量（有值输出 en/zh 对，空则纯英文），模板 `article.html` h2 用 `{{title_html}}`；列表卡片 `_render_listing_card` 同步输出 en/zh；`<title>`/og:title 继续用 `{{title}}` 保持英文（SEO）。
+- **预防**：blog 相关任何标题改动都改 `tools/build_blog.py` + `tools/templates/article.html`，然后重建，别直接手改生成的 HTML（会被下次 build 覆盖）。
+
+### M42. 审计脚本跨平台失效：REPO 硬编码 Windows 路径
+- **现象**：`tools/_audit_site_images.py` 在 macOS 上输出 `Total local image refs checked: 0`（服务器明明 200）。
+- **根因**：脚本头部 `REPO = Path("E:/文档/GitHub/1d-fansite")` 是 Windows 时代硬编码路径，迁移后找不到 HTML 文件 → 0 refs；且 checked 为 0 时不报错，容易误判"审计通过"。
+- **处理**：改为 `REPO = Path(__file__).resolve().parent.parent`（动态推导仓库根）。
+- **预防**：任何脚本里的仓库根路径一律动态推导（`__file__` 两级），禁止硬编码盘符；审计脚本 checked 为 0 时视作失败而非成功。
+
 ---
 
 ## 八、git 与部署
@@ -235,6 +258,12 @@
 - **处理**：`wrangler.jsonc` 加 `"build": { "command": "rm -rf .git" }`，让 wrangler deploy 在扫描 assets 前先删掉 `.git`（构建环境每次全新 clone，删 .git 不影响后续）。已验证：push `cfdfc4c` 后构建成功，线上 `www.5guys1direction.asia` 全站新版本上线、资源全部 200。若 `build.command` 也不生效，备选：把控制台 deploy command 改为 `rm -rf .git && npx wrangler deploy`。
 - **预防**：wrangler.jsonc 必须常驻 main 根目录；任何 `assets.*` 新字段先确认当前 wrangler 版本支持（4.118 仅支持 directory/binding/html_handling/not_found_handling/run_worker_first/experimental_serve_directly）。
 
+### M38. 跨平台迁移（Windows→macOS）后 git 假 diff：CRLF + 复制的 .git index
+- **现象**：新机器上 `git status` 显示 6 个文件 modified，但 `git diff` 为空、`git diff --summary` 也为空；`git hash-object` 与 HEAD blob 完全一致，`git update-index --refresh` 反复报 "needs update"。
+- **根因**：项目目录（含 `.git/`）从 Windows 整目录复制到 macOS：① 复制/编辑器把部分被跟踪文件转成 CRLF 行尾；② `.git/index` 的 stat 缓存（mtime/ctime/ino/mode）全是旧机器的，refresh 修不干净；③ `core.filemode=false` + `core.ignorecase=true` 是 Windows Git 特征，确认 .git 是复制而非 clone。
+- **处理**：① 被跟踪 CRLF 文件批量转 LF：`perl -pi -e 's/\r\n/\n/g' <files>`（注意 `file -b` 对 JSON 只报 "JSON data" 不报行尾，用 `grep -c $'\r' <file>` 兜底，否则漏网）；② 重建 index 强制全量重扫：`rm .git/index && git reset -q`；③ 验证 `git status` 干净 + `git diff -w` 无内容差异 + 等几秒复查确认稳定。
+- **预防**：新机器优先 `git clone` 而非复制目录，`.git` 不要手动搬；跨平台开发建议根目录加 `.gitattributes`（`* text=auto eol=lf`）统一行尾；若机器上跑着百度网盘等同步工具，确认项目目录不在其同步列表（否则本地改动会被回滚、stat 永远对不上）。
+
 ---
 
 ## 九、其他
@@ -248,3 +277,15 @@
 - **现象**：曾把首页 `.panel.homepage-video`（History）背景图换成别的。
 - **处理**：Takion 确认首页是对的，恢复原图。
 - **预防**：用户明确说"是对的"的地方，改其他部分时别顺手动。
+
+### M43. 翻译按钮"不显示"先查视觉层：黑字黑底隐形
+- **现象**：用户报"部分页面左上角翻译按钮不显示"，但 Playwright 注入检查全部通过（按钮存在且在 #sticky 内）。
+- **根因**：① 首页 `body.home-section` 的 header 初始在视口外（`top:-13.77%`，滚动超 ~746px 才滑入），顶部天然看不到；② 全站性问题：CSS `header#sticky.scrolled .translate-btn--header{color:#000}` 假设滚动后 header 背景变白，但原版克隆 header 背景恒为 `#000` → 滚动后按钮黑字黑底完全隐形。
+- **处理**：① 首页按用户要求在 `.panel.hero` 内嵌第二个 `translate-btn--hero`（absolute 左上角 + 深色半透明底），滚动后 header 滑入接替；② 删除 `color:#000` 的 scrolled 覆盖规则，按钮全状态保持白色。
+- **预防**：排查"按钮不显示"时按 注入存在性 → 位置 → 颜色对比度 三层走；`re.subn` 返回计数是匹配次数不是修改次数，幂等验证用 `md5` 前后对比而非输出数字；`injectHeaderButton()` 的全局 guard 要改成只查 `#sticky` 内部，否则 hero 按钮注入后 header 按钮被跳过。
+
+### M44. 页面级专用翻译脚本要加"已包裹校正"第二遍
+- **现象**：`_translate_tour.py` 首跑只报 15 处，但 tour.html 里大量 location 的 zh 与专用词表不一致（专有名被通用脚本意译）。
+- **根因**：通用脚本 `_translate_pages.py` 已先译过 tour.html（418 个 location 已包裹），专用脚本正则只匹配未包裹形态，跳过了已包裹部分。
+- **处理**：脚本加第 2 遍 `re.subn`，匹配 `<span class="location"><span class="en">([^<]*)</span><span class="zh">([^<]*)</span>` 形态，`en.strip() in M and zh != M[en.strip()]` 时才替换 zh；注意 zh 与 `<span class="venue">` 间可能有空格，用 `\s*` 捕获并保留。
+- **预防**：新写页面级脚本前先跑一遍全量 diff（对比现有 en/zh 对与词表），别只处理未包裹；专有名（ITV1/Channel 4/The O2/Paramount Theatre 等）一律保留英文，不要意译。

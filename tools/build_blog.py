@@ -64,6 +64,7 @@ class Post:
     slug: str
     source_path: Path  # absolute path to article.md
     title: str = ""
+    title_zh: str = ""  # 中文标题（意译）；为空则 h2 只显示英文
     date_display: str = ""  # pretty form, e.g. "27th July 2026"
     author: str = ""
     header_img: str = ""  # relative path used in HTML
@@ -131,6 +132,7 @@ def _load_post(md_path: Path) -> Post:
         slug=slug,
         source_path=md_path,
         title=fm.get("title", slug.replace("-", " ").title()),
+        title_zh=fm.get("title_zh", ""),
         date_display=fm.get("date_display") or _pretty_date(date),
         author=fm.get("author", "Takion Kroslin"),
         header_img=fm.get("header_img", "../../../../images/gfx/5guys/logo-black.png"),
@@ -151,7 +153,7 @@ def _load_post(md_path: Path) -> Post:
     # Stash any unknown keys so authors can add custom metadata later.
     for k, v in fm.items():
         if k not in {
-            "date", "slug", "title", "date_display", "author",
+            "date", "slug", "title", "title_zh", "date_display", "author",
             "header_img", "header_img_size", "header_img_position",
             "description", "keywords", "og_image",
         }:
@@ -321,7 +323,7 @@ def _build_article_html(post: Post) -> str:
     depth = len(Path(post.rel_url).parts) - 1  # number of ".."" needed
     root_prefix = _relative(depth)
     about_href = f"{root_prefix}pages/about.html"
-    css_href = f"{root_prefix}css/styles.css"
+    css_href = f"{root_prefix}css/styles.css?v=20260803b"
     jquery_href = f"{root_prefix}js/jquery.min.js"
     main_js_href = f"{root_prefix}js/main.js"
 
@@ -337,8 +339,18 @@ def _build_article_html(post: Post) -> str:
     if not post.body_md.strip():
         body_html = ""
 
+    # 标题：有 title_zh 时输出 en/zh 对，否则只输出英文（兼容旧文章）
+    if post.title_zh:
+        title_html = (
+            f'<span class="en">{html.escape(post.title)}</span>'
+            f'<span class="zh">{html.escape(post.title_zh)}</span>'
+        )
+    else:
+        title_html = html.escape(post.title)
+
     replacements = {
         "title": html.escape(post.title),
+        "title_html": title_html,
         "description": html.escape(post.description or post.title, quote=False),
         "keywords": html.escape(post.keywords or "FIVE GUYS ONE DIRECTION, blog", quote=False),
         "author_html": html.escape(post.author, quote=False) + " &amp; FIVE GUYS ONE DIRECTION",
@@ -368,6 +380,7 @@ def _build_article_html(post: Post) -> str:
 def _serialize_post(post: Post) -> dict[str, Any]:
     return {
         "title": post.title,
+        "title_zh": post.title_zh,
         "slug": post.slug,
         "date": post.date,
         "date_display": post.date_display,
@@ -465,19 +478,26 @@ def _render_listing_card(post: Post, scaler: str) -> str:
     # fit the square card without being cropped: the logo is 3000x548
     # (aspect ratio ~5.5:1) and a 1:1 card would otherwise show a thin
     # strip at 40% width.
+    if post.title_zh:
+        title_span = (
+            f'<span class="en">{html.escape(post.title)}</span>'
+            f'<span class="zh">{html.escape(post.title_zh)}</span>'
+        )
+    else:
+        title_span = html.escape(post.title)
     return f'''<div class="panel journal-news homepage-news" style="background:url({html.escape(img)}) center/contain no-repeat #000;">
 
 		<div class="inline"></div>
 
 		<div class="panel-header">
 			<div class="title" style="color:#fff;">{html.escape(post.date_display)}</div>
-			<div class="section-name" style="color:#fff;border-color:#fff;"><a style="color:#fff;border-color:#fff;" href="{html.escape(url)}">Blog</a></div>
+			<div class="section-name" style="color:#fff;border-color:#fff;"><a style="color:#fff;border-color:#fff;" href="{html.escape(url)}"><span class="en">Blog</span><span class="zh">博客</span></a></div>
 		</div>
 
-		<h2 style="color:#fff;"><span class="scaler" style="font-size: {html.escape(scaler)};"><a style="color:#fff;border-color:transparent;" href="{html.escape(url)}">{html.escape(post.title)}</a></span></h2>
+		<h2 style="color:#fff;"><span class="scaler" style="font-size: {html.escape(scaler)};"><a style="color:#fff;border-color:transparent;" href="{html.escape(url)}">{title_span}</a></span></h2>
 
 		<div class="info">
-			<a style="color:#fff;border-color:#fff;" href="{html.escape(url)}" class="more">Read more</a>
+			<a style="color:#fff;border-color:#fff;" href="{html.escape(url)}" class="more"><span class="en">Read more</span><span class="zh">阅读更多</span></a>
 		</div>
 
 	</div>'''

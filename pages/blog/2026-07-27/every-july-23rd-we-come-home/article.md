@@ -1,5 +1,6 @@
 <!--
 title: Every July 23rd, We Come Home
+title_zh: 每年 7 月 23 日，我们回家
 date: 2026-07-27
 slug: every-july-23rd-we-come-home
 date_display: 27th July 2026

@@ -1,8 +1,9 @@
 {
-  "generated_at": "2026-07-30T04:48:08.309086Z",
+  "generated_at": "2026-08-03T02:49:26.609783Z",
   "posts": [
     {
       "title": "Every July 23rd, We Come Home",
+      "title_zh": "每年 7 月 23 日，我们回家",
       "slug": "every-july-23rd-we-come-home",
       "date": "2026-07-27",
       "date_display": "27th July 2026",
@@ -14,6 +15,7 @@
     },
     {
       "title": "Ready to Run — The Sound of Choosing Each Other",
+      "title_zh": "Ready to Run——选择彼此的声音",
       "slug": "ready-to-run",
       "date": "2026-07-27",
       "date_display": "27th July 2026",
@@ -25,6 +27,7 @@
     },
     {
       "title": "Why I Love 1D So Bad",
+      "title_zh": "我为什么这么爱 1D",
       "slug": "why-i-love-1d-so-bad",
       "date": "2026-07-27",
       "date_display": "27th July 2026",
@@ -36,6 +39,7 @@
     },
     {
       "title": "Why This Site Exists",
+      "title_zh": "为什么会有这个网站",
       "slug": "why-this-site-exists",
       "date": "2026-07-27",
       "date_display": "27th July 2026",

@@ -1,5 +1,6 @@
 <!--
 title: Ready to Run — The Sound of Choosing Each Other
+title_zh: Ready to Run——选择彼此的声音
 date: 2026-07-27
 slug: ready-to-run
 date_display: 27th July 2026

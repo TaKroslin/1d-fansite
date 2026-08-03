@@ -1,5 +1,6 @@
 <!--
 title: Why I Love 1D So Bad
+title_zh: 我为什么这么爱 1D
 date: 2026-07-27
 slug: why-i-love-1d-so-bad
 date_display: 27th July 2026

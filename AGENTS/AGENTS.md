@@ -59,7 +59,7 @@ E:\文档\GitHub\1d-fansite/
 │   ├── journal.html                 ← 克隆 20 篇 journal 2015–2020
 │   ├── band.html                    ← 5 成员 + 视差
 │   ├── tour.html                    ← 433 个 tour date
-│   ├── shop.html                    ← Shop panels
+│   ├── shop.html                    ← 🚫 禁止改动 — 用户明确要求任何时候都不要动（不翻译、不改内容）
 │   ├── blog.html                    ← 🤖 自动生成 — blog 列表（不手改）
 │   ├── gallery.html                 ← 5 个 gallery 分类
 │   ├── this-is-us.html              ← Mainland China fan-account 目录
@@ -99,14 +99,14 @@ E:\文档\GitHub\1d-fansite/
 
 所有页面通过 `<link>` 和 `<script>` 标签加载资源，不使用任何模块系统。
 
-| 资源 | 根级页面 (`index.html`) | `pages/` 一级 | `pages/music/albums/<a>.html`（3 层） | `pages/blog/...` 深度 4 | `pages/music/albums/<a>/songs/<s>.html`（5 层） |
-|------|----------------------|----------------|---------------------------------------|---------------------------|----------------------------------------------|
-| CSS | `css/styles.css` | `../css/styles.css` | `../../../css/styles.css` | `../../../../css/styles.css` | `../../../../../css/styles.css` |
-| JS | `js/main.js` | `../js/main.js` | `../../../js/main.js` | `../../../../js/main.js` | `../../../../../js/main.js` |
-| jQuery | Google CDN | 同 | 同 | 同 | 同 |
-| 图片 | `images/gfx/...` | `../images/gfx/...` | `../../../images/gfx/...` | `../../../../images/gfx/...` | `../../../../../images/gfx/...` |
-| Logo link | `index.html` | `../index.html` | `../../../index.html` | `../../../../index.html` | `../../../../../index.html` |
-| Footer about | `pages/about.html` | `about.html` | `../../../pages/about.html` | `../../../../pages/about.html` | `../../../../../pages/about.html` |
+| 资源 | 根级页面 (`index.html`) | `pages/` 一级 | `pages/music/albums/<a>.html`（3 层） | `pages/gallery/<cat>/index.html`（3 层） | `pages/blog/...` 深度 4 | `pages/music/albums/<a>/songs/<s>.html`（5 层） |
+|------|----------------------|----------------|---------------------------------------|----------------------------------------|---------------------------|----------------------------------------------|
+| CSS | `css/styles.css` | `../css/styles.css` | `../../../css/styles.css` | `../../../css/styles.css` | `../../../../css/styles.css` | `../../../../../css/styles.css` |
+| JS | `js/main.js` | `../js/main.js` | `../../../js/main.js` | `../../../js/main.js` | `../../../../js/main.js` | `../../../../../js/main.js` |
+| jQuery | Google CDN | 同 | 同 | 同 | 同 | 同 |
+| 图片 | `images/gfx/...` | `../images/gfx/...` | `../../../images/gfx/...` | `../../../images/gfx/...` | `../../../../images/gfx/...` | `../../../../../images/gfx/...` |
+| Logo link | `index.html` | `../index.html` | `../../../index.html` | `../../../index.html` | `../../../../index.html` | `../../../../../index.html` |
+| Footer about | `pages/about.html` | `about.html` | `../../../pages/about.html` | `../../../pages/about.html` | `../../../../pages/about.html` | `../../../../../pages/about.html` |
 
 ⚠️ **blog 列表页面**是个特例：它位于 `pages/blog.html`，但里面的卡片链接是 `blog/2026-07-27/...`（已经是 `pages/` 之下的相对路径），不要多加 `pages/` 前缀。封面图 `url(../images/gfx/...)`。
 

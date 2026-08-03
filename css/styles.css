@@ -162,8 +162,25 @@ header#sticky .translate-btn--header{
 header#sticky .translate-btn--header:hover,
 header#sticky .translate-btn--header:focus{opacity:1;outline:none}
 
-/* On-scroll: header background becomes white, button must go dark */
-header#sticky.scrolled .translate-btn--header{color:#000}
+/* NOTE: no scrolled color override — header background stays #000 in the
+   original clone, so the header button must stay white in every state. */
+
+/* ── Homepage hero button (top-left of .panel.hero, visible before header slides in) ── */
+.panel.hero .translate-btn--hero{
+  position:absolute;
+  top:1em;
+  left:1em;
+  font-size:60%;
+  color:#fff;
+  padding:.35em .8em;
+  opacity:.9;
+  z-index:50;
+  background:rgba(0,0,0,.55);
+  border-radius:.3em;
+  text-shadow:0 1px 2px rgba(0,0,0,.4);
+}
+.panel.hero .translate-btn--hero:hover,
+.panel.hero .translate-btn--hero:focus{opacity:1;outline:none;background:rgba(0,0,0,.75)}
 
 /* ── Bilingual lyrics layout (stacked: en then zh) ── */
 .lyric-line{display:block;margin:0;padding:0}
@@ -219,4 +236,42 @@ html.lang-zh .lyric-passage{display:block}
 .panel.gallery .nextControl{
   pointer-events:auto!important;
   cursor:pointer;
+}
+
+/* =================================================================
+   FIVE GUYS: Gallery — "Back to Gallery" link spacing
+   The original .journal-archive-link is hidden (display:none), but
+   in our pages it's overridden to display:block by other rules and
+   ends up flush against the last .gallery-cover and the footer.
+   Push it down with breathing room above + below, larger button.
+   ================================================================= */
+.journal-archive-link{
+  display:block;
+  padding:6em 0 4em;
+  text-align:center;
+}
+.journal-archive-link a.more{
+  font-size:120%;
+  padding:.75em 1.5em;
+}
+
+/* =================================================================
+   FIVE GUYS: Albums cover — two sizes (rect 2:1 desktop, square 1:1 mobile)
+   retinafy url replace: -sml → -lrg (desktop 1025+ HiDPI) / -med (mobile 1024-)
+   Desktop default uses -rect-; mobile breakpoint switches to -square-.
+   ================================================================= */
+@media (max-width: 767px){
+  .panel.gallery-cover.albums-cover .bg{
+    background-image:url(../images/gfx/albums-mono-square-sml.png)!important;
+  }
+}
+
+/* =================================================================
+   FIVE GUYS: Albums cover — remove grayscale so the orange theme
+   stays. Other gallery-cover panels keep the official grayscale
+   filter for hover effect; this one is the curated editorial.
+   ================================================================= */
+.panel.gallery-cover.albums-cover .bg{
+  -webkit-filter:none!important;
+  filter:none!important;
 }

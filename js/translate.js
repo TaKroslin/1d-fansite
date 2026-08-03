@@ -71,10 +71,10 @@
   }
 
   function injectHeaderButton() {
-    if (document.querySelector("[data-translate-btn]")) return;
-
     var sticky = document.getElementById("sticky");
     if (!sticky) return;
+    // 只查 sticky 内部，允许其他区域（如 hero）独立按钮共存
+    if (sticky.querySelector("[data-translate-btn]")) return;
 
     var isLyrics = pageHasLyrics();
     var btn = makeHeaderButton(isLyrics);
@@ -86,6 +86,19 @@
     } else {
       sticky.appendChild(btn);
     }
+  }
+
+  // 首页 hero 图左上角再注入一个翻译按钮（header 隐藏期可用）。
+  // 仅当页面存在 .panel.hero 时注入；按钮 absolute 定位在 hero 面板内，
+  // 随页面滚动，滚出视口后由 header 按钮接替。
+  function injectHeroButton() {
+    var hero = document.querySelector(".panel.hero");
+    if (!hero) return;
+    if (hero.querySelector("[data-translate-btn]")) return;
+
+    var btn = makeHeaderButton(false);
+    btn.className = btn.className.replace("translate-btn--header", "translate-btn--hero");
+    hero.appendChild(btn);
   }
 
   // -----------------------------------------------------------------
@@ -150,6 +163,7 @@
     }
 
     applyLangClass(stored);
+    injectHeroButton();
     injectHeaderButton();
     bindClicks();
   }
