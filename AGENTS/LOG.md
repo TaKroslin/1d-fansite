@@ -37,7 +37,44 @@
 
 ---
 
-## 2026-08-04 — 移动端相册（photos 页）改为垂直堆叠浏览
+## 2026-08-04 — 6 个 skills 升级为标准结构（文档+参考+示例+模板）
+
+- **模型**：deepseek-v4-flash
+- **目的**：把上一轮的扁平 SKILL.md 升级为标准 skill 结构：主流程文档（SKILL.md）+ 详细参考（reference.md）+ 真实示例（examples/）+ 可复制模板（templates/），让每个 skill 既可读又可直接复用。
+- **结果**（6 个 skill，共 36 文件）：
+  1. **design-system**：reference.md（颜色/字体/语义角色/menu 字体/panel 全览/断点/图标/社交色/动画 9 大表）；examples 3（journal-news/gallery-cover/journal-article 真实 panel）；templates 1（panel-generic）。
+  2. **new-page**：reference.md（深度表/body class/meta 规范）；examples 1（about.html 真实 pages/ 一级页）；templates 2（page-skeleton + head-meta，含 {PREFIX}/{BODY_CLASS} 占位符）。
+  3. **blog-post**：reference.md（front-matter 全字段表/META+SCALERS/双语配对）；examples 2（真实 article.md + home-card）；templates 3（article.md/article.zh.md/home-card）。
+  4. **translation**：reference.md（LYRICS/TRANSLATIONS 字典格式+规则）；examples 2（真实 lyric-line 双语 + 页面 bilingual-text）；templates 2（歌词字典/专辑标题字典模板）。
+  5. **qa-workflow**：reference.md（验证矩阵/grep 命令/脚本要点）；examples 2（真实 _audit_site_images.py + _qa.py）；templates 2（check-links.py HTTP 200 遍历 + playwright-shot.py，结尾 os._exit(0)）。
+  6. **gallery-page**：reference.md（三层结构/图片规范/photos.html 列表/防坑）；examples 2（真实分类页 + night-changes slideshow 页）；templates 2（gallery-cover + slideshow 骨架）。
+  - 每个 SKILL.md 重写为"主流程"：操作步骤 + 铁律 + 参考资料索引表（指到同目录 reference/examples/templates）。
+- **验证**：`find .opencode` 36 文件全齐；6 个 skill 均四要素齐全（SKILL+reference+examples+templates）；frontmatter name=目录名全部 OK；`git check-ignore` 无一被忽略（exit=1）。
+- **Token 消耗**：约 4 万
+- **用时**：约 30 分钟
+- **经验总结**：① 标准 skill 结构让"查参考"和"复制模板"分离——SKILL.md 只讲流程，reference.md 放表格，templates 直接可抄，降低每次注入的 token；② examples 直接从真实页面复制（about.html/night-changes.html/members index），保证示例与线上一致；③ 模板用 `{PREFIX}`/`{hash}`/`{N}` 占位符标注必须替换处，防照抄出错。
+- **遗留/待办**：无
+
+---
+
+## 2026-08-04 — 创建 6 个可复用 opencode skills
+
+- **模型**：deepseek-v4-flash
+- **目的**：把开发中高频复用的项目知识固化成 opencode skills，按任务注入会话，避免每次全读 AGENTS/ 文档、减少 token 消耗。
+- **结果**：
+  1. `.opencode/skills/design-system/SKILL.md` — 颜色/字体/panel 组件/图标/动画/响应式断点速查 + CSS 修改铁律（bump ?v=、追加不重排）。
+  2. `.opencode/skills/new-page/SKILL.md` — 新建页面流程：模板复制、相对路径深度表（0/1/3/4/5 层）、body class 约定、header/footer 骨架、双语结构。
+  3. `.opencode/skills/blog-post/SKILL.md` — article.md front-matter 全字段、build_blog.py 构建产物、首页卡片手动同步、META/SCALERS 维护。
+  4. `.opencode/skills/translation/SKILL.md` — 歌词页/专辑页脚本注入（translate_lyrics.py / translate_albums.py）+ 普通页面 .en/.zh 双 span + 歌词数据源。
+  5. `.opencode/skills/qa-workflow/SKILL.md` — 三层 QA（静态 grep / HTTP 审计 / Playwright）、部署前检查、Python 脚本模板要点。
+  6. `.opencode/skills/gallery-page/SKILL.md` — 三层图库结构（分类索引/分类页/slideshow）+ rect-lrg/rect-med 规范 + M4/M14/M45/M46 防坑。
+- **验证**：`find .opencode` 确认 6 个 SKILL.md 齐全；循环校验 frontmatter `name` 与目录名一致（全部 ✓，符合 opencode 命名规范 `^[a-z0-9]+(-[a-z0-9]+)*$`）；description 均 <1024 字符。skills 放项目级 `.opencode/skills/`，git 工作树内自动发现。
+- **Token 消耗**：约 2.5 万
+- **用时**：约 15 分钟
+- **经验总结**：① skill 内容直接从 AGENTS/ 文档抽取"可操作要点"，全文指向原文档——避免同一坑在三个文件重复；② 每个 skill 内联了对应 METHODS 编号（M4/M6/M12/M14/M45/M46），agent 加载 skill 即带防坑上下文；③ 目录名必须等于 frontmatter name，否则不识别。
+- **遗留/待办**：无
+
+---
 
 - **模型**：deepseek-v4-flash
 - **目的**：photos slideshow 页在移动端（≤767px）沿用桌面端横向轮播，产生大面积空白/黑缝；且窗口在移动端↔桌面端切换时需要刷新。改为移动端垂直堆叠、上下滑动、无缝隙；桌面端轮播不变。

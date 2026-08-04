@@ -1,0 +1,39 @@
+<div class="panel gallery">
+
+	<div id="slideshow" class="cycle-slideshow"
+		data-cycle-swipe=true
+    	data-cycle-swipe-fx=scrollHorz
+    	data-cycle-fx=scrollHorz
+		data-cycle-timeout=2000
+		data-cycle-caption=".count span"
+		data-cycle-caption-template="{{slideNum}}/{N}"
+		data-cycle-slides=">div.slide"
+		data-cycle-manual-speed="100"
+		data-cycle-prev=".prevControl"
+		data-cycle-next=".nextControl"
+		data-cycle-paused="true"
+		data-cycle-auto-height="false"
+		>
+		<div class="slide">
+			<div class="bg retinafy" style="background-image: url({5层}images/media/gallery-images/rect-lrg/{hash1}.jpg);"></div>
+		</div>
+		<div class="slide">
+			<div class="bg retinafy" style="background-image: url({5层}images/media/gallery-images/rect-lrg/{hash2}.jpg);"></div>
+		</div>
+	<!--.cycle-slideshow-->
+
+	<span class="prevControl"><i class="icon-carousel-left"></i></span>
+	<span class="nextControl"><i class="icon-carousel-right"></i></span>
+
+	<div class="count"><span></span></div>
+
+</div><!--.panel.gallery-->
+<div class="panel gallery-info">
+	<div class="panel-header">
+		<div class="title">{Album}</div>
+		<div class="section-name"><span>{Category}</span></div>
+	</div>
+	<div class="text">
+		<p>{描述与日期}</p>
+	</div>
+</div><!--.panel.gallery-info-->
