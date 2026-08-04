@@ -12,7 +12,8 @@
 
 - **Pure static site**：HTML/CSS/JS，无框架，无构建工具
 - **Server（开发）**：`python -m http.server 8000`
-- **Server（部署）**：Cloudflare Pages（直连 GitHub，自动部署）
+- **Server（部署）**：Cloudflare Workers（静态资源模式，`wrangler.jsonc` 配置，git 集成拉 GitHub main 分支自动构建）
+- **线上正式地址（唯一真源）**：`https://www.5guys1direction.asia/` — 所有 og:url / 分享链接 / 文档一律用此域名（带 `www.`，裸 `5guys1direction.asia` 和 `.cn` 均非正式入口）
 - **jQuery 2.1.1**：Google CDN (`https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js`)
 - **Waypoints.js**：内嵌在 `js/main.js` 中（用于滚动触发 panel fade-in）
 - **Isotope.js**：按需加载，unpkg CDN (`https://unpkg.com/isotope-layout@3/dist/isotope.pkgd.min.js`)

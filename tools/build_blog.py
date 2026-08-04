@@ -356,7 +356,7 @@ def _build_article_html(post: Post) -> str:
         "author_html": html.escape(post.author, quote=False) + " &amp; FIVE GUYS ONE DIRECTION",
         "og_image": html.escape(post.og_image or post.header_img, quote=False),
         "canonical_url": html.escape(
-            f"https://5guys1direction.asia/{post.rel_url}"
+            f"https://www.5guys1direction.asia/{post.rel_url}"
         ),
         "date_display": html.escape(post.date_display),
         "cover_src": html.escape(cover_src, quote=True),

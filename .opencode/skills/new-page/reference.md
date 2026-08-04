@@ -54,7 +54,7 @@
 - Google Fonts link（**永远带 `&display=swap`**）
 - CSS link 带 `?v=` 版本参数
 
-og:url 用 `https://5guys1direction.cn/...`，注意相对路径按页面深度换算成完整 URL。
+og:url 用 `https://www.5guys1direction.asia/...`，注意相对路径按页面深度换算成完整 URL。
 
 ## 4. 常见坑速查
 

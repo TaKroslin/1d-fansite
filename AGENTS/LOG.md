@@ -37,6 +37,23 @@
 
 ---
 
+## 2026-08-04 — 全站域名统一为正式地址 www.5guys1direction.asia
+
+- **模型**：deepseek-v4-flash
+- **目的**：用户发布群公告时发现仓库里域名混乱——大部分页面 og:url 写着过期的 `5guys1direction.cn`，少数 blog 相关写 `5guys1direction.asia`（无 www），而真实部署域名是 `https://www.5guys1direction.asia/`（已 curl 验证 HTTP 200）。需把仓库所有域名引用统一。
+- **结果**：
+  - 批量替换 194 个文件：`5guys1direction.cn` / `5guys1direction.asia` → `www.5guys1direction.asia`（perl 负向前瞻 `(?<!www\.)` 防重复加前缀）。
+  - `tools/build_blog.py:359` og:url 生成源修正 → 重建 blog 5 篇 + posts.json + blog.html。
+  - `AGENTS/AGENTS.md` Tech Stack 补「线上正式地址（唯一真源）」一行，并顺手修正部署平台描述（Pages → Workers，与 RULES.md/wrangler.jsonc 一致）。
+  - 模板（`tools/templates/*`、`.opencode/skills/*`）同步修正，防新页面再带旧域名。
+- **验证**：`git ls-files` 全量 grep → 仅剩 AGENTS.md 中刻意说明"裸 .asia/.cn 非正式入口"的一行文字，无真实旧域名残留；blog 重建后 og:url 为 www 域名。
+- **Token 消耗**：约 1 万
+- **用时**：约 10 分钟
+- **经验总结**：
+  - **发布链接/写分享文案前，必须先 `curl -I` 验证真实域名**，不要信任仓库里写死的 og:url（本坑源自历史 meta 未随域名迁移更新，已在文案任务中翻车 3 次）。
+  - 全站批量域名/路径替换用 perl 负向前瞻，验证时 grep 模式要小心旧域名是新域名的子串（`www.5guys1direction.asia` 含 `5guys1direction.asia`），需用 `[^.]` 或锚定过滤。
+- **遗留/待办**：无。
+
 ## 2026-08-04 — favicon 全站补漏：blog 模板 + 缺失页面
 
 - **模型**：deepseek-v4-flash
