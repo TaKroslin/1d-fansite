@@ -8,6 +8,7 @@
 python -m http.server 8000
 # 访问 http://localhost:8000/
 # QA 脚本用 127.0.0.1:8000
+# ⚠️ 任务结束后不要 pkill http.server —— 保持常驻，方便用户随时打开检查
 ```
 
 ## Blog 构建
@@ -71,6 +72,22 @@ Get-Content .gitignore
 git diff --stat
 ```
 
+## Playwright 浏览器验证（Node + 本机 Chrome）
+
+```powershell
+# 环境：本机已装 Chrome，Playwright 用 Node（Python API 未装）
+# 运行脚本（require('playwright') + channel:'chrome'）：
+$env:NODE_PATH = (npm root -g); node tools/_qa_xxx.js
+# macOS/zsh 写法：
+# NODE_PATH=$(npm root -g) node tools/_qa_xxx.js
+
+# 脚本要点：
+#   const browser = await chromium.launch({ channel: 'chrome' });  # 用已装 Chrome，免下载
+#   结束 await browser.close()
+# 可用 boundingBox()/getComputedStyle 验证居中、hover opacity/color/z-index，
+#   模型直接读数值，比看截图更精确
+```
+
 ## 批量修改脚本模板要点（Python）
 
 ```python
@@ -79,7 +96,7 @@ git diff --stat
 # 2. 脚本幂等：重复跑结果一致，输出统计（改了 N 个文件）
 # 3. 相对路径深度用常量，不手工拼
 # 4. 正则替换先打印匹配组确认，再 sub
-# 5. Playwright 脚本结尾 os._exit(0)
+# 5. Playwright 脚本（若用 Python）结尾 os._exit(0)
 ```
 
 ## 已死/可用数据源

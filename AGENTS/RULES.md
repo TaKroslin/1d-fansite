@@ -25,8 +25,10 @@
    - **图片/资源相关**：`AGENTS/METHODS.md` 图片类坑 + `COMMANDS.md` 审计命令
    - **blog 相关**：`AGENTS/AGENTS.md` 的 Blog Markdown Workflow
    - **歌词/翻译相关**：`AGENTS/AGENTS.md` 翻译说明 + `METHODS.md` 翻译类坑
-3. 确认本地 server 状态（QA 需要）：`python -m http.server 8000` 后台跑起来
+3. 确认本地 server 状态（QA 需要）：`python -m http.server 8000` 后台跑起来（127.0.0.1:8000）
 4. 读 `AGENTS/LOG.md` 最近 1-3 条，了解"上次做到哪、遗留什么"
+
+> **本地 server 常驻，任务结束不杀掉**：`http.server 8000` 在会话中保持后台运行即可，方便用户随时打开 `http://localhost:8000` 检查效果。结束任务时**不要** `pkill http.server`；只有在用户明确要求重启/停止时才处理。
 
 > 不要每读一个文件就汇报一次。文档读完直接干活，结尾汇报。
 
@@ -74,6 +76,23 @@
 - 翻译字典结构：`{album: {song: [(en, zh), ...]}}`，en 必须与 HTML 原文严格 1:1（顺序对应），zh 可为 `[待译: <english>]` 占位。
 - 非单曲歌词页（MIA 14 首）：Song 类型 + Written by + prev/next 相邻曲目；无 release-buy/release-video。
 
+### 2.6 blog 正文视频卡片（bilibili 等第三方视频）
+
+- **结构**：封面背景 + 居中 play 图标，点击才注入 iframe（**默认不自动播放**，无 `autoplay` 参数）。
+  ```html
+  <div class="bilibili-card" style="background-image:url(../../../../images/blog/<cover>.png);">
+    <a class="bilibili-play" href="#" data-bilibili-src="//player.bilibili.com/player.html?...">
+      <i class="icon-play"></i><i class="icon-play-text"></i>
+    </a>
+  </div>
+  ```
+- **两个图标都要放**：`icon-play`（居中大播放符）+ `icon-play-text`（PLAY 字样）——hover 动画靠两个图标切换（play 右移淡出 + PLAY 淡入），缺一个就没有官方效果。
+- **依赖**：文章页必须引用 `js/bilibili-video.js`（build 模板已自动加，勿删）；CSS `.bilibili-card`/`.bilibili-play` 已加在 styles.css additions 块末尾。
+- **层级铁律**：遮罩用 `::before`（z-index 1），glyph `i` 必须 `z-index:2` + `color:#fff!important`。正文链接通用规则 `.article-holder .text a:visited:hover{color:#666}` specificity 更高，会覆盖继承色让 PLAY 文字发灰（M48）。
+- **尺寸**：Play 图标与 PLAY 文字 `font-size:1000%`（实测 ~198px），绝对定位 `top:50%;left:50%` + `translate(-50%,-50%)` 居中于 16:9 框内；不要照抄官方 `a.play-button` 的 `2000%/3200%`（那是方形 panel 设计，进 16:9 框会溢出）。
+- **封面图**：放 `images/blog/`，沿用小写连字符命名（如 `larry-bilibili-cover.png`）。封面方形图给列表卡片用 `cover_img` 字段，横幅给文章页 `header_img`（见 §Blog 工作流）。
+- **双语**：en/zh 各放一份同结构卡片，build fallback 成 `.en`/`.zh` 两块，切换语言各自生效。
+
 ---
 
 ## 3. 检测 / QA 规则（分层检测，从便宜到贵）
@@ -95,8 +114,16 @@
 - 需要确认**布局/颜色/动画/响应式/交互行为**时才启动 Playwright。
 - 典型场景：CSS 改动后的视觉效果、mobile 断点、slideshow 翻页交互、hover 动画。
 - 截图归档到 `tools/_qa_screenshots/`。
-- **Playwright 脚本结束时用 `os._exit(0)`**，否则 chromium 不释放、命令挂起报 timeout（结果其实已产出）。
+- **Playwright 默认用 Node**（Python API 本机未装）。全局包在 npm global，本机已装 Chrome：
+  ```bash
+  # 脚本用 CommonJS require('playwright')，运行时加 NODE_PATH：
+  NODE_PATH=$(npm root -g) node tools/_qa_xxx.js
+  # 启动必须 channel:'chrome'（本机已装 Chrome，无需下载 headless shell）：
+  const browser = await chromium.launch({ channel: 'chrome' });
+  ```
+- 脚本结束时 `await browser.close()` 或 `process.exit(0)`，否则 chromium 不释放、命令挂起报 timeout。
 - 优先 headless；真实浏览器问题（如缓存）需 channel=chrome + `?v=` 版本参数排查。
+- **不写截图脚本也能验证几何/颜色**：用 Playwright 读 `boundingBox()` 和 `getComputedStyle`（如图标是否居中、hover 后 opacity/color/z-index），比肉眼看截图更精确，且模型可直接读数值。
 
 ### 各场景默认验证方案
 | 场景 | 默认验证 | 是否要视觉 |

@@ -328,3 +328,21 @@ html.lang-zh .lyric-passage{display:block}
     display:none!important;
   }
 }
+
+/* FIVE GUYS: bilibili video card (click to embed, no autoplay).
+   Centered play icon inside the 16:9 frame; on hover the play glyph
+   slides right + fades while the PLAY glyph fades in — mirrors the
+   official a.play-button cycle. Overlay is a ::before pseudo-element
+   so the white glyphs always sit above the dim layer. */
+.article-holder .text .bilibili-card{position:relative;height:0;width:100%;padding:56.25% 0 0 0;margin:1.4em 0;background-size:cover;background-position:center center;cursor:pointer;overflow:hidden}
+.article-holder .text .bilibili-card iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:0}
+.article-holder .text .bilibili-play{position:absolute;top:0;left:0;width:100%;height:100%;z-index:2;color:#fff}
+.article-holder .text .bilibili-play:hover,.article-holder .text .bilibili-play:visited:hover{color:#fff;border-color:transparent}
+.article-holder .text .bilibili-play:hover i{color:#fff!important}
+.article-holder .text .bilibili-play::before{content:"";position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0);-moz-transition-duration:.333333s;-webkit-transition-duration:.333333s;transition-duration:.333333s;z-index:1}
+.article-holder .text .bilibili-play i{position:absolute;top:50%;left:50%;line-height:1;z-index:2;-moz-transition-duration:.333333s;-webkit-transition-duration:.333333s;transition-duration:.333333s}
+.article-holder .text .bilibili-play i.icon-play{font-size:1000%;-webkit-transform:translate(-50%,-50%);transform:translate(-50%,-50%);-moz-opacity:1;-khtml-opacity:1;-webkit-opacity:1;opacity:1}
+.article-holder .text .bilibili-play i.icon-play-text{font-size:1000%;-webkit-transform:translate(-50%,calc(-50% + 1.5em));transform:translate(-50%,calc(-50% + 1.5em));-moz-opacity:0;-khtml-opacity:0;-webkit-opacity:0;opacity:0}
+.article-holder .text .bilibili-play:hover::before{background:rgba(0,0,0,.5)}
+.article-holder .text .bilibili-play:hover i.icon-play{-webkit-transform:translate(calc(-50% + 2em),-50%);transform:translate(calc(-50% + 2em),-50%);-moz-opacity:0;-khtml-opacity:0;-webkit-opacity:0;opacity:0}
+.article-holder .text .bilibili-play:hover i.icon-play-text{-webkit-transform:translate(-50%,-50%);transform:translate(-50%,-50%);-moz-opacity:1;-khtml-opacity:1;-webkit-opacity:1;opacity:1}

@@ -313,3 +313,29 @@
 - **根因**：通用脚本 `_translate_pages.py` 已先译过 tour.html（418 个 location 已包裹），专用脚本正则只匹配未包裹形态，跳过了已包裹部分。
 - **处理**：脚本加第 2 遍 `re.subn`，匹配 `<span class="location"><span class="en">([^<]*)</span><span class="zh">([^<]*)</span>` 形态，`en.strip() in M and zh != M[en.strip()]` 时才替换 zh；注意 zh 与 `<span class="venue">` 间可能有空格，用 `\s*` 捕获并保留。
 - **预防**：新写页面级脚本前先跑一遍全量 diff（对比现有 en/zh 对与词表），别只处理未包裹；专有名（ITV1/Channel 4/The O2/Paramount Theatre 等）一律保留英文，不要意译。
+
+### M45. 本地 server 常驻，任务结束不要 pkill
+- **现象**：任务收尾时习惯性 `pkill http.server`，用户每次检查都要重新让 agent 启动 server。
+- **根因**：原 RULES 没规定 server 生命周期；误以为"清理环境"= 杀掉所有后台进程。
+- **处理**：本地 `http.server 8000` 会话内保持后台运行，任务结束**不杀**；只在用户明确要求重启时才停。
+- **预防**：session 里 server 是共享资源，收尾清单只清理临时 QA 脚本，不碰 server 进程。
+
+### M46. Playwright 本机用 Node + Chrome，Python API 未装
+- **现象**：`import playwright` 在 python3/venv 都 ModuleNotFoundError；`python -m pip install playwright` 被 PEP 668 拦截。
+- **根因**：本机 Playwright 是 npm 全局包（`$(npm root -g)/playwright`），Python 版未安装；且无 system-python 的 playwright wheel。
+- **处理**：脚本用 CommonJS `require('playwright')`，运行加 `NODE_PATH=$(npm root -g)`；启动 `chromium.launch({ channel: 'chrome' })` 复用已装 Chrome，免下载 headless shell（`npm root -g` 的 playwright 无 driver node_modules，默认会去找 ms-playwright 缓存里的 headless shell，本机没下载 → 必须 channel:'chrome'）。
+- **预防**：浏览器验证一律 Node 脚本；`await browser.close()` 或 `process.exit(0)` 收尾，否则 chromium 不释放、命令挂起。
+
+### M47. 文章正文链接 hover 变色规则 specificity 极高
+- **现象**：`.bilibili-play` 自定义 glyph 在 hover 后颜色变 `rgb(102,102,102)`（灰），即使已写了 `color:#fff` 覆盖。
+- **根因**：官方克隆正文有通用规则 `.panel.journal-article .article-holder .text a:visited:hover{color:#666}`，specificity（0,6,1）高于 `.article-holder .text .bilibili-play:hover`（0,4,1）；`color` 从 `<a>` 继承给 `<i>`，继承值被直接命中 `<a>` 的规则覆盖。
+- **处理**：把 `color:#fff!important` **直接作用于 glyph 元素**（`.bilibili-play:hover i{color:#fff!important}`），不要只设链接继承色。
+- **预防**：自绘 glyph 的颜色铁律 = 目标元素 + `!important`，别指望继承；改前 grep 该选择器的全量 specificity。
+
+### M48. 视频卡片 hover 变暗遮罩会压暗白色 glyph
+- **现象**：hover 时 PLAY 文字/图标发灰，以为是颜色设定错，实际是半透明黑遮罩压在 glyph 上。
+- **根因**：官方 `a.play-button:hover{background:rgba(0,0,0,.5)}` 的遮罩是链接自身背景，与子元素 glyph 同层渲染。
+- **处理**：遮罩改用伪元素 `.bilibili-play::before{...background:rgba(0,0,0,.5);z-index:1}`，glyph `i` 提升 `z-index:2`，保证白色在最上层。
+- **预防**：hover 变暗 + 白色前景的组合，遮罩必须低于前景 z-index，否则一律发灰。
+
+

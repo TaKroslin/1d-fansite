@@ -37,7 +37,72 @@
 
 ---
 
-## 2026-08-04 — 6 个 skills 升级为标准结构（文档+参考+示例+模板）
+## 2026-08-04 — AGENTS 文档更新：blog 视频卡片规范 + Playwright(Node/Chrome) + server 常驻
+
+- **模型**：deepseek-v4-flash
+- **目的**：把本次 More Than a Ship 视频卡片沉淀为可复用规范；写明本机 Playwright 用 Node + 已装 Chrome；本地 server 任务结束不杀，方便用户检查。
+- **结果**：
+  1. `AGENTS/RULES.md`：§1 会话启动新增「本地 server 常驻，任务结束不 pkill」；新增 §2.6「blog 正文视频卡片规范」（bilibili 卡片 HTML 结构、双图标、层级铁律 ::before 遮罩 z-index1 < glyph z-index2 + `color:#fff!important`、1000% 尺寸、封面图放 images/blog/、双语各一份）；§3 第 3 层浏览器验证改为 Node + `channel:'chrome'`，并推荐用 boundingBox/getComputedStyle 读数值代替看截图。
+  2. `AGENTS/AGENTS.md`：新增文章 checklist 修正（build 已全 front-matter 驱动，无 META/SCALERS 字典）+ 新增「正文视频卡片」小节。
+  3. `AGENTS/COMMANDS.md`：新增 Playwright(Node+Chrome) 命令速查；server 注释加"任务结束不要 pkill"。
+  4. `AGENTS/METHODS.md`：新增 M45（server 常驻）、M46（Playwright 用 Node+Chrome，Python API 未装）、M47（正文链接 a:visited:hover specificity 极高，glyph 需 !important）、M48（hover 变暗遮罩压暗白色 glyph，遮罩 z-index 必须低于前景）。
+- **验证**：grep 确认四文件改动到位；无语法破坏（RULES/AGENTS/COMMANDS/METHODS 均正常可读）。
+- **Token 消耗**：约 0.8 万
+- **用时**：约 8 分钟
+- **经验总结**：① 规范文档的价值在于把"踩坑后的正确做法"写进流程，避免下次重复排查；② 环境事实（Node Playwright + 本机 Chrome、server 常驻）属于跨会话通用知识，应放 RULES/COMMANDS 而非单次 LOG。
+- **遗留/待办**：无
+
+## 2026-08-04 — More Than a Ship 视频卡片 hover 动画修复（居中放大 + 纯白文字层级）
+
+- **模型**：deepseek-v4-flash
+- **目的**：用户反馈三点——① 首次实现溢出（把官方正方形 2000% 图标搬进 16:9 框）；② 图标太小；③ hover 时 PLAY 文字发灰。
+- **结果**：
+  1. 重写 `.bilibili-play`：图标/文字绝对定位 `top:50%;left:50%` + `translate(-50%,-50%)` 居中于 16:9 框内，去掉官方 2000% 巨大字号；动画用 `transform`（图标 `translateX(+2em)` 右移淡出、文字从下方升到居中淡入），复刻官方 hover 循环。
+  2. 遮罩从链接自身 `background:rgba(0,0,0,.5)` 改为 `::before` 伪元素（z-index:1），文字 `i` 提升到 z-index:2 —— 保证 hover 变暗时文字仍纯白。
+  3. 文字发灰根因：通用规则 `.panel.journal-article .article-holder .text a:visited:hover{color:#666}` specificity 更高，覆盖了链接继承色 → 加 `.bilibili-play:hover i{color:#fff!important}` 直接作用于 glyph。
+  4. 图标/文字尺寸 560%/400% → 1000%：Play 图标与 PLAY 文字均 198px，居中。
+  5. CSS bump `?v=20260804h → 20260804i`（build_blog.py / blog_list 模板 / index.html）。
+- **验证**：Playwright(chrome) 几何断言——IDLE 图标 198px 中心 delta(0,-0.5) 居中、文字在下方 opacity 0；HOVER 图标右移 396px + opacity 0、文字升到中心 delta(0,-0.5) + 纯白 `rgb(255,255,255)` + opacity 1、遮罩 `rgba(0,0,0,.5)` z-index 1 < 文字 z-index 2。`_audit_site_images.py` → 302 refs Broken: 0。
+- **Token 消耗**：约 1.5 万
+- **用时**：约 15 分钟
+- **经验总结**：① 复刻动画≠照搬尺寸：官方 play-button 2000% 是为方形面板设计，16:9 框内必须重做定位与字号；② 纯静态站正文链接有 `a:visited:hover` 高 specificity 变色规则，自绘 glyph 需 `!important` 直接作用目标元素，靠继承必被覆盖。
+- **遗留/待办**：无
+
+## 2026-08-04 — More Than a Ship 视频卡片改版（不自动播放 + 站内 YouTube 卡片样式）
+
+- **模型**：deepseek-v4-flash
+- **目的**：bilibili 视频不要自动播放，包装成站内 YouTube 视频卡片样式（封面 + 居中 play 按钮，点击才加载 iframe），封面用新图 larry-bilibili-cover.png。
+- **结果**：
+  1. 新增 `images/blog/larry-bilibili-cover.png`（1920×1080 16:9 封面）。
+  2. 新增 `js/bilibili-video.js`（全局守卫 `__5GUYS_BILI_VIDEO__`，事件委托点击 `a.bilibili-play` 注入 iframe，无 autoplay，`.en`/`.zh` 两块通用）。
+  3. `tools/templates/article.html` 追加引用 `bilibili-video.js`（生成时 `{{root}}` 前缀）。
+  4. `css/styles.css` additions 块末尾追加 `.bilibili-card`（56.25% 16:9 容器 + 居中 play 按钮 hover 遮罩）。
+  5. article.md / article.zh.md 视频由 `.youtube` iframe 改为 `.bilibili-card` 封面卡片（`data-bilibili-src` 存 iframe URL，仅点击时注入 → 不自动播放）。
+  6. CSS bump：`?v=20260804c → 20260804d`（build_blog.py css_href、blog_list.html 模板、index.html）。
+- **验证**：build 成功 5 篇；`_audit_site_images.py` → 302 refs，Broken: 0；文章页/blog.html/index.html + bilibili-cover.png + bilibili-video.js 全部 HTTP 200；grep 确认无残留直接 iframe（player.bilibili 仅出现在 data 属性）。
+- **Token 消耗**：约 1 万
+- **用时**：约 12 分钟
+- **经验总结**：① 站内 YouTube 视频卡片复用不了 main.js 的 `a.play-button`（写死 YouTube embed + autoplay=1），自定义 class + 独立 JS + 全局守卫更干净；② 纯静态站做"点击加载"视频，用封面背景 + play 按钮 + JS 注入 iframe，避免加载即播放。
+- **遗留/待办**：无
+
+## 2026-08-04 — 新增 blog「More Than a Ship」(2026-08-04/more-than-a-ship)
+
+- **模型**：deepseek-v4-flash
+- **目的**：用户投稿个人随笔（Larry 主题，英中双语，非严格互译），带两张自制图（larry-header 横幅 / larry-cover 方形）和文末 bilibili 视频。新增到博客并替换首页卡片。
+- **结果**：
+  1. 新建 `images/blog/larry-cover.png`(1200×1200) + `larry-header.png`(1200×500)（自定义图放 `images/blog/`）。
+  2. 新增 `pages/blog/2026-08-04/more-than-a-ship/article.md` + `article.zh.md`：front-matter 加自定义字段 `cover_img`（卡片方形封面，与 header_img 横幅分离）；英中段落数不同 → build 自动 fallback 成 `.en`/`.zh` 两大块（两部分页面），符合"非严格翻译"需求。
+  3. 文末 PS 段落 + `<div class="youtube">` 包裹 bilibili iframe（复用 styles.css 已有 `.article-holder .text .youtube` 16:9 样式），中英文各一份。
+  4. 修改 `tools/build_blog.py` `_render_listing_card`：`img = post.extra.get("cover_img") or post.header_img`，使 blog 列表卡片用方形 cover 而非横幅 header。
+  5. 重跑 build：5 篇文章 + blog.html + posts.json。
+  6. 首页 `index.html`：新卡片放上排右边（原 why-this-site-exists 位），why-this-site-exists 顺移下排 right 位，移除 why-i-love-1d-so-bad 卡片。
+- **验证**：`python tools/_audit_site_images.py` → 301 refs，Broken: 0；文章页/blog.html/index.html + 2 张新图全部 HTTP 200；grep 确认首页卡片 4→3 篇且新文章在首位。
+- **Token 消耗**：约 2 万
+- **用时**：约 15 分钟
+- **经验总结**：① 英中段落数不必严格配对——build_blog.py 会 fallback 成整块 `.en`/`.zh` 结构，长文非互译场景直接这么写；② 卡片方形封面与文章页横幅 header 分离用 front-matter `cover_img` 字段，不改动脚本默认逻辑（`or header_img` 兜底）。
+- **遗留/待办**：部署前 `git add images/blog/`（新目录未跟踪）；skill 文档中 META/SCALERS 字典已废弃（build_blog.py 已改为全 front-matter 驱动），后续可更新 blog-post skill 的 reference.md。
+
+
 
 - **模型**：deepseek-v4-flash
 - **目的**：把上一轮的扁平 SKILL.md 升级为标准 skill 结构：主流程文档（SKILL.md）+ 详细参考（reference.md）+ 真实示例（examples/）+ 可复制模板（templates/），让每个 skill 既可读又可直接复用。

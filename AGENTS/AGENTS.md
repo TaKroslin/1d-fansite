@@ -356,10 +356,25 @@ scaler: 60%
 ### 新增文章 checklist
 
 1. 创建 `pages/blog/YYYY-MM-DD/<slug>/article.md`（复制现有 article.md 改 front-matter + 正文）
-2. 编辑 `tools/build_blog.py` 顶部 `META` 字典（手动维护元数据，因为 og_image 等不是 MD 能完全表达的）
-3. 编辑 `tools/build_blog.py` 顶部 `SCALERS` 字典（每个标题的字号百分比）
-4. 跑 `python tools/build_blog.py`
-5. **手改 `index.html` 添加首页卡片**（目前没有自动同步机制）
+2. 跑 `python tools/build_blog.py`（build 脚本已改为**全 front-matter 驱动**，不再有 META/SCALERS 字典；所有字段直接读 article.md front-matter）
+3. **手改 `index.html` 添加首页卡片**（目前没有自动同步机制）
+4. 如正文含第三方视频，按下方「正文视频卡片」规范处理
+
+### 正文视频卡片（bilibili 等）
+
+文章正文想插视频（YouTube/bilibili），用「封面 + play 按钮」卡片，点击才加载 iframe（不自动播放）。详见 `AGENTS/RULES.md §2.6`。核心 HTML 片段：
+
+```html
+<div class="bilibili-card" style="background-image:url(../../../../images/blog/<cover>.png);">
+  <a class="bilibili-play" href="#" data-bilibili-src="//player.bilibili.com/player.html?...">
+    <i class="icon-play"></i><i class="icon-play-text"></i>
+  </a>
+</div>
+```
+
+- 中英文各放一份同结构卡片（`.en`/`.zh` 切换各自生效）。
+- 封面图放 `images/blog/`，小写连字符命名。
+- 依赖 `js/bilibili-video.js`（article.html 模板已自动引用）与 styles.css additions 块内的 `.bilibili-card` 样式，改文章时勿删。
 
 ### 模板
 

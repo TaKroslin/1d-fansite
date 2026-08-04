@@ -323,7 +323,7 @@ def _build_article_html(post: Post) -> str:
     depth = len(Path(post.rel_url).parts) - 1  # number of ".."" needed
     root_prefix = _relative(depth)
     about_href = f"{root_prefix}pages/about.html"
-    css_href = f"{root_prefix}css/styles.css?v=20260803b"
+    css_href = f"{root_prefix}css/styles.css?v=20260804i"
     jquery_href = f"{root_prefix}js/jquery.min.js"
     main_js_href = f"{root_prefix}js/main.js"
 
@@ -465,7 +465,7 @@ def _render_listing_card(post: Post, scaler: str) -> str:
     # stored in the .md front-matter is already a depth-correct relative
     # path for an article (../../../../images/...).  We rebuild the path
     # from the listing page's depth (one "..").
-    img = post.header_img
+    img = post.extra.get("cover_img") or post.header_img
     if "images/" in img:
         img = "../images/" + img.split("images/", 1)[1]
     # The card background is a #000 black panel.  If the article's

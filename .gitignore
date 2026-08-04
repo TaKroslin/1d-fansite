@@ -24,6 +24,9 @@ tools/CODEX_TASK_*.md
 Thumbs.db
 desktop.ini
 
+# Playwright test artifacts
+test-results/
+
 # Editor
 .vscode/
 .idea/
