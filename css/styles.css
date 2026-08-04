@@ -346,3 +346,26 @@ html.lang-zh .lyric-passage{display:block}
 .article-holder .text .bilibili-play:hover::before{background:rgba(0,0,0,.5)}
 .article-holder .text .bilibili-play:hover i.icon-play{-webkit-transform:translate(calc(-50% + 2em),-50%);transform:translate(calc(-50% + 2em),-50%);-moz-opacity:0;-khtml-opacity:0;-webkit-opacity:0;opacity:0}
 .article-holder .text .bilibili-play:hover i.icon-play-text{-webkit-transform:translate(-50%,-50%);transform:translate(-50%,-50%);-moz-opacity:1;-khtml-opacity:1;-webkit-opacity:1;opacity:1}
+
+/* =================================================================
+   FIVE GUYS: Bilingual default-hide leak fix
+   Higher-specificity span layout rules were overriding the
+   .zh{display:none} default and re-showing Chinese inside English
+   mode:
+     - .panel.journal-news.homepage-news h2 span (mobile blog cards)
+     - .panel.release-menu ul li a span (album "Videos/Photos/Singles")
+     - .panel.tour-listing ul li .location span (tour venues)
+   Force the hide with !important; keep zh / bilingual show-rules
+   equally strong so opting into Chinese still works.
+   ================================================================= */
+.zh{display:none!important}
+html.lang-zh .zh{display:inline!important}
+html.lang-zh .lyric-line .zh,
+html.lang-bilingual .lyric-line .zh{display:block!important}
+html.lang-zh .lyric-passage .zh,
+html.lang-bilingual .lyric-passage .zh{display:block!important}
+/* Same leak on the other side: those span rules also override the
+   html.lang-zh .en{display:none} hide, so English reappears inside
+   Chinese mode. Match the force-hide. */
+html.lang-zh .en{display:none!important}
+html.lang-zh .lyric-line .en{display:none!important}

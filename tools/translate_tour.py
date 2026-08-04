@@ -1,0 +1,352 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+translate_tour.py — 重新翻译 pages/tour.html 中文版
+=================================================================
+为每个 <span class="venue"> 注入双语结构：
+    <span class="venue"><span class="en">原文</span><span class="zh">译文（原文）</span></span>
+并修复 location 里未翻译的地名/场馆名 <span class="zh">。
+
+原则：
+  - 人名（Harry/Zayn/Louis/Niall/Liam/Alan/James 等）保留英文
+  - 乐队名 One Direction / 1D 保留英文
+  - 场馆名、节目名、事件名 -> 翻译 + （原文）
+  - 纯句子的里程碑（生日/发行）-> 翻译句子本身
+  - 地名全部翻译（location 里的 .zh 补漏）
+脚本幂等：已含 <span class="zh"> 的 venue 跳过，可重复跑。
+"""
+import re
+
+PATH = "pages/tour.html"
+
+# 需要修复的 location 里的 .zh（残留英文的地名/场馆名）
+LOCATION_ZH_FIX = {
+    "Atlantico Pavilion，葡萄牙，": "大西洋馆（Atlantico Pavilion），葡萄牙，",
+    "Channel 4，": "第四频道（Channel 4），",
+    "Cynthia Woods Mitchell Pavilion，美国，": "辛西娅·伍兹·米切尔馆（Cynthia Woods Mitchell Pavilion），美国，",
+    "Festive Grand™ Theatre，Resorts World™ Sentosa，新加坡，": "节日大剧院™（Festive Grand™ Theatre），圣淘沙名胜世界™（Resorts World™ Sentosa），新加坡，",
+    "ITV1，": "独立电视台一台（ITV1），",
+    "Paramount Theatre，美国，": "派拉蒙剧院（Paramount Theatre），美国，",
+    "Selfridges，特拉福德，英国，": "塞尔福里奇百货（Selfridges），特拉福德，英国，",
+    "Trax FM，": "Trax 调频（Trax FM），",
+    "Westfield，伦敦，英国，": "韦斯特菲尔德（Westfield），伦敦，英国，",
+    "伦敦 The O2，英国，": "伦敦 O2 场馆（The O2 London），英国，",
+}
+
+# venue 翻译字典。键 = 归一化后的原文（与提取列表逐字一致），值 = 译文。
+V = {
+    "02 Apollo": "02 阿波罗剧场（02 Apollo）",
+    "02 Apollo (Evening Show)": "02 阿波罗剧场·晚间场（02 Apollo (Evening Show)）",
+    "02 Apollo (Matinee Show)": "02 阿波罗剧场·日场（02 Apollo (Matinee Show)）",
+    "02 Arena": "02 竞技场（02 Arena）",
+    "1-800-Ask-Gary Amphitheatre": "1-800-Ask-Gary 露天剧场（1-800-Ask-Gary Amphitheatre）",
+    "1D Day": "1D 日（1D Day）",
+    "'One Direction: Dare To Dream' book released!": "One Direction《Dare To Dream》新书上市！",
+    "20th October - Brisbane Entertainment Centre": "10月20日——布里斯班娱乐中心（20th October - Brisbane Entertainment Centre）",
+    "3Arena": "3Arena 竞技场（3Arena）",
+    "7he Sevens": "七人球场（7he Sevens）",
+    "AAMI Stadium": "AAMI 体育场（AAMI Stadium）",
+    "AT&T Stadium": "AT&T 体育场（AT&T Stadium）",
+    "Adelaide Entertainment Centre": "阿德莱德娱乐中心（Adelaide Entertainment Centre）",
+    "Agganis Arena": "阿加尼斯竞技场（Agganis Arena）",
+    "Air Canada Centre": "加拿大航空中心（Air Canada Centre）",
+    "Air Canada Theatre": "加拿大航空剧院（Air Canada Theatre）",
+    "Alamodome": "阿拉莫巨蛋（Alamodome）",
+    "Album Listening Party": "专辑试听会（Album Listening Party）",
+    "Allianz Stadium": "安联体育场（Allianz Stadium）",
+    "Allphones Arena": "奥丰斯竞技场（Allphones Arena）",
+    "Allstate Arena": "全州保险竞技场（Allstate Arena）",
+    "American Airlines Arena": "美国航空竞技场（American Airlines Arena）",
+    "American Music Awards": "全美音乐奖（American Music Awards）",
+    "Amsterdam Arena": "阿姆斯特丹竞技场（Amsterdam Arena）",
+    "Amway Center": "安威中心（Amway Center）",
+    "Arena": "竞技场（Arena）",
+    "Arena - The Sun show": "竞技场——《太阳报》专场（Arena - The Sun show）",
+    "Arrowhead Stadium": "箭头球场（Arrowhead Stadium）",
+    "Asia World Expo": "亚洲国际博览馆（Asia World Expo）",
+    "Auditorio Nacional": "国家礼堂（Auditorio Nacional）",
+    "BBC Children In Need 2011": "BBC 慈善之夜晚会 2011（BBC Children In Need 2011）",
+    "BBC Radio 1": "BBC 第一电台（BBC Radio 1）",
+    "BC Place": "BC 体育场（BC Place）",
+    "BOK Center": "BOK 中心（BOK Center）",
+    "Bank Atlantic Center": "大西洋银行中心（Bank Atlantic Center）",
+    "Barclaycard Arena": "巴克莱卡竞技场（Barclaycard Arena）",
+    "Be Up In The Sky With One Direction": "与 One Direction 一同翱翔天际（Be Up In The Sky With One Direction）",
+    "Beacon Theatre": "灯塔剧院（Beacon Theatre）",
+    "Beacon Theatre (Matinee performance)": "灯塔剧院·日场演出（Beacon Theatre (Matinee performance)）",
+    "Bell Centre": "贝尔中心（Bell Centre）",
+    "Bercy": "贝西体育馆（Bercy）",
+    "Billboard Awards": "公告牌音乐奖（Billboard Awards）",
+    "Boxen": "波克森体育馆（Boxen）",
+    "Bridgestone Arena": "普利司通竞技场（Bridgestone Arena）",
+    "Brighton Centre": "布莱顿中心（Brighton Centre）",
+    "Brisbane Entertainment Centre": "布里斯班娱乐中心（Brisbane Entertainment Centre）",
+    "CASA Arena": "CASA 竞技场（CASA Arena）",
+    "CBS Canterbury Arena": "CBS 坎特伯雷竞技场（CBS Canterbury Arena）",
+    "Cafe Opera": "歌剧院咖啡馆（Cafe Opera）",
+    "Café Opera": "歌剧院咖啡馆（Café Opera）",
+    "Canadian Tire Centre": "加拿大轮胎中心（Canadian Tire Centre）",
+    "Cape Town Stadium": "开普敦体育场（Cape Town Stadium）",
+    "Capital Arena": "首都竞技场（Capital Arena）",
+    "Cardiff Arena": "加的夫竞技场（Cardiff Arena）",
+    "Cardiff Arena (matinee)": "加的夫竞技场·日场（Cardiff Arena (matinee)）",
+    "Cardiff Motorpoint Arena": "加的夫摩托点竞技场（Cardiff Motorpoint Arena）",
+    "CenturyLink Field": "世纪互联球场（CenturyLink Field）",
+    "City Hall": "市政厅（City Hall）",
+    "Civic Hall": "市政礼堂（Civic Hall）",
+    "Clyde Auditorium": "克莱德音乐厅（Clyde Auditorium）",
+    "Clyde Auditorium (Evening Show)": "克莱德音乐厅·晚间场（Clyde Auditorium (Evening Show)）",
+    "Clyde Auditorium (Matinee Show)": "克莱德音乐厅·日场（Clyde Auditorium (Matinee Show)）",
+    "Comcast Center": "康卡斯特中心（Comcast Center）",
+    "Comerica Theatre": "科美利加剧院（Comerica Theatre）",
+    "Commonwealth Stadium": "联邦体育场（Commonwealth Stadium）",
+    "Consol Energy Center": "康索尔能源中心（Consol Energy Center）",
+    "Croke Park": "克罗克公园（Croke Park）",
+    "Dancing On Ice": "《冰上起舞》（Dancing On Ice）",
+    "Dragao Stadium": "巨龙体育场（Dragao Stadium）",
+    "Durham PAC": "达勒姆表演艺术中心（Durham PAC）",
+    "Echo Arena": "回声竞技场（Echo Arena）",
+    "Edward Jones Dome": "爱德华·琼斯巨蛋（Edward Jones Dome）",
+    "Ernst-Happel-Stadion": "恩斯特·哈佩尔体育场（Ernst-Happel-Stadion）",
+    "Esprit Arena": "埃斯普利特竞技场（Esprit Arena）",
+    "Estadi Olimpic": "奥林匹克体育场（Estadi Olimpic）",
+    "Estadio Centenario": "百年体育场（Estadio Centenario）",
+    "Estadio El Campin": "埃尔坎平体育场（Estadio El Campin）",
+    "Estadio Nacional": "国家体育场（Estadio Nacional）",
+    "Estadio Vicente Calderón": "文森特·卡尔德隆体育场（Estadio Vicente Calderón）",
+    "Estádio do Morumbi": "莫伦比球场（Estádio do Morumbi）",
+    "Etihad Stadium": "伊蒂哈德球场（Etihad Stadium）",
+    "Events Center": "会展中心（Events Center）",
+    "FNB Stadium": "FNB 体育场（FNB Stadium）",
+    "First Midwest Bank Amphitheater": "美国中西部第一银行露天剧场（First Midwest Bank Amphitheater）",
+    "First Midwest Bank Amphitheatre": "美国中西部第一银行露天剧场（First Midwest Bank Amphitheatre）",
+    "FirstEnergy Stadium": "第一能源体育场（FirstEnergy Stadium）",
+    "Ford Field": "福特球场（Ford Field）",
+    "Foro Sol": "太阳广场（Foro Sol）",
+    "Forum": "论坛体育馆（Forum）",
+    "Fox Theater": "福克斯剧院（Fox Theater）",
+    "Fox Theatre": "福克斯剧院（Fox Theatre）",
+    "Foxwoods": "福克斯伍兹（Foxwoods）",
+    "Friends Arena": "朋友体育场（Friends Arena）",
+    "Georgia Dome": "佐治亚巨蛋（Georgia Dome）",
+    "Gexa Pavilion": "杰格萨馆（Gexa Pavilion）",
+    "Gibson Amphitheatre": "吉布森露天剧场（Gibson Amphitheatre）",
+    "Gibson Amphitheatre - Matinee performance": "吉布森露天剧场·日场演出（Gibson Amphitheatre - Matinee performance）",
+    "Gilette Stadium": "吉列体育场（Gilette Stadium）",
+    "Gillette Stadium": "吉列体育场（Gillette Stadium）",
+    "Good Morning America": "《早安美国》（Good Morning America）",
+    "Gotta Be You Released": "《Gotta Be You》发行（Gotta Be You Released）",
+    "Gotta Be You: CD Single Released": "《Gotta Be You》：CD 单曲发行（Gotta Be You: CD Single Released）",
+    "HMV, Whitely’s Shopping Centre, Bayswater.": "贝斯沃特惠特利购物中心 HMV 店（HMV, Whitely’s Shopping Centre, Bayswater.）",
+    "HP Pavilion": "惠普馆（HP Pavilion）",
+    "Hallenstadion": "国家体育馆（Hallenstadion）",
+    "Harry turns 18!": "Harry 满 18 岁了！",
+    "Heaven Nightclub": "天堂夜总会（Heaven Nightclub）",
+    "Heinz Field": "亨氏球场（Heinz Field）",
+    "Hersheypark Stadium": "好时公园体育场（Hersheypark Stadium）",
+    "Hits Radio 1D Takeover": "Hits 电台 1D 专场（Hits Radio 1D Takeover）",
+    "Houston, TX": "休斯顿，得克萨斯州",
+    "IN:Demand Honours 2011": "IN:Demand 荣誉大奖 2011（IN:Demand Honours 2011）",
+    "International Arena": "国际竞技场（International Arena）",
+    "Interview on Alan Carr's Chatty Man": "艾伦·卡尔的《话痨》节目访谈（Interview on Alan Carr's Chatty Man）",
+    "Investors Group Field": "投资者集团球场（Investors Group Field）",
+    "Izod Center": "伊佐德中心（Izod Center）",
+    "Jingle Bell Ball 2011": "2011 圣诞铃铛球（Jingle Bell Ball 2011）",
+    "KFC Yum! Center": "肯德基美味中心（KFC Yum! Center）",
+    "Key Arena": "钥匙竞技场（Key Arena）",
+    "King Baudouin Stadium": "博杜安国王体育场（King Baudouin Stadium）",
+    "König-Pilsener": "国王皮尔斯纳馆（König-Pilsener）",
+    "LG Arena": "LG 竞技场（LG Arena）",
+    "LG Arena (matinee)": "LG 竞技场·日场（LG Arena (matinee)）",
+    "LP Field": "LP 球场（LP Field）",
+    "Levi's Stadium": "李维斯球场（Levi's Stadium）",
+    "Liam turns 18!": "Liam 满 18 岁了！",
+    "Lincoln Financial Field": "林肯金融球场（Lincoln Financial Field）",
+    "Lisbon": "里斯本（Lisbon）",
+    "Liverpool Echo Arena": "利物浦回声竞技场（Liverpool Echo Arena）",
+    "London HMV Apollo": "伦敦 HMV 阿波罗剧场（London HMV Apollo）",
+    "Louis turns 20!": "Louis 满 20 岁了！",
+    "Lucas Oil Stadium": "卢卡斯石油球场（Lucas Oil Stadium）",
+    "M&T Bank Stadium": "M&T 银行球场（M&T Bank Stadium）",
+    "MEN Arena": "MEN 竞技场（MEN Arena）",
+    "MGM Grand": "MGM 大酒店（MGM Grand）",
+    "Madison Square Garden": "麦迪逊广场花园（Madison Square Garden）",
+    "Makuhari Messe": "幕张国际展览中心（Makuhari Messe）",
+    "Mall Of Asia Concert Ground": "亚洲商城演唱会广场（Mall Of Asia Concert Ground）",
+    "Manchester Arena": "曼彻斯特竞技场（Manchester Arena）",
+    "Manchester Arena (matinee)": "曼彻斯特竞技场·日场（Manchester Arena (matinee)）",
+    "Mandalay Bay": "曼德勒海湾（Mandalay Bay）",
+    "Mandalay Bay Events Center": "曼德勒海湾会展中心（Mandalay Bay Events Center）",
+    "Maverick Center": "特立独行者中心（Maverick Center）",
+    "Melbourne Rod Laver Arena": "墨尔本罗德·拉沃尔球场（Melbourne Rod Laver Arena）",
+    "Mercedes-Benz Superdome": "梅赛德斯-奔驰巨蛋（Mercedes-Benz Superdome）",
+    "MetLife Stadium": "大都会人寿体育场（MetLife Stadium）",
+    "Metro Arena": "地铁竞技场（Metro Arena）",
+    "Metro Radio Arena": "地铁广播竞技场（Metro Radio Arena）",
+    "Millenium Stadium": "千禧体育场（Millenium Stadium）",
+    "Miller Park": "米勒球场（Miller Park）",
+    "Mohegan Sun Arena": "莫希根太阳竞技场（Mohegan Sun Arena）",
+    "Molson Amphitheatre": "莫尔森露天剧场（Molson Amphitheatre）",
+    "Molson Amphitheatre - EXTRA SHOW!": "莫尔森露天剧场——加场！（Molson Amphitheatre - EXTRA SHOW!）",
+    "Motorpoint Arena": "摩托点竞技场（Motorpoint Arena）",
+    "Motorpoint Arena (matinee)": "摩托点竞技场·日场（Motorpoint Arena (matinee)）",
+    "Murrayfield Stadium": "默里菲尔德体育场（Murrayfield Stadium）",
+    "NBC's America's Got Talent": "NBC《美国达人秀》（NBC's America's Got Talent）",
+    "NIA Arena": "NIA 竞技场（NIA Arena）",
+    "National Stadium": "国家体育场（National Stadium）",
+    "Nationals Park": "国民球场（Nationals Park）",
+    "Nationwide Arena": "全国竞技场（Nationwide Arena）",
+    "Niall turns 18!": "Niall 满 18 岁了！",
+    "Nikon at Jones Beach Theater": "尼康·琼斯海滩剧院（Nikon at Jones Beach Theater）",
+    "Nottingham Capital FM Arena": "诺丁汉 Capital FM 竞技场（Nottingham Capital FM Arena）",
+    "O2 Arena": "O2 竞技场（O2 Arena）",
+    "O2 Arena (matinee)": "O2 竞技场·日场（O2 Arena (matinee)）",
+    "O2 World": "O2 世界体育馆（O2 World）",
+    "Oakland, CA": "奥克兰，加利福尼亚州",
+    "Odyssey Arena": "奥德赛竞技场（Odyssey Arena）",
+    "Ohio Stadium": "俄亥俄球场（Ohio Stadium）",
+    "Olympiahalle": "奥林匹克厅（Olympiahalle）",
+    "Olympiastadion": "奥林匹克体育场（Olympiastadion）",
+    "Olympic Stadium": "奥林匹克体育场（Olympic Stadium）",
+    "One Direction - A Year In The Making - ITV Documentary!": "One Direction——《一年间》ITV 纪录片！（One Direction - A Year In The Making - ITV Documentary!）",
+    "One Direction Book Signing at Lakeside, Essex!": "One Direction 埃塞克斯湖滨签售会！（One Direction Book Signing at Lakeside, Essex!）",
+    "One Direction Book Signing at Selfridges, Trafford!": "One Direction 特拉福德塞尔福里奇签售会！（One Direction Book Signing at Selfridges, Trafford!）",
+    "One Direction Book Signing at WHSmith Westfield, London": "One Direction 伦敦 Westfield WHSmith 书店签售会（One Direction Book Signing at WHSmith Westfield, London）",
+    "One Direction Book Signing at WHSmith, Liverpool!": "One Direction 利物浦 WHSmith 书店签售会！（One Direction Book Signing at WHSmith, Liverpool!）",
+    "One Direction Nokia C3 and C202 are on sale!": "One Direction 诺基亚 C3 与 C202 现已上市！",
+    "One Direction Twitter Takeover!": "One Direction 接管推特！",
+    "One Direction on Daybreak!": "One Direction 亮相《破晓》栏目！",
+    "One Direction on This Morning!": "One Direction 亮相《今晨》栏目！",
+    "One Direction perform on Red Or Black!, ITV": "One Direction 亮相 ITV《红或黑》栏目！",
+    "One Direction radio interview on Cool FM!": "One Direction 在 Cool FM 电台接受采访！",
+    "One Direction radio interview on Radio Aire Breakfast": "One Direction 在 Radio Aire 早餐节目接受采访",
+    "One Direction radio interview with Mike Tollan and Chelsea on Key 103": "One Direction 与 Mike Tollan、Chelsea 在 Key 103 电台接受采访",
+    "One Thing Released": "《One Thing》单曲发行（One Thing Released）",
+    "Opera House": "歌剧院（Opera House）",
+    "Oracle Arena": "甲骨文竞技场（Oracle Arena）",
+    "Osaka Dome": "大阪巨蛋（Osaka Dome）",
+    "PNC Arena": "PNC 竞技场（PNC Arena）",
+    "PNC Music Pavilion": "PNC 音乐馆（PNC Music Pavilion）",
+    "Palace Theatre": "皇宫剧院（Palace Theatre）",
+    "Palacio Vistalegra": "美景宫（Palacio Vistalegra）",
+    "Parken Stadium": "帕肯球场（Parken Stadium）",
+    "Parque dos Atletas": "运动员公园（Parque dos Atletas）",
+    "Patersons Stadium": "帕特森体育场（Patersons Stadium）",
+    "Patriot Center": "爱国者中心（Patriot Center）",
+    "Pavelló Olimpic": "奥林匹克馆（Pavelló Olímpic）",
+    "Pavilions": "亭台馆（Pavilions）",
+    "Pepsi Center": "百事中心（Pepsi Center）",
+    "Perth Indoor Arena": "珀斯室内竞技场（Perth Indoor Arena）",
+    "Philips Arena": "飞利浦竞技场（Philips Arena）",
+    "Planet Hollywood": "好莱坞星球（Planet Hollywood）",
+    "Qualcomm Stadium": "高通球场（Qualcomm Stadium）",
+    "Radio City Music Hall": "无线电城音乐厅（Radio City Music Hall）",
+    "Rajamangala Stadium": "拉差曼加拉体育场（Rajamangala Stadium）",
+    "Ralph Wilson Stadium": "拉尔夫·威尔逊球场（Ralph Wilson Stadium）",
+    "Raymond James Stadium": "雷蒙德·詹姆斯球场（Raymond James Stadium）",
+    "Reliant Stadium": "信赖球场（Reliant Stadium）",
+    "Rod Laver Arena": "罗德·拉沃尔球场（Rod Laver Arena）",
+    "Rod Laver Arena (Matinee)": "罗德·拉沃尔球场·日场（Rod Laver Arena (Matinee)）",
+    "Rogers Arena": "罗杰斯竞技场（Rogers Arena）",
+    "Rogers Centre": "罗杰斯中心（Rogers Centre）",
+    "Rose Bowl": "玫瑰碗球场（Rose Bowl）",
+    "Rosemont Theatre": "罗斯蒙特剧院（Rosemont Theatre）",
+    "Royal Concert Hall (Evening Show)": "皇家音乐厅·晚间场（Royal Concert Hall (Evening Show)）",
+    "Royal Concert Hall (Matinee Show)": "皇家音乐厅·日场（Royal Concert Hall (Matinee Show)）",
+    "SECC": "苏格兰会展中心（SECC）",
+    "SSE Arena": "SSE 竞技场（SSE Arena）",
+    "SSE Hydro Arena": "SSE 水电竞技场（SSE Hydro Arena）",
+    "Saitama Super Arena": "埼玉超级竞技场（Saitama Super Arena）",
+    "Saturday Night Live": "《周六夜现场》（Saturday Night Live）",
+    "Sleep Train Amphitheatre": "睡眠列车露天剧场（Sleep Train Amphitheatre）",
+    "Soldier Field": "士兵球场（Soldier Field）",
+    "Sportpaleis": "体育宫（Sportpaleis）",
+    "Spotify Listening Party": "Spotify 试听会（Spotify Listening Party）",
+    "Sprint Center": "斯普林特中心（Sprint Center）",
+    "Stade de France": "法兰西体育场（Stade de France）",
+    "Stade de Suisse": "瑞士体育场（Stade de Suisse）",
+    "Stadio Olimpico": "奥林匹克体育场（Stadio Olimpico）",
+    "Stadio San Siro": "圣西罗球场（Stadio San Siro）",
+    "Stadium Of Light": "光明球场（Stadium Of Light）",
+    "Stadium Utama Gelora Bung Karno": "朋卡诺主体育场（Stadium Utama Gelora Bung Karno）",
+    "Staples Center": "斯台普斯中心（Staples Center）",
+    "Sun Bowl Stadium": "太阳碗球场（Sun Bowl Stadium）",
+    "Sun Life Stadium": "太阳生活球场（Sun Life Stadium）",
+    "Suncorp Stadium": "桑科普球场（Suncorp Stadium）",
+    "Susquehanna Bank Center **NOTE! New venue!": "苏斯奎汉纳银行中心 **注意：新场馆！**（Susquehanna Bank Center **NOTE! New venue!**）",
+    "Sydney Allphones Arena": "悉尼奥丰斯竞技场（Sydney Allphones Arena）",
+    "TCF Bank Stadium": "TCF 银行球场（TCF Bank Stadium）",
+    "Target Center": "塔吉特中心（Target Center）",
+    "Telnor Arena": "泰尔诺竞技场（Telnor Arena）",
+    "The 02": "The 02 场馆（The 02）",
+    "The Arena At Gwinett Center": "格威内特中心竞技场（The Arena At Gwinett Center）",
+    "The Galaxie": "银河馆（The Galaxie）",
+    "The Palace of Auburn Hills": "奥本山宫殿（The Palace of Auburn Hills）",
+    "The Theatre at Honda Center": "本田中心剧院（The Theatre at Honda Center）",
+    "The Waterfront": "滨水厅（The Waterfront）",
+    "The X Factor USA": "《X Factor》美国版（The X Factor USA）",
+    "The X Factor!": "《X Factor》！（The X Factor!）",
+    "The boys take over James Merritt's radio show!": "男孩们接管了 James Merritt 的电台节目！",
+    "Time Warner Cable Arena": "时代华纳有线竞技场（Time Warner Cable Arena）",
+    "Toyota Center": "丰田中心（Toyota Center）",
+    "Ullevaal Stadion": "乌勒瓦尔体育场（Ullevaal Stadion）",
+    "Ullevi": "乌利维球场（Ullevi）",
+    "Univ of Phoenix Stadium": "凤凰城大学球场（Univ of Phoenix Stadium）",
+    "Up All Night - Released": "《Up All Night》发行（Up All Night - Released）",
+    "Up All Night - The Live Tour Premiere Screening": "《Up All Night》现场巡演首映放映会（Up All Night - The Live Tour Premiere Screening）",
+    "VasHappenin?": "现在发生了什么？（VasHappenin?）",
+    "Vector Arena": "维克托竞技场（Vector Arena）",
+    "Velez Sarsfield": "贝莱斯·萨尔斯菲尔德球场（Velez Sarsfield）",
+    "Verizon Center": "威瑞森中心（Verizon Center）",
+    "Vicente Calderon": "文森特·卡尔德隆体育场（Vicente Calderon）",
+    "Viejas Arena": "维埃哈斯竞技场（Viejas Arena）",
+    "Wells Fargo Center": "富国银行中心（Wells Fargo Center）",
+    "Wembley Arena": "温布利体育馆（Wembley Arena）",
+    "Wembley Stadium": "温布利体育场（Wembley Stadium）",
+    "What Makes You Beautiful is released!": "《What Makes You Beautiful》发行了！",
+    "Your Place": "你的所在地（Your Place）",
+    "Zayn turns 19!": "Zayn 满 19 岁了！",
+    "Ziggo Arena": "Ziggo 竞技场（Ziggo Arena）",
+    "iHeartRadio Release Party": "iHeartRadio 发行派对（iHeartRadio Release Party）",
+}
+
+
+def _norm(s):
+    return re.sub(r"\s+", " ", s).strip()
+
+
+def main():
+    html = open(PATH, encoding="utf-8").read()
+    orig = html
+
+    venues_done = {"count": 0}
+
+    def wrap_venue(m):
+        inner_raw = m.group(1)
+        if "<span" in inner_raw:      # 已是双语结构 -> 跳过（幂等）
+            return m.group(0)
+        key = _norm(inner_raw)
+        if key not in V:
+            return m.group(0)
+        venues_done["count"] += 1
+        zh = V[key]
+        return '<span class="venue"><span class="en">%s</span><span class="zh">%s</span></span>' % (inner_raw, zh)
+
+    html = re.sub(r'<span class="venue">(.*?)</span>', wrap_venue, html, flags=re.S)
+
+    applied_loc = 0
+    for old, new in LOCATION_ZH_FIX.items():
+        pat = '<span class="zh">%s</span>' % old
+        if pat in html:
+            html = html.replace(pat, '<span class="zh">%s</span>' % new)
+            applied_loc += 1
+
+    if html != orig:
+        open(PATH, "w", encoding="utf-8").write(html)
+    print("venue 补译条数:", venues_done["count"])
+    print("location .zh 修复:", applied_loc, "/", len(LOCATION_ZH_FIX))
+    print("文件已更新" if html != orig else "无变化")
+
+
+if __name__ == "__main__":
+    main()

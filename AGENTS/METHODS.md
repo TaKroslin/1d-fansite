@@ -50,6 +50,18 @@
 - **处理**：改前数层级，改完 grep 抽查 + HTTP 审计。
 - **预防**：写脚本时显式写死深度常量，不手工拼。
 
+### M50. 导航「Home」菜单链接容易比 logo 差一层 `../`
+- **现象**：用户报部分页面"回主页"按钮重定向到 `/pages/index.html`（404）。专辑页(3 层)/子页(4 层)/歌曲页(5 层)的 `<a class="menu1" ...>Home</a>` 全部少一个 `../`；同一页的 logo 链接却是对的（复制粘贴时只改了 logo）。
+- **根因**：导航 Home 是**独立于 logo 的第二处 home 链接**，批量加导航或从模板复制页面时深度算错一层，且很难肉眼发现（本地点着像"跳回首页"其实进了 pages/index.html 或 404）。
+- **处理**：对全站每个页面把 logo 链接和 `<a class="menu1">Home</a>` 都按 `os.path.relpath(root/index.html, fp.parent)` 计算正确相对路径，凡解析结果 != 根 `index.html` 就替换（幂等）。共修 121 处导航 Home + 2 处 logo。
+- **预防**：写批量路径脚本必须做"相对路径 → resolve 后的绝对路径"校验（`(fp.parent/href).resolve()`），只检查字符串样子会漏；凡是页面含导航的，logo 和 Home 两个 home 链接一起查。
+
+### M51. 克隆站批量修链接：journal 双目录结构 + territory 死链整段跳过
+- **现象**：全站扫描内部 `.html` 链接发现 journal 克隆区导航/面包屑/前后篇链接普遍差一层（`../../music.html` 解析到 `journal/music.html`、`../2015-08-21/x.html` 解析到 `journal/<当日>/2015-08-21/x.html`）；gallery/albums.html 导航缺 `../`。
+- **根因**：克隆自官方，每篇 journal 文章同时存在 `journal/<date>/<slug>/index.html`、`journal/<date>/<slug>.html/index.html`、`journal/<date>/<slug>.html`（文件）三种拷贝；页面里的相对链接只按其中一种结构写，其余全错。官方还有 territory 国家页选择器（`<a class="territory">` → `xx/index.html` / `xx/home.html`），这些国家页克隆里根本没有。
+- **处理**：① 统一规范目标：站内页 `pages/<name>.html`（tour→`pages/tour.html`）、home→根 `index.html`、archive→`pages/tour.html`、journal 文章→`journal/<date>/<slug>/index.html`（以 `journal/archive.html` 列表用的结构为准）；② 对每条 broken 链接按 basename→canonical 计算 `os.path.relpath` 重写；③ **territory 链接整段跳过**（`class="territory"` 或路径含国家码 `ar/au/at/…`），不当作层级错误处理。
+- **预防**：克隆站做全站链接审计前，先摸清目标区的目录结构（尤其同文多拷贝）；区分"层级错误"（目标文件存在、路径差层）与"死功能"（目标从未存在）；territory/404 等官方遗留先归类再决定是否动。
+
 ### M7. blog.html 卡片链接不加 `pages/` 前缀
 - **现象**：blog 列表卡片链接 404。
 - **根因**：blog.html 自己就在 `pages/`，卡片链接写 `pages/blog/...` 就多了一层。
@@ -91,6 +103,12 @@
 ### M13. styles.css 是单行 minified：只追加，不重排
 - **现象**：重排/格式化 styles.css 造成巨大 diff 或破坏官方规则。
 - **预防**：新规则追加到文件末尾 `/* FIVE GUYS ONE DIRECTION additions */` 块；修 bug 也只动目标行。
+
+### M49. 官方高特异性 `span{display:*}` 会漏出翻译默认隐藏（中英混排）
+- **现象**：用户报"移动端没点翻译开关也显示中文翻译（中英混排）"。实测 141 页中 13 页英文态 `.zh` computed display ≠ none（index/blog 博客卡片、5 专辑页+singles 的"视频/照片/单曲"菜单、tour 场馆名）。
+- **根因**：翻译切换完全依赖 `.zh{display:none}`（0,1,0）与 `html.lang-zh .en{display:none}`（0,2,0）两个默认规则。官方 CSS 里更高优先级的 span 布局规则会覆盖它们：`.panel.journal-news.homepage-news h2 span{display:block}`（移动端媒体查询，0,3,2）、`.panel.release-menu ul li a span{display:table-cell}`（0,4,2，全部视口）、`.panel.tour-listing ul li .location span{display:block}`（移动端）。于是英文态漏中文、中文态也漏英文（同一批规则同时压过 `.en` 隐藏）。
+- **处理**：样式块末尾追加 `!important` 补丁——`.zh{display:none!important}`、`html.lang-zh .zh{display:inline!important}`、`html.lang-zh .en{display:none!important}`，并给 `.lyric-line`/`.lyric-passage` 的 zh/en 显示规则同加 `!important`（否则会被默认 hide 反杀）。同时修 `js/translate.js`：非歌词页遇存储 `"bilingual"` 回退 `"en"`（原 `"zh"`），杜绝歌词页双语态污染普通页。改完必 bump `?v=`。
+- **预防**：凡是页面里新增任何 `span{display:*}` 布局（尤其移动端），先想会不会跟 `.zh`/`.en` 默认隐藏打架；排查"没点开关也有中文/混排"先做全站 computed display 扫描定位泄漏选择器，再决定用 `!important` 兜底。`!important` 必须成对（hide + show），否则会破坏中文态。
 
 ---
 

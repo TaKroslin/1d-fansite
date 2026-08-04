@@ -157,9 +157,12 @@
     if (isLyrics && stored === "zh") {
       stored = "bilingual";
     }
-    // Non-lyrics pages: enforce en or zh (never bilingual)
+    // Non-lyrics pages: enforce en or zh (never bilingual).
+    // "bilingual" is only meaningful on lyrics pages — mapping it to "zh"
+    // here would silently flip every normal page into full Chinese after
+    // visiting a lyrics page in CN/EN mode. Fall back to English instead.
     if (!isLyrics && stored === "bilingual") {
-      stored = "zh";
+      stored = "en";
     }
 
     applyLangClass(stored);

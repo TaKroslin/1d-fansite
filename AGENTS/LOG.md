@@ -37,6 +37,142 @@
 
 ---
 
+## 2026-08-04 — favicon 全站补漏：blog 模板 + 缺失页面
+
+- **模型**：deepseek-v4-flash
+- **目的**：用户反馈"读文章时标签栏仍不显示 badge"。排查发现 blog 文章页由 `tools/build_blog.py` 自动生成，模板 `article.html` / `blog_list.html` 里没有 favicon 引用——手工加的会被重新构建覆盖；另发现一批页面从未写过 favicon。
+- **结果**：
+  - `tools/templates/article.html`：在 `<meta charset>` 后加 `<link rel="icon" ... href="{{root}}images/gfx/1d-badge.png" />`（root 前缀与 css_href 同源）。
+  - `tools/templates/blog_list.html`：加 `../images/gfx/1d-badge.png`。
+  - `.venv/bin/python tools/build_blog.py` 重新构建 → 5 篇 blog 文章 + blog.html 全部带 favicon。
+  - 全站部署页面（index + journal + pages 共 198 个）现已 100% 带 `rel="icon"`，无缺失。
+  - 剩余的 `.opencode/skills/*`（11 个 HTML 片段，无 `<head>`）与 `tools/templates` 属文档/模板示例，非部署页面，未加。
+- **验证**：`grep -rL 'rel="icon"' index.html journal pages` → 无缺失；HTTP server 抽查 blog 文章页 favicon 引用 + 200；`_audit_site_images.py` → Broken: 0。
+- **Token 消耗**：约 1.5 万
+- **用时**：约 15 分钟
+- **经验总结**：
+  - **自动生成页面改 favicon/资源引用必须改模板再重建**，直接手改生成物会被 build 覆盖（本文档项目 blog 生成式工作流的通用坑，已写入 METHODS.md 思路）。
+  - 排查"不显示"先确认是不是构建覆盖，再怀疑缓存。
+- **遗留/待办**：浏览器 favicon 缓存会导致旧标签页不更新，需强刷（Cmd+Shift+R）或重开标签。
+
+## 2026-08-04 — 发版前改标题后缀 + 换 favicon
+
+- **模型**：deepseek-v4-flash
+- **目的**：发版前最后一次品牌调整——(1) 标题里 "The Official Website" 换成 "The Fan Club"；(2) 浏览器标签栏 favicon 换成用户发的红底白字 1D badge。用户明确：主站名 **FIVE GUYS ONE DIRECTION 不动**，只改后缀；Blog/About/Gallery 等页面名后缀不碰。
+- **结果**：
+  - `The Official Website` → `The Fan Club`：只替换 `<title>` 和 `og:title` 行（Python 脚本按行筛选），23 个文件各 1 处（index、music、shop、band、tour、journal、`tour/_official_archive`、`journal/archive` + 15 个专辑子页 og:title）。
+  - 新增 favicon `images/gfx/1d-badge.png`：微信发图 (1170×1556 jpg) 用 `sips -Z 512` 转 PNG (385×512)，源 jpg 删除。
+  - 全站 `rel="icon"` 引用 `1d-logo.png` → `1d-badge.png`，182 个文件（脚本只改 `rel="icon"` 行，fan-art 页的 og:image/背景图仍保留 `1d-logo.png` 未误伤）。
+  - skill 示例 `.opencode/skills/gallery-page/examples/slideshow.html` 同步更新（13 处）。
+  - tools/ 下两个临时 probe 文件误改后已还原（非站点文件）。
+- **验证**：`python tools/_audit_site_images.py` → Broken: 0（302 引用）；`python -m http.server` + curl 抽查 index/music/blog/about/gallery/tour/journal/`_official_archive`/`journal/archive` 标题全部正确；`1d-badge.png` HTTP 200。
+- **Token 消耗**：约 2 万
+- **用时**：约 20 分钟
+- **经验总结**：
+  - 需求理解先确认边界——用户要的是"只改 The Official Website 描述，不动主站名"，第一次理解成"统一后缀"被纠正；先 grep 出所有 title 形态再问一次范围，避免全站误改。
+  - 批量改 favicon 只匹配 `rel="icon"` 行，避免把同名图片在 og:image/背景的引用一起换掉。
+- **遗留/待办**：blog 文章页/模板本就没有 favicon 引用（历史遗留），未在本次范围补；如需全站 favicon 全覆盖可后续加。
+
+## 2026-08-04 — 修复 journal 缺图：文章图路径 + 全站 favicon 相对路径
+
+- **模型**：deepseek-v4-flash
+- **目的**：用户报 journal 有几篇文章缺图片。
+- **结果**：
+  - **文章正文图 6 处**：4 个 `index/index.html` 深拷贝（`journal/date/slug/index/` 层）文章图 `../../../images/` 差 2 层 → `../../../../images/`；`2020-07-23/10yearsof1d/index.html` 的 `1D_Logotype_Black.jpg` 走官方旧路径 `assets/gfx/`（本地是 `images/gfx/`，2 处引用）。
+  - **全站 favicon 路径错**：排查时发现所有非根页面（pages/ 与 journal/ 全部文章）都写 `href="images/gfx/1d-logo.png"`（相对各自目录解析到 `xxx/images/...` 全 404），共 2028 处。按每文件 `os.path.relpath` 重写为正确深度，修复 168 个文件（`shop.html` 排除）。
+  - 深拷贝 favicon（13 篇 × 13 处）也一并修正。
+- **验证**：
+  - 全站图片引用扫描：2537 处，仅剩 `shop.html` 内 13 处 favicon（🚫 禁止改动）。
+  - HTTP：10yearsof1d、深拷贝文章页、`1D_Logotype_Black.jpg`、`1d-logo.png` 等全部 200。
+  - Playwright：深拷贝 `.bg` 背景加载成功、无本地请求失败；10yearsof1d 的 `<img>` logotype 路径正确。
+  - `shop.html` 未动。
+- **Token 消耗**：约 2 万
+- **用时**：约 15 分钟
+- **经验总结**：克隆站的 `<link rel="icon">` favicon 常带裸相对路径 `images/...`，在非根页面必 404（浏览器静默，不易察觉）；批量查图时别只查 `url()`/`<img src>`，`<link rel="icon">` 也要纳入；修相对路径一律 `os.path.relpath` 计算，别手数 `../`。
+- **遗留/待办**：shop.html 内 13 处 favicon 断链（禁止改动文件）；本次改动（含前四任务）仍未 commit。
+
+---
+
+## 2026-08-04 — 移除 territory 国家选择器 + 补录 Capital Summertime Ball 文章
+
+- **模型**：deepseek-v4-flash
+- **目的**：承接上一任务遗留的两类问题——① 官方克隆遗留的 territory 国家页选择器（3840 条死链）；② `capital-summertime-ball`（2015-04-27）文章缺失导致的前后篇死链。用户决定：移除选择器、补录文章。
+- **结果**：
+  - **移除 territory 选择器**：162 个页面的 `<!--<li class="territories">…</li>-->` 注释块（国家旗帜 → `xx/index.html`/`xx/home.html`）全部删除，删后全站 `territor` 引用 0。这些本就是注释掉的死标记，删除零视觉影响。
+  - **补录文章** `journal/2015-04-27/capital-summertime-ball/index.html`：从仍在线的官方站抓取正文（Liam 确认参加 Capital STB 2015），按 `extra-tickets…` 模板复刻（HTTrack 头、nav、footer、translate.js、prev=extra-tickets、无 next=最早一篇）；文章图沿用同批文章的本地 gfx 占位图 `music-four-colour-square-lrg.jpg`（原图在已死的 cdn.smehost.net，M25/M27）。
+  - **journal/archive.html** 列表追加该篇（27.04.15，作为最旧条目）。
+  - **统一 CSS 版本**：全站（pages+journal+index，共 196 文件）统一 `styles.css?v=20260806`——顺带修掉上一任务遗漏：journal 区页面仍引用旧 `?v=20260804c`，会拿不到翻译修复 CSS。`shop.html` 保持 `20260804c` 未动。
+  - 重跑 canonical 链接修复，3 处 extra-tickets → capital 的死链现可解析。
+- **验证**：
+  - 全站 `.html` 链接解析扫描：3231 条，**broken 0**（territory 0、非 territory 0）。
+  - HTTP 级遍历 3231 条：仅剩 shop.html 内 4 条 `/gb/404.html`（🚫 禁止改动）。
+  - Playwright：新文章标题/日期/正文 ✓、prev→extra-tickets ✓、无 next ✓、translate 按钮注入 ✓、无 JS 错误；extra-tickets 的 next→新文章 ✓（双向闭环）。
+  - `shop.html` 未动。
+- **Token 消耗**：约 3 万
+- **用时**：约 20 分钟
+- **经验总结**：① 官方克隆的 territory 选择器整块是注释死代码，删掉即可清掉几千条假死链；② 补录克隆文章时原图依赖死 CDN，直接复用同批文章的本地图占位即可，别去追已死资源；③ 改 CSS 版本号要全站统一，上一任务只 bump 了 pages/，journal 区遗漏导致翻译修复没覆盖到。详见 `METHODS.md` M25/M27/M51。
+- **遗留/待办**：shop.html 的 `/gb/404.html`（官方遗留，禁止改动）；本次改动含前两任务（翻译修复、home 链接、全站链接）仍未 commit。
+
+---
+
+## 2026-08-04 — 全站互相跳转链接层级错误批量修复
+
+- **模型**：deepseek-v4-flash
+- **目的**：用户要求检查全站互相跳转的 `<a>` 链接是否存在层级/深度错误，一并修复。
+- **结果**：
+  - 全站扫描 `index.html + pages/ + journal/` 共 7591 条内部 `.html` 链接，找出 4354 条解析后目标不存在的链接（其中 ~4200 为官方克隆遗留的 territory 国家页链接，属死功能，未动）。
+  - 修复三类真层级错误：
+    1. **journal 克隆区导航/面包屑/返回按钮**：`../../music.html`、`../../../journal.html`、`../../pages/...` 等全部按 `relpath(pages/<page>.html)` 重写（含 `tour/archive.html` → `pages/tour.html`）。
+    2. **journal 文章前后篇链接**：`../YYYY-MM-DD/<slug>.html` 解析成 `journal/<当前日期>/<目标日期>/…`，规范为 `journal/<目标日期>/<slug>/index.html`（文章同时存在 `<slug>/`、`<slug>.html/`、`<slug>.html` 三种拷贝，以 `journal/archive.html` 用的 `<slug>/index.html` 为规范）。
+    3. **gallery/albums.html**（深度 2）：导航/图库面板链接缺一层 `../`；`music/albums/*` → `../music/albums/*`。
+  - 共修 **559 处**（nav menuX 324 + 通用 canonical 235），幂等（重跑 0 变更）。方法：对每条 broken 链接按 basename→canonical 站点页（about/journal/music/…/tour.html → `pages/` 下对应页；home→根 index；archive→tour.html）计算正确 relpath；territory 链接（`class="territory"` 或含国家码路径）整体跳过。
+- **验证**：
+  - 全站 HTTP 级遍历非 territory 内部 `.html` 链接 3706 条：仅剩 7 条 404 = shop.html 的 4 条 `/gb/404.html`（🚫 shop 禁止改动，遗留）+ `capital-summertime-ball`（该文章 2015-04-27 从未入库，3 份拷贝同一死链，非层级错误）。
+  - 抽查 diff：journal/gallery 改动全为 `href=` 行；HTML 文件中非 href、非 `?v=` 改动仅 2 处（上一任务的 logo 行）。
+  - `shop.html` 未动。
+- **Token 消耗**：约 4 万
+- **用时**：约 25 分钟
+- **经验总结**：克隆站批量修链接：① 必须先"相对路径 resolve 到绝对路径"再判存在，字符串看不出层级错；② journal 区文章有 `<slug>/` 与 `<slug>.html/` 双目录 + `<slug>.html` 文件三种拷贝，统一以列表页用的 `<slug>/index.html` 为规范；③ 官方遗留 territory 国家页链接整段跳过，别当层级错误修。详见 `METHODS.md` M51。
+- **遗留/待办**：`capital-summertime-ball`（2015-04-27）死链未处理——该文章不在仓库，可考虑删掉该 next 箭头或补一篇；shop.html 的 `/gb/404.html` 因禁止改动保留。
+
+---
+
+## 2026-08-04 — 修复回主页按钮指向 /pages/index.html（导航 Home + logo 相对路径深度差一层）
+
+- **模型**：deepseek-v4-flash
+- **目的**：用户报部分页面"回主页"按钮重定向到不存在的 `/pages/index.html`。确认是相对路径深度差一层：`<a class="menu1" ...>Home</a>` 导航链接在专辑页（3 层）/ 子页（4 层）/ 歌曲页（5 层）全部少一个 `../`；另有 2 处 logo 链接错（`pages/gallery/albums.html`、`pages/tour/_official_archive.html`）。
+- **结果**：
+  - Python 批量脚本对全部 283 处 home 链接（logo + 导航 Home）做解析校验，凡未解析到根 `index.html` 的重写为正确相对路径：共修 **121 个导航 Home**（少一层 `../`）+ **2 处 logo**（含 `_official_archive.html` 的 `../home.html` → `../../index.html`）。
+  - 逻辑：按 `os.path.relpath(root/index.html, fp.parent)` 计算正确深度替换，天然幂等，只改解析不到根的那几处。
+- **验证**：
+  - 解析复核：剩余错误 home 链接 **0**。
+  - HTTP 级：本地 server 遍历 283 处 home 链接，全部 200 且 path == `/index.html`（`pages/index.html` 会 404）。
+  - `shop.html` 未动。
+- **Token 消耗**：约 2 万
+- **用时**：约 15 分钟
+- **经验总结**：批量修链接先做"相对路径解析到绝对路径"的校验，别只看字符串样子；导航 Home 与 logo 是两处独立 home 链接，都要检查。坑记录见 `METHODS.md` M50。
+- **遗留/待办**：无
+
+---
+
+## 2026-08-04 — 修复移动端「没点开关也显示中文翻译」：CSS 特异性覆盖 .zh/.en 隐藏
+
+- **模型**：deepseek-v4-flash
+- **目的**：用户报"部分页面在移动端即使不点翻译开关也自动显示中文（中英混排）"。排查确认根因不是 localStorage/translate.js，而是官方 CSS 高特异性 span 布局规则覆盖了翻译切换的默认隐藏规则。
+- **结果**：
+  - `css/styles.css` 末尾追加补丁：`.zh{display:none!important}` + `html.lang-zh .zh/.en`、`.lyric-line`、`.lyric-passage` 的 zh/en 显示/隐藏规则全部 `!important`。覆盖三条泄漏源：`.panel.journal-news.homepage-news h2 span{display:block}`（移动端博客卡片）、`.panel.release-menu ul li a span{display:table-cell}`（专辑"视频/照片/单曲"菜单）、`.panel.tour-listing ul li .location span{display:block}`（tour 场馆）。
+  - `js/translate.js`：非歌词页遇存储值 `"bilingual"` 时回退 `"en"`（原为 `"zh"`）——修掉"去过歌词页后普通页自动全中文"的泄漏。
+  - 141 个页面批量 bump `styles.css?v=20260804` → `?v=20260805`（`shop.html` 保持 `20260804c` 未动）。
+- **验证**：
+  - Playwright 移动端(390×844)全站扫描 141 页：英文态可见 `.zh` 数量 **0**（修复前 13 页）。
+  - 抽查：zh 态 blog/tour/专辑页 en 隐藏、zh 显示 ✓；歌词页 CN/EN 双语 en+zh 都显示 ✓；专辑 release-menu zh 态布局 box 533×118 文字居中 ✓。
+- **Token 消耗**：约 8 万
+- **用时**：约 30 分钟
+- **经验总结**：翻译切换依赖 `.zh{display:none}` / `html.lang-zh .en{display:none}` 的默认态，凡是官方 CSS 里更高优先级的 `span{display:*}` 布局规则（尤其移动端媒体查询）都会悄悄漏出中文/英文。排查"没点开关也显示中文"先做全站 computed display 扫描，别先怀疑持久化。详见 `METHODS.md` M49。
+- **遗留/待办**：无
+
+---
+
 ## 2026-08-04 — blog-post skill 全面更新（图片规范 + 首页卡片规则 + 视频卡片方案）
 
 - **模型**：deepseek-v4-flash
