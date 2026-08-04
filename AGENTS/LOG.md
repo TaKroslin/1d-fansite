@@ -37,6 +37,21 @@
 
 ---
 
+## 2026-08-04 — blog-post skill 全面更新（图片规范 + 首页卡片规则 + 视频卡片方案）
+
+- **模型**：deepseek-v4-flash
+- **目的**：把 More Than a Ship 沉淀的能力固化进 blog-post skill：三图规范（header 横幅/cover 方形/视频封面 16:9）、首页卡片更新规则（只留最新 N 篇、新插最前、删最旧）、视频卡片处理方案；同时修正 skill 里已废弃的 META/SCALERS 字典说法。
+- **结果**：
+  1. `SKILL.md` 重写：checklist 去 META/SCALERS（build 已全 front-matter 驱动）；新增「图片规范」「首页卡片更新规则」（N=3，新文章替换第一张卡、最旧删掉）、「视频卡片方案」三节；铁律补 M45-M48；参考资料索引补新文件。
+  2. `reference.md` 重写：front-matter 表加 `cover_img`；双语机制修正为"段落数不一致自动 fallback 成 .en/.zh 两大块，不报错"；新增视频卡片节；常见坑表补 M45-M48。
+  3. `templates/article.md` 加 `cover_img` + 视频卡片注释；新增 `templates/video-card.html`；`templates/home-card.html` 加规则注释。
+  4. `examples/` 新增 `more-than-a-ship.md`（真实三图+视频卡片文章）；`home-card.html` 更新为真实线上卡片（larry-cover 方形封面）。
+- **验证**：目录文件齐全；frontmatter name=blog-post 与目录名匹配；无残留误引 META/SCALERS 字典（仅两处"已废弃"说明）。
+- **Token 消耗**：约 1.2 万
+- **用时**：约 12 分钟
+- **经验总结**：① skill 文档必须与实际 build 脚本同步——META/SCALERS 字典早已废弃，旧文档会误导后续任务；② "首页只留最新 N 篇"这类隐性规则要写成显式步骤，否则新增文章时容易只加不删导致首页卡片数膨胀。
+- **遗留/待办**：无
+
 ## 2026-08-04 — AGENTS 文档更新：blog 视频卡片规范 + Playwright(Node/Chrome) + server 常驻
 
 - **模型**：deepseek-v4-flash
