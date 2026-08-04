@@ -37,6 +37,64 @@
 
 ---
 
+## 2026-08-04 — 移动端相册（photos 页）改为垂直堆叠浏览
+
+- **模型**：deepseek-v4-flash
+- **目的**：photos slideshow 页在移动端（≤767px）沿用桌面端横向轮播，产生大面积空白/黑缝；且窗口在移动端↔桌面端切换时需要刷新。改为移动端垂直堆叠、上下滑动、无缝隙；桌面端轮播不变。
+- **结果**：
+  1. `css/styles.css` — 新增 `@media (max-width:767px)` 块：`.panel.gallery` 去掉 66.666% padding；`#slideshow` 与 `.slide` 全部 `!important` 覆盖（`position:relative; width:100%; height:auto; visibility:visible; z-index:auto`）；`.prevControl/.nextControl/.count` 隐藏；`.bg` 保留作图片载体（absolute 填满 slide）。
+  2. `js/slideshow-nav.js` — 不再 `cycle('destroy')`，改为仅按实际图片尺寸设每张 slide 的 `aspect-ratio`（`naturalWidth/naturalHeight`），缓存到 `ratioCache`；`resize` 监听跨 767px 时应用/清除。cycle2 保持初始化，桌面↔移动切换无需刷新。
+  3. 13 个 photos HTML — 加 `data-cycle-auto-height="false"`（禁用 autoheight 插件，阻止其 30ms 后插入 `.cycle-sentinel` 克隆首图）；CSS `?v=` 升到 `20260804f`。
+- **验证**：
+  - 图片审计 `python tools/_audit_site_images.py` → **Broken: 0**（298 引用）。
+  - Playwright（CDP + Chrome headless）13 页逐页：slide 宽=375（满屏）、`aspect-ratio` 与图片真实比例一致（16:9→211px、2:1→188px、3:2→250px）、相邻 slide 间距全 0、无黑缝、全 visible/relative。
+  - 桌面 1280px 回归：cycle2 正常初始化（absolute/z-index/1 张可见），`data-cycle-auto-height="false"` 不破坏桌面。
+  - 窗口 1280↔375 反复切换：布局实时切换，无需刷新。
+  - 根因确认：首图放大遮盖 = main.js `retinafy`（window.load）克隆 `.bg` 为 `position:absolute;width/height:100%`，在 slide 变 static 后相对 `.panel.gallery` 定位盖住全图 → 改用 `position:relative` slide + 不删 `.bg` 规避；黑缝 = 固定 `aspect-ratio:3/2` 与图片真实比例（16:9/2:1）不符产生 letterbox → JS 按真实比例设 aspect-ratio 解决。
+- **Token 消耗**：约 9 万（主会话）
+- **用时**：约 2 小时
+- **经验总结**：① 静态站相册用背景图 + 可变比例，必须按图片真实尺寸设 `aspect-ratio`，固定比例必然 letterbox；② 官方 `retinafy` 会给所有 `.retinafy` 元素克隆 `.bg`，移动端重构 DOM 时务必保留 `.bg` 且让 slide 保持 `position:relative`（否则 absolute 子元素相对外层大容器定位，整页被盖）；③ 想实现 resize 平滑切换，CSS `!important` 覆盖 + 不销毁第三方组件（cycle2）远优于 JS 销毁重建。
+- **遗留/待办**：无。另发现部分 `rect-lrg` 图片实为 160px 缩略图 / 损坏尺寸（13311×51775），非本次改动引入，属数据质量问题，后续可重下。
+
+---
+
+## 2026-08-04 — 删除首页 "Buy Made In The A.M." + Newsletter 两个 panel
+
+- **模型**：deepseek-v4-flash
+- **目的**：首页倒数第二组 panel（moment "Buy Made In The A.M." + newsletter）不再需要，整组移除且不留下空白间隙。
+- **结果**：
+  - `index.html` 删除 `<div class="panel moment">`（行 603-627）与 `<div class="panel newsletter">`（行 631-667）及包裹它们的 `<div class="panel-group">`，共删 70 行。
+  - 上方 `.panel.homepage-music` 与下方 `.panel.gallery-cover` 现在直接相邻（599 → 601 行），中间无空隙。
+  - 其他 panel 与结构未动。
+- **验证**：`grep -n "homepage-music\|panel-group\|gallery-cover\|newsletter\|Moment" index.html` —— homepage-music（599）后直接是 gallery-cover（601）；全文件无残留 newsletter / Moment（其余 panel-group 均为其他区块）。
+- **Token 消耗**：约 1 万
+- **用时**：约 2 分钟
+- **经验总结**：
+  - 编辑整段 HTML 时若精确字符串匹配失败（空行/空白差异），改用行号区间删除更可靠；删前用 assert 校验边界行。
+  - 用户说 "home.html" 实际是首页 `index.html`。
+- **遗留/待办**：无
+
+## 2026-08-04 — 重译 tour 页中文版（433 场馆/节目 + 地点补漏）
+
+- **模型**：deepseek-v4-flash-free
+- **目的**：`pages/tour.html` 翻译混乱——场馆名、节目名、部分地名还是英文混杂，重译中文版。
+- **结果**：
+  - 新脚本 `tools/translate_tour.py`（幂等）：给 433 个 `.venue` 里 432 个注入双语 `<span class="en">原文</span><span class="zh">译文（原文）</span>`；遗留 `2013-23-11`（官方数据占位垃圾）不译。
+  - 原则：人名（Harry/Zayn/Louis/Niall/Liam/Alan 等）保留英文；`One Direction`/`1D` 保留英文（与站内其他 zh 一致）；场馆/节目名 → 翻译+（原文）；句子（生日/发行/签售）→ 整句翻译；地名全译。
+  - 修复 10 处 location 里残留英文的地名/场馆名（Atlantico Pavilion、Cynthia Woods Mitchell Pavilion、Paramount/派拉蒙、Festive Grand/节日大剧院、ITV1、Selfridges、Westfield、The O2、Trax FM、Channel 4）。
+  - 手动精修 6 处译名（X Factor、Forum、Allstate、Ziggo、VasHappenin、Chatty Man）。
+- **验证**：`python tools/translate_tour.py` 二跑 0 变化（幂等）；venue 433/432 双语、0 空 zh、span 全平衡；`curl` tour.html HTTP 200，translate.js 引用在；CSS `.display:block` 规则仅在 ≤767px 媒体查询内，桌面 venue 仍同行不串行。
+- **Token 消耗**：约 4 万（主会话）
+- **用时**：约 35 分钟
+- **经验总结**：
+  1. 公众号 Fansite 把 `One Direction` 当专名保留不译，整个站统一，别擅自译成"单向"。
+  2. venue/节目名译文统一 `译（原文）` 括号格式，便于读者对照；纯句子则不套括号。
+  3. 上 `display:block` 规则一般在 mobile 媒体查询，批量嵌 span 结构不会崩桌面布局；改 HTML 内容不必 bump `?v=`。
+- **遗留/待办**：
+  - venue `2013-23-11` 是官网原始数据占位错误（把 `01.11.13` 的场馆错记为日期），建议后续要么删掉该 `<li>`，要么网查补正确场馆名。
+
+---
+
 ## 2026-08-03 — 补全 article-images 缺 lrg 变体（26 张，成功 20）
 
 - **模型**：Mavis

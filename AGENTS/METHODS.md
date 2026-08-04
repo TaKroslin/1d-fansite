@@ -108,6 +108,30 @@
 - **处理**：`js/slideshow-nav.js` 原生实现 keydown（←→）+ touchstart/touchend（|dx|>40 且 |dx|>|dy|）。
 - **预防**：别假设插件存在；JS 交互先验证依赖。
 
+### M40. cycle2 autoheight 插件会在 init 后 30ms 插入 `.cycle-sentinel` 克隆首图
+- **现象**：移动端把 slideshow 改成垂直堆叠后，首图出现两遍 + 首张后 22px 缝隙。
+- **根因**：autoheight 插件（`autoHeight` 默认 `0`，属 number ≥ 0）在 `cycle-initialized` 后 `setTimeout(…,30)` 克隆当前 slide 作测量 sentinel，恰好躲过我们的 DOM-ready 清理，事后才插入 DOM。
+- **处理**：slideshow 元素加 `data-cycle-auto-height="false"`，禁用整个 autoheight 插件（桌面端无任何可见影响，sentinel 本来就是隐藏测量用）。
+- **预防**：任何用 cycle2 且会重构 DOM 的场景，先禁用 `auto-height`。
+
+### M41. 官方 `retinafy` 会在 window.load 给每个 `.retinafy` 元素克隆一个新 `.bg` div
+- **现象**：移动端把 slide 改成 `position:static` 后，首图被放大成巨大覆盖层。
+- **根因**：`main.js` retinafy 对每个 `.retinafy` 元素 HEAD 校验后 `retinafy_replace`：插一个 `position:absolute;width:100%;height:100%` 的新 `.bg` 并删原 `.bg`。原 slide 一旦脱离 `position:absolute`（变 static），新 `.bg` 的绝对定位祖先变成外层 `.panel.gallery`（此时高度=全部堆叠照片），`background-size:cover` 把图放大到整页。
+- **处理**：移动端让 `.slide` 保持 `position:relative!important`（成为 `.bg` 的定位祖先），`.bg` 保留 absolute 填满 slide，不删不移。`-lrg` 图无 `-sml` 后缀，retinafy 的替换是同 URL 克隆，视觉无差异。
+- **预防**：不要删/移动 slide 内的 `.bg`；改 slide 定位时先想 `.bg` 的定位祖先会变成谁。
+
+### M42. 固定 `aspect-ratio:3/2` 遇到不同比例图片必然 letterbox 黑缝
+- **现象**：移动端垂直堆叠照片，部分页两张照片之间有黑缝/黑带。
+- **根因**：照片真实比例不一（`rect-lrg` 有 1920×1080=16:9、2400×1200=2:1、1500×1000=3:2，甚至 160px 缩略图），固定 `aspect-ratio` 盒子 + `background-size:100% auto` 时，比例更扁的图在盒子里留出上下黑带。
+- **处理**：JS 按 `Image().naturalWidth/naturalHeight` 给每张 slide 设内联 `aspect-ratio`（`w + ' / ' + h`），并缓存 URL→ratio；CSS 只放 `3/2` 兜底。
+- **预防**：静态站背景图做自适应比例必须知道真实图片比例，别写死；QA 时抽查不同 album 的首张 ratio。
+
+### M43. 想支持桌面↔移动 resize 平滑切换，别销毁第三方组件
+- **现象**：窗口从桌面拉成移动端后，slideshow 不切换成垂直堆叠，刷新才行。
+- **根因**：之前做法在 DOM ready 时 `cycle('destroy')` + 删 `.bg`，状态不可逆，resize 回桌面无法恢复。
+- **处理**：CSS `@media(max-width:767px)` 用 `!important` 覆盖 cycle2 内联样式（`position/width/height/visibility/z-index`），cycle2 保持初始化；resize 只增删 per-slide `aspect-ratio`。媒体查询原生响应 resize，无需刷新。
+- **预防**：resize 响应式优先"CSS 覆盖 + 保留组件"，不得已才销毁重建。
+
 ### M16. Playwright 脚本结束必须 os._exit(0)
 - **现象**：脚本逻辑全部跑完但进程挂住，命令报 timeout（结果其实已产出）。
 - **根因**：chromium 未完全释放。

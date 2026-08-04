@@ -275,3 +275,56 @@ html.lang-zh .lyric-passage{display:block}
   -webkit-filter:none!important;
   filter:none!important;
 }
+
+/* =================================================================
+   FIVE GUYS: Mobile slideshow — vertical scroll layout
+   On mobile (≤767px) the horizontal cycle2 slideshow creates blank
+   areas because the landscape panel ratio doesn't suit portrait
+   screens. Override with !important so the rules beat cycle2's
+   inline styles WITHOUT destroying cycle2 — this keeps the desktop
+   slideshow intact and lets window-resize switch layouts natively
+   (no page refresh needed). Each slide keeps its own aspect-ratio
+   (set in JS from the real image) so full-width photos have no
+   letterbox / black band.
+   ================================================================= */
+@media only screen and (max-width:767px){
+  .panel.gallery{
+    padding-top:0!important;
+    height:auto;
+    overflow:visible;
+    position:relative;
+  }
+  .panel.gallery #slideshow{
+    position:relative!important;
+    width:100%!important;
+    height:auto!important;
+    top:auto!important;
+    left:auto!important;
+  }
+  .panel.gallery #slideshow .slide{
+    position:relative!important;
+    top:auto!important;
+    left:auto!important;
+    width:100%!important;
+    height:auto!important;
+    visibility:visible!important;
+    z-index:auto!important;
+    margin:0;
+    aspect-ratio:3/2;
+  }
+  .panel.gallery #slideshow .slide .bg{
+    position:absolute;
+    width:100%;
+    height:100%;
+    top:0;
+    left:0;
+    background-size:100% auto;
+    background-repeat:no-repeat;
+    background-position:center center;
+  }
+  .panel.gallery .prevControl,
+  .panel.gallery .nextControl,
+  .panel.gallery .count{
+    display:none!important;
+  }
+}

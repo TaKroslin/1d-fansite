@@ -8,6 +8,13 @@
  * 2. Keyboard navigation: Left / Right arrow keys flip slides.
  * 3. Touch swipe: horizontal swipe flips slides (cycle2's swipe
  *    plugin is NOT loaded, so this is a minimal native fallback).
+ * 4. Mobile (≤767px): the CSS media query in styles.css reflows the
+ *    slideshow into a vertical stack (see "Mobile slideshow" block).
+ *    cycle2 is left initialised so resizing desktop↔mobile switches
+ *    layouts natively. Here we only set each slide's aspect-ratio to
+ *    its image's real ratio, so full-width photos show without any
+ *    letterboxing/black band (the photos have varying ratios — 16:9,
+ *    2:1, 3:2…). Nothing is destroyed, so no refresh is needed.
  */
 (function($){
   $(function(){
@@ -19,6 +26,47 @@
 
     var $ss = $('#slideshow');
     if (!$ss.length || !$.fn.cycle) { return; }
+
+    var MOBILE_BP = 767;
+    var ratioCache = {};
+
+    // ---- 4. mobile: lock each slide to its real image aspect ratio ----
+    function applyMobileAspectRatios() {
+      $ss.find('.slide').each(function(){
+        var $slide = $(this);
+        var $bg = $slide.find('.bg');
+        var m = $bg.length ? /url\((['"]?)(.*?)\1\)/.exec($bg.css('background-image')) : null;
+        if (!m) { return; }
+        var url = m[2];
+        if (ratioCache[url]) {
+          $slide.css('aspect-ratio', ratioCache[url]);
+          return;
+        }
+        var img = new Image();
+        img.onload = function(){
+          if (img.naturalWidth && img.naturalHeight) {
+            ratioCache[url] = img.naturalWidth + ' / ' + img.naturalHeight;
+            $slide.css('aspect-ratio', ratioCache[url]);
+          }
+        };
+        img.src = url;
+      });
+    }
+
+    function clearMobileAspectRatios() {
+      $ss.find('.slide').css('aspect-ratio', '');
+    }
+
+    function handleLayout() {
+      if (window.innerWidth <= MOBILE_BP) {
+        applyMobileAspectRatios();
+      } else {
+        clearMobileAspectRatios();
+      }
+    }
+
+    handleLayout();
+    $(window).on('resize', handleLayout);
 
     // ---- 1. force controls to the very top ----
     $('.panel.gallery .prevControl, .panel.gallery .nextControl, .panel.gallery .count')
