@@ -6,7 +6,7 @@
 
 | 字段 | 必填 | 说明 |
 |------|------|------|
-| **模型** | ✅ | Mavis / Codex / 其他；多模型接力写 "X + Y 复核" |
+| **模型** | ✅ | deepseek-v4-flash / Codex / 其他；多模型接力写 "X + Y 复核" |
 | **目的** | ✅ | 这次改什么、为什么改 |
 | **结果** | ✅ | 关键文件 + 关键手法，3-8 条要点 |
 | **验证** | ✅ | 命令 + 结果数字（如 "Broken: 0"） |
@@ -97,7 +97,7 @@
 
 ## 2026-08-03 — 补全 article-images 缺 lrg 变体（26 张，成功 20）
 
-- **模型**：Mavis
+- **模型**：deepseek-v4-flash
 - **目的**：`images/media/article-images/` 下部分图只有 sml/med 变体，缺 lrg；补全官方 lrg 版本。
 - **结果**：
   - 扫描出缺 lrg 的 26 张（square-sml/square-med → square-lrg 21 张；rect-sml → rect-lrg 3 张；另 2 张 -col 彩版）。
@@ -118,7 +118,7 @@
 
 ## 2026-08-03 — Gallery「分专辑」集合入口 albums.html（5 album × 13 photosets）
 
-- **模型**：Mavis
+- **模型**：deepseek-v4-flash
 - **目的**：在 gallery 下新建一个分专辑的集合入口页，把 music 5 个 photos 页全部 13 个图集聚合到一处，风格与 gallery 契合。
 - **结果**：
   - **新页 `pages/gallery/albums.html`**（`tools/_build_albums_page.py` 自动生成，幂等）：用官方 `panel.release-header-mono.header-<slug>`（沿用 music 页 5 个 album 背景图，CSS 已有 5 条规则无需新增）作为分段标题，每个 album 下接 1-4 个 `panel.gallery-cover`（与 music photos 页同构：rect-lrg 封面、灰度 hover、count 徽章、"View images"按钮），按专辑年代顺序：Up All Night 3 → Take Me Home 3 → Midnight Memories 4 → Four 2 → Made In The A.M. 1，共 13 张。
@@ -142,7 +142,7 @@
 
 ## 2026-08-03 — Gallery 页面重构（music photos 样式）+ 子页样式创建
 
-- **模型**：Mavis
+- **模型**：deepseek-v4-flash
 - **目的**：gallery.html 排版混乱（panel-group 每排 2 个方块）→ 改成 music photos 页样式；创建 5 个分类子页的样式框架（不放图，用户稍后补）。
 - **结果**：
   - `pages/gallery.html`：去掉 3 个 `panel-group`（50% 宽 2 列）→ 5 个全宽 `gallery-cover` + moment 面板连续排列，每卡加旋转 `count` 徽章（数字 = 子页卡片数：6/4/4/4/3），与 up-all-night/photos.html 结构 1:1 对齐。
@@ -166,7 +166,7 @@
 
 ## 2026-08-03 — tour 全部地名翻译 + 首页双翻译按钮修复
 
-- **模型**：Mavis
+- **模型**：deepseek-v4-flash
 - **目的**：
   1. 执行 `tools/_translate_tour.py` 完成 tour.html 全部地名中文化；
   2. 修复"部分页面左上角翻译按钮不显示"——实为首页顶部 + 全站滚动后按钮隐形两个问题。
@@ -193,7 +193,7 @@
 
 ## 2026-08-02 — 翻译工程收尾：修复 45 个脏文件 + 全站标题意译中文化
 
-- **模型**：Mavis
+- **模型**：deepseek-v4-flash
 - **目的**：① 修复 `_translate_pages.py` 历史 bug 造成的 45 个页面脏状态（双重包裹 span / 导航误翻译 / `<title>` 被塞 span）；② 按用户要求把全站标题意译成中文（不直译）。
 - **结果**：
   - `tools/_fix_overwrap.py` 重写（顺序敏感：先解双重包裹循环到稳定 → 再还原导航 → 最后还原 title）：44 files fixed、44 个导航项还原、34 个 title 清理；二次跑修复 5 个复数嵌套形态（`<span class="en"><span class="en">Video</span><span class="zh">视频</span>s</span><span class="zh">视频</span>`）。
@@ -210,7 +210,7 @@
 
 ## 2026-08-02 — E 阶段收尾：journal/this-is-us 翻译 + shop 永久禁改
 
-- **模型**：Mavis
+- **模型**：deepseek-v4-flash
 - **目的**：E 阶段收尾（journal.html + this-is-us.html 双语化）；用户明确指令：**shop.html 任何时候都不要动**。
 - **结果**：
   - `tools/_translate_journal.py`（新，幂等）：journal.html 全部 8 个日期（`23rd July 2020` → `2020年7月23日`，先例格式）、section-name Journal→日志 / Moment→时刻 / Gallery→图库 / Video→视频（Instagram/Twitter 品牌名保留英文）、Moment 面板 `Buy Made In The A.M.`→入手《Made In The A.M.》/ `FOUR is out now`→《FOUR》现已发行、`See the shoot`→查看拍摄现场、`News Archive`→新闻存档，共 24 对；补 `../js/translate.js` 引用。官方文章标题（#10YearsOf1D、A Whole Lotta History... 等）与 tweet/Instagram 正文保留英文（存档约定）。
@@ -226,7 +226,7 @@
 
 ## 2026-08-02 — 新 MacBook 环境初始化：修复跨平台 git 假 diff
 
-- **模型**：Mavis
+- **模型**：deepseek-v4-flash
 - **目的**：新 MacBook 上认识项目 + 环境就绪检查；处理工作区 6 个文件"未提交修改"（实为跨平台迁移造成的假 diff）。
 - **结果**：
   - 定位假 diff 根因：项目目录（含 `.git/`）从 Windows 整目录复制而来，6 个被跟踪文件为 CRLF 行尾 + index stat 缓存失效（`git diff` 空但 status 显示 M）。
@@ -242,7 +242,7 @@
 
 ## 2026-08-01 — 全量同步 git：新资源/新页面/AGENTS 文档入库
 
-- **模型**：Mavis
+- **模型**：deepseek-v4-flash
 - **目的**：把当前工作区全量同步到 GitHub（此前多个 commit 未推，累计 443 个文件改动），并补全 .gitignore 防误提交。
 - **结果**：
   - `.gitignore` 新增：`onedirectionmusiccom-ukprod/`（3.9MB 死克隆）、`tools/_*.ps1/.html/.jpg/.md`（一次性抓取/探测/下载）、`tools/review/`、`tools/CODEX_TASK_*.md`。
@@ -258,7 +258,7 @@
 
 ## 2026-08-01 — 文档体系重构：AGENTS.md 拆分 + 模型工作手册上线
 
-- **模型**：Mavis
+- **模型**：deepseek-v4-flash
 - **目的**：优化大模型工作效率与流程。原 AGENTS.md 1032 行/58KB 把"项目事实"和"操作规则/踩坑/日志"混在一起，模型难以快速定位、重复踩坑。拆分为职责分明的文档体系，明确开发-检测-部署全流程规范（非必要不用视觉模型，只在需截图验证时用视觉）。
 - **结果**：
   1. 根 `AGENTS.md` 重写为精简入口：文档地图 + 强制阅读顺序 + 快速命令（保留根目录位置，保证 agent 自动加载机制不失效）
@@ -288,7 +288,7 @@
 
 ## 2026-07-28 — Markdown 工作流 + Mobile/Footer/Logo/Fonts 综合修复
 
-- **模型**：Mavis
+- **模型**：deepseek-v4-flash
 - **目的**：blog 从手写 HTML 迁到 Markdown 工作流；修复 mobile 显示、footer 链接、logo 体积、字体加载。
 - **结果**：
   1. `tools/build_blog.py` + `article.md` × 4 + 模板上线（Markdown → 静态 HTML，无运行时依赖）
@@ -303,7 +303,7 @@
 
 ## 2026-07-28 — Blog 列表 4 轮 bug 修复 + 文章 cover 改 `<img>`
 
-- **模型**：Mavis
+- **模型**：deepseek-v4-flash
 - **目的**：彻底修复 blog 列表卡片的视觉 bug（5 轮迭代）。
 - **结果**：
   1. 模板 marker 注释撕裂修复（裸 marker）；卡片 URL 去 `pages/` 前缀
@@ -319,7 +319,7 @@
 
 ## 2026-07-28 — Zayn Band Panel 完整实现 + 5 成员引言更新
 
-- **模型**：Mavis
+- **模型**：deepseek-v4-flash
 - **目的**：band.html 补第 5 个成员 Zayn（filmstrip、CSS、social、parallax），更新全部成员引言。
 - **结果**：
   1. `images/gfx/filmstrip-zayn-smlc4ca.jpg`（500×1000，1:2 匹配其他成员）
@@ -334,7 +334,7 @@
 
 ## 2026-07-29 — 整站双语翻译系统
 
-- **模型**：Mavis
+- **模型**：deepseek-v4-flash
 - **目的**：全站中英双语翻译切换（EN↔ZH / 歌词页双语对照）。
 - **结果**：
   1. `js/translate.js`（浮动按钮 + fade 切换 + localStorage 持久化）+ 翻译 CSS
@@ -349,7 +349,7 @@
 
 ## 2026-07-29 (Round 2) — 翻译按钮重设计 + 全部歌词翻译
 
-- **模型**：Mavis + 后台 agent ×5（翻译）
+- **模型**：deepseek-v4-flash + 后台 agent ×5（翻译）
 - **目的**：按钮重设计（header 内纯文字）、行为修正（歌词页仅双语模式）、全部歌词翻译。
 - **结果**：
   1. 按钮从 floating 改注入 `header#sticky` 左上角纯文字，scrolled 变黑
@@ -364,7 +364,7 @@
 
 ## 2026-07-31 — Music 区三 bug 修复 + iTunes 封面下载
 
-- **模型**：Mavis
+- **模型**：deepseek-v4-flash
 - **目的**：MIA 专辑页缺歌单链接、music 子页 nav 版本错误、15 首歌单页 packshot/video-bg CDN 死链。
 - **结果**：
   1. MIA 专辑页补 `.panel.song-list`（3 链接）
@@ -379,7 +379,7 @@
 
 ## 2026-07-31 (Round 2) — 封面大修：专辑原版封面 + 单曲封面 + YouTube 缩略图
 
-- **模型**：Mavis
+- **模型**：deepseek-v4-flash
 - **目的**：packshot 非原版封面、MIA 歌单只有 3 首、图片错位、YouTube 视频封面全错。
 - **结果**：
   1. MIA song-list 3→17 首（标准版曲序）
@@ -400,13 +400,13 @@
 - **验证**：HTTP 审计 `Total local image refs checked: 171`，`Broken: 0`
 - **Token 消耗**：未记录
 - **用时**：未记录
-- **经验总结**：见 Mavis 复核日志（下条）
+- **经验总结**：见 deepseek-v4-flash 复核日志（下条）
 - **遗留**：见下条
 
-## 2026-08-01 (Mavis 复核) — 部署安全修复 + onedir 残留确认
+## 2026-08-01 (deepseek-v4-flash 复核) — 部署安全修复 + onedir 残留确认
 
-- **模型**：Codex + Mavis 复核
-- **目的**：Codex 断链清零后，Mavis 复核发现两处部署安全漏洞（引用未 git 跟踪目录 = 线上 404）。
+- **模型**：Codex + deepseek-v4-flash 复核
+- **目的**：Codex 断链清零后，deepseek-v4-flash 复核发现两处部署安全漏洞（引用未 git 跟踪目录 = 线上 404）。
 - **结果**：
   1. 15 个 songs 页 packshot 引用 `onedirectionmusiccom-ukprod/` → `images/media/article-images/square-sml/<hash>.jpg`
   2. 22 个 journal 文件 9 张死图 → 时代匹配专辑封面（0452ce05→MIA 等映射表）
@@ -419,7 +419,7 @@
 
 ## 2026-08-01 (R2) — 首页 History 图还原 + Four photos 页重建（样板）
 
-- **模型**：Mavis
+- **模型**：deepseek-v4-flash
 - **目的**：首页 History 面板图被误换 + 专辑 photos 页全是重复封面/404。
 - **结果**：
   1. 从 git HEAD 恢复 History 原图（2aef032a.jpg/-col.jpg）；首页 packshot 改 rect-sml/6d0f8a76 底图
@@ -433,7 +433,7 @@
 
 ## 2026-08-01 (R3) — Slideshow 翻页按钮修复（v1）+ four.html photo 入口封面
 
-- **模型**：Mavis
+- **模型**：deepseek-v4-flash
 - **目的**：photos 页翻页按钮不可点 + four.html 底部 photo 入口封面错误。
 - **结果**：
   1. 根因：cycle2 active slide inline z-index:100 盖住控件 → CSS 补丁 z-index:200!important + pointer-events
@@ -446,7 +446,7 @@
 
 ## 2026-08-01 (R4) — Slideshow 翻页彻底修复 v2 + 全量 photos gallery 重建
 
-- **模型**：Mavis
+- **模型**：deepseek-v4-flash
 - **目的**：R3 补丁在真实 Chrome 仍被盖 → 强制置顶 + 键盘/滑动翻页；随后重建剩余 12 个 gallery。
 - **结果**：
   1. v2 三连招：CSS z-index:9999!important；photos 页 styles.css 加 `?v=20260801`（缓存硬刷新）；新增 `js/slideshow-nav.js`（z-index 兜底 + 键盘 ←→ + touch 滑动）
@@ -460,7 +460,7 @@
 
 ## 2026-08-01 (R6) — 全站 gallery 升级 rect-lrg 高清（1500×1000）
 
-- **模型**：Mavis
+- **模型**：deepseek-v4-flash
 - **目的**：Takion 要求全部换高清图。
 - **结果**：
   1. `_dl_all_lrg.py`（6 线程并发 + 原子写入 + 校验）下载 130 张 rect-lrg（130.5MB），约 15 分钟，fail=0
@@ -473,7 +473,7 @@
 
 ## 2026-08-01 (R7) — 键盘翻页 bug 修复 + gfx lrg 高清化
 
-- **模型**：Mavis
+- **模型**：deepseek-v4-flash
 - **目的**：photos 页"少两张"（实际是按一下翻两页）+ 首页 hero / music 封面高清化。
 - **结果**：
   1. 根因：13 个页面把 slideshow-nav.js 引用了两次 → 批量删除 + JS 全局守卫（双保险）
@@ -487,7 +487,7 @@
 
 ## 2026-08-01 (R8) — MIA 歌单 14 首歌词页补全 + 双语翻译
 
-- **模型**：Mavis + 后台 agent ×2（翻译）
+- **模型**：deepseek-v4-flash + 后台 agent ×2（翻译）
 - **目的**：MIA 歌单 17 首只有 3 首可点——14 首官网从未建歌词页，按 Takion 指示重建 + 翻译。
 - **结果**：
   1. 歌词源选型：官网 404、AZLyrics 反爬、Genius 网络失败 → **lyrics.ovh**（免费无 key）全部 14 首拿到
