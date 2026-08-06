@@ -40,7 +40,7 @@ description: 在 1d fansite 新增 gallery 分类页 / photoset 照片集页面�
 
 ```bash
 python -m http.server 8000 &
-python tools/_audit_site_images.py   # Broken: 0
+python tools/audit/_audit_site_images.py   # Broken: 0
 git status --porcelain | grep "^??"  # 新图已跟踪
 ```
 

@@ -15,7 +15,7 @@ python -m http.server 8000
 
 ```powershell
 # 编辑 pages/blog/YYYY-MM-DD/<slug>/article.md 后运行
-python tools/build_blog.py
+python tools/build/build_blog.py
 # 生成：文章页 index.html + pages/blog.html 列表 + pages/blog/posts.json
 # ⚠️ 首页 blog 卡片手写，需手动同步 index.html
 ```
@@ -24,18 +24,18 @@ python tools/build_blog.py
 
 ```powershell
 # 需要本地 server 先跑起来
-python tools/_audit_site_images.py
+python tools/audit/_audit_site_images.py
 # 目标输出：Total local image refs checked: N，Broken: 0
 ```
 
 ## 歌词翻译注入
 
 ```powershell
-# 编辑 tools/lyric_translations.py 后运行（从字典重新注入全部歌词页）
-python tools/translate_lyrics.py
+# 编辑 tools/translate/lyric_translations.py 后运行（从字典重新注入全部歌词页）
+python tools/translate/translate_lyrics.py
 
 # 专辑页歌名双语注入
-python tools/translate_albums.py
+python tools/translate/translate_albums.py
 ```
 
 ## 常用检查（PowerShell）

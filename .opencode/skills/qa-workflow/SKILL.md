@@ -23,7 +23,7 @@ description: 1d fansite 分层 QA 验证流程——静态检查、HTTP 级验�
 ### 第 2 层：HTTP 级验证（本地 server + 脚本，分钟级）
 
 1. 启动 server：`python -m http.server 8000`（QA 脚本用 127.0.0.1:8000）。
-2. 全站图片审计：`python tools/_audit_site_images.py` → `Broken: 0`。
+2. 全站图片审计：`python tools/audit/_audit_site_images.py` → `Broken: 0`。
 3. 页面/资源 200 检查：写一次性脚本遍历（模板见 `templates/check-links.py`）。
 
 > ⚠️ **必须 HTTP urljoin，不能 Path.resolve()**（M8）——HTTP 的 `..` 超根会截断，文件系统 resolve 会误报 MISSING。

@@ -20,7 +20,7 @@ description: 在 1d fansite 新建 HTML 页面的完整流程——复制模板�
 |-----------|---------|
 | 内容页（pages/ 一级） | `pages/about.html` 或任意 `pages/*.html` |
 | 列表/图库分类 | `pages/gallery/<cat>/index.html` |
-| 文章页 | 跑 `tools/build_blog.py`（见 blog-post skill），不手写 |
+| 文章页 | 跑 `tools/build/build_blog.py`（见 blog-post skill），不手写 |
 | 相册 slideshow | `pages/music/albums/<a>/photos/<slug>.html`（见 gallery-page skill） |
 
 ### 2. 定深度 + body class
@@ -43,7 +43,7 @@ description: 在 1d fansite 新建 HTML 页面的完整流程——复制模板�
 
 ```bash
 python -m http.server 8000 &
-python tools/_audit_site_images.py   # Broken: 0
+python tools/audit/_audit_site_images.py   # Broken: 0
 rg "onedirectionmusiccom-ukprod" pages/   # 应无残留
 git status --porcelain | grep "^??"  # 新图片已跟踪（未跟踪 = 线上 404）
 ```

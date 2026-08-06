@@ -25,7 +25,7 @@ front-matter 包在 HTML 注释 `<!-- -->` 里（避免 YAML 解析依赖）。b
 
 ## 2. 构建产物
 
-`python tools/build_blog.py` 生成：
+`python tools/build/build_blog.py` 生成：
 
 | 文件 | 说明 |
 |------|------|

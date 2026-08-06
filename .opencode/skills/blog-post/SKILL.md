@@ -9,9 +9,9 @@ description: 在 1d fansite 新增/编辑/删除 blog 文章的完整流程—�
 
 ## 工作原理
 
-文章用 Markdown 写，`tools/build_blog.py` 离线渲染成完整 HTML（无运行时 JS 依赖）。文章页 + 列表页 + `posts.json` 都是**自动生成**，首页卡片是**手动同步**。
+文章用 Markdown 写，`tools/build/build_blog.py` 离线渲染成完整 HTML（无运行时 JS 依赖）。文章页 + 列表页 + `posts.json` 都是**自动生成**，首页卡片是**手动同步**。
 
-⚠️ **build 脚本已全 front-matter 驱动**：所有元数据直接读 `article.md` 的 front-matter，`tools/build_blog.py` **没有** META/SCALERS 字典（旧文档已作废，不要去找）。
+⚠️ **build 脚本已全 front-matter 驱动**：所有元数据直接读 `article.md` 的 front-matter，`tools/build/build_blog.py` **没有** META/SCALERS 字典（旧文档已作废，不要去找）。
 
 ## 文件结构
 
@@ -29,11 +29,11 @@ pages/blog/YYYY-MM-DD/<slug>/
 3. **中文版（可选）**：`templates/article.zh.md` —— 无 front-matter，纯正文。段落数可与英文不同（build 会自动 fallback 成 `.en`/`.zh` 两大块，见 reference.md §4）。
 4. **构建**：
    ```bash
-   python tools/build_blog.py
+   python tools/build/build_blog.py
    ```
 5. **手改 `index.html` 首页卡片**：见下方「首页卡片更新规则」。无自动同步机制。
 6. **如有视频**：正文尾部按「视频卡片方案」插入（见下）。
-7. 跑验证（`python tools/_audit_site_images.py` → Broken: 0），`AGENTS/LOG.md` 追加日志。
+7. 跑验证（`python tools/audit/_audit_site_images.py` → Broken: 0），`AGENTS/LOG.md` 追加日志。
 
 ## 图片规范
 
@@ -66,13 +66,13 @@ pages/blog/YYYY-MM-DD/<slug>/
 ## 编辑文章
 
 1. 改 `article.md` / `article.zh.md`。
-2. 重跑 `python tools/build_blog.py`。
+2. 重跑 `python tools/build/build_blog.py`。
 3. 首页卡片如需改文案，手动同步 `index.html`。
 
 ## 删除文章
 
 1. 删 `pages/blog/YYYY-MM-DD/<slug>/` 目录。
-2. 重跑 `python tools/build_blog.py`。
+2. 重跑 `python tools/build/build_blog.py`。
 3. 手改 `index.html` 去掉对应首页卡片（参考上方「首页卡片更新规则」反向操作）。
 4. 如用了专属图片，一并从 `images/blog/` 删除。
 
@@ -100,7 +100,7 @@ pages/blog/YYYY-MM-DD/<slug>/
 ## 验证
 
 ```bash
-python tools/_audit_site_images.py   # Broken: 0（header_img/og_image/视频封面路径错误会暴露）
+python tools/audit/_audit_site_images.py   # Broken: 0（header_img/og_image/视频封面路径错误会暴露）
 grep "your-slug" index.html          # 确认首页卡片同步
 grep -c "pages/blog/YYYY-MM-DD" index.html  # 卡片数量 = N（当前 3）
 ```

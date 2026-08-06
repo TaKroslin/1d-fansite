@@ -11,8 +11,9 @@
 1. **先查证，后动手**：改任何东西之前，先读相关文件确认现状；不确定就 grep / 查文档，不猜。
 2. **小步改，快验证**：每次改动保持最小范围，改完立即跑对应验证，不要攒一堆改动再验证。
 3. **非必要不用视觉模型/截图**：能用脚本、HTTP 请求、文本 grep 验证的，绝不启动浏览器截图。**只有需要确认"视觉呈现"（布局、颜色、动画、响应式）时才用 Playwright 截图 + 视觉确认。** 普通的功能正确性（链接 200、图片存在、JS 无错误）一律用低成本检查。
-4. **批量操作先写脚本**：涉及 10+ 文件的同类修改，写一次性 Python 脚本（放 `tools/`），脚本要幂等、可重跑，改完验证输出。不要手工逐个文件改。
-5. **改完必写日志**：`AGENTS/LOG.md` 追加一条（规范见 §6）。经验教训沉淀到 `METHODS.md` / 本文件。
+4. **视觉确认默认走 MCP `visionpower` 服务器**：DeepSeek 无原生多模态/看图能力，凡是"看图"（截图、图片分析、识别视觉元素）一律通过 `visionpower` MCP 服务器提供的视觉工具完成，不要假设模型自带看图能力。此规则对 opencode 下运行的所有 DeepSeek 会话生效。
+5. **批量操作先写脚本**：涉及 10+ 文件的同类修改，写一次性 Python 脚本（放 `tools/`），脚本要幂等、可重跑，改完验证输出。不要手工逐个文件改。
+6. **改完必写日志**：`AGENTS/LOG.md` 追加一条（规范见 §6）。经验教训沉淀到 `METHODS.md` / 本文件。
 
 ---
 
@@ -62,7 +63,8 @@
 
 ### 2.4 Python 脚本（tools/）
 
-- 脚本放 `tools/`，一次性任务文件名加 `_` 前缀（如 `_fix_xxx.py`），完成后标注可清理。
+- **常驻工具按功能分目录**：`tools/build/`（构建）、`tools/translate/`（翻译）、`tools/audit/`（审计）、`tools/templates/`（模板）。调用方式见 `tools/README.md` 索引。
+- **一次性脚本加 `_` 前缀，完成后移入 `tools/archive/`**：根目录不长期保留一次性脚本；archive 内确无用时删除。
 - 读文件统一 `encoding='utf-8'`（Windows 下 PowerShell 默认 ANSI，Python 默认也可能出问题）；JSON 中间文件可能带 BOM，用 `utf-8-sig` 读。
 - **不要用 `dict.get(key, default)` 传需要求值的默认值**（`default` 会先求值，key 缺失时直接抛错）。用 `d[k] if k in d else fallback`。
 - 批量替换用 `str.replace` 时，模板里的 marker 必须是**裸文本**，不要包在 HTML 注释 `<!-- -->` 里（replace 会命中注释里的那次）。
@@ -72,7 +74,7 @@
 ### 2.5 歌词/翻译
 
 - 歌词页结构：`.lyric-line` 双语（en + `<span class="zh">`），页面带 `data-translate="true"`，并引用 translate.js。
-- 注入歌词用 `tools/translate_lyrics.py`（从 `lyric_translations.py` 字典读），**不要手工改 67 个歌页 HTML**。
+- 注入歌词用 `tools/translate/translate_lyrics.py`（从 `lyric_translations.py` 字典读），**不要手工改 67 个歌页 HTML**。
 - 翻译字典结构：`{album: {song: [(en, zh), ...]}}`，en 必须与 HTML 原文严格 1:1（顺序对应），zh 可为 `[待译: <english>]` 占位。
 - 非单曲歌词页（MIA 14 首）：Song 类型 + Written by + prev/next 相邻曲目；无 release-buy/release-video。
 
@@ -106,14 +108,16 @@
 
 ### 第 2 层：HTTP 级验证（本地 server + 脚本，分钟级）
 - 启动 `python -m http.server 8000`（127.0.0.1:8000）。
-- 全站图片审计：`python tools/_audit_site_images.py` → 目标 `Broken: 0`。
+- 全站图片审计：`python tools/audit/_audit_site_images.py` → 目标 `Broken: 0`。
 - 页面 200 / 资源 200 检查：写一次性 Python 脚本 `requests.get` 或 `urllib` 遍历。
 - **QA 图片路径必须用真实 HTTP urljoin + 请求验证，不能用 `Path.resolve()`**（HTTP 的 `..` 超过根会被截断，文件系统 resolve 会误报）。
 
 ### 第 3 层：浏览器验证（仅当需要确认视觉呈现时才用）
 - 需要确认**布局/颜色/动画/响应式/交互行为**时才启动 Playwright。
 - 典型场景：CSS 改动后的视觉效果、mobile 断点、slideshow 翻页交互、hover 动画。
-- 截图归档到 `tools/_qa_screenshots/`。
+- 截图归档到 `tools/_qa_screenshots/`，**按任务分类存放**：每个任务建一个子文件夹（如 `gallery-vision-test/`、`blog-list/`），截图直接写进对应任务文件夹，不要散落在根目录。根目录只允许放任务文件夹。
+- **看图默认走 MCP `visionpower`**：截图后用 `visionpower` 的视觉工具分析图片（布局/颜色/是否居中/文字可读性），**不依赖模型原生多模态**（DeepSeek 无此能力）。
+- **视觉验证完必须把截图发用户复核**：DeepSeek 无多模态，图片无法在聊天框内联渲染（Read 图片会报错）。视觉验证结束后**用 `open <截图路径>`（macOS）一键弹出关键截图**给用户人工复核，不要只报文字结论。关键截图 3-4 张为上限，不要一次弹一堆。
 - **Playwright 默认用 Node**（Python API 本机未装）。全局包在 npm global，本机已装 Chrome：
   ```bash
   # 脚本用 CommonJS require('playwright')，运行时加 NODE_PATH：
@@ -177,7 +181,14 @@
 - **结果**：改了什么、怎么改的（关键文件 + 关键手法，3-8 条要点）
 - **验证**：怎么验证的（命令 + 结果数字，如 "Broken: 0"）
 - **Token 消耗**：约 X 万（估算，主会话 + 后台 agent 分开写）；历史未记录写"未记录"
-- **用时**：约 X 分钟（估算）
+- **用时**：**实测，不估算**（估算常误差 10 倍）。方法：任务开始时记时间戳，写日志前算差值——
+  ```bash
+  # 任务开始（或想起时补记）：
+  date +%s > /tmp/td_start
+  # 写日志前：
+  echo "用时 $(( $(date +%s) - $(cat /tmp/td_start) )) 秒"
+  ```
+  时间戳写在 `/tmp/`（跨工具调用持久），一个任务算一次，多条并发命令不重复计。忘了记起点就用最后一次 bash 命令的 `time` 或 `date` 输出推导，宁写实测数字也不拍脑袋。
 - **经验总结**：1-3 条最关键的经验（简短）；详细版写到 RULES.md / METHODS.md
 - **遗留/待办**：未完成事项（要能在下次会话直接续做）
 ```
@@ -185,6 +196,7 @@
 ### 6.2 要求
 
 - **模型名**：必填。多模型接力时写清楚谁做了什么。
+- **用时**：必填且**必须实测**（见 §6.1），禁止凭感觉写"约 X 分钟"。实测方法：`date +%s > /tmp/td_start` 记起点，写完日志前 `echo $(( $(date +%s) - $(cat /tmp/td_start) ))` 算秒。
 - **Token 消耗**：估算即可（输入+输出），后台 agent 分开列。
 - **经验总结**：LOG 里只写简短结论；**详细的坑（现象/根因/处理/预防）写到 METHODS.md**，可复用的流程规则写到 RULES.md。一个坑不要同时在三个文件重复全文。
 - **新增坑**：日志写完顺手在 METHODS.md 补一条（若确是新坑）。

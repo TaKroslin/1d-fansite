@@ -9,7 +9,7 @@ Format: {album_slug: {song_slug: [(en_line, zh_line), ...]}}
 
 维护方式：
 1. 新增/修改翻译条目。
-2. 运行 python tools/translate_lyrics.py（幂等，重复跑 no-op）。
+2. 运行 python tools/translate/translate_lyrics.py（幂等，重复跑 no-op）。
 """
 from __future__ import annotations
 from typing import Dict, List, Tuple

@@ -27,6 +27,8 @@
 ## 核心规则（详见 RULES.md）
 
 - **非必要不用视觉模型/截图**：能用脚本、HTTP、grep 验证的绝不启动浏览器；只有确认视觉呈现（布局/颜色/动画/响应式）时才用 Playwright 截图。
+- **看图一律走 MCP `visionpower`**：DeepSeek 无原生多模态，截图/图片分析通过 `visionpower` MCP 视觉工具完成。
+- **视觉验证完必发截图**：DeepSeek 无法在聊天框内嵌图片，截图验证结束后用 `open <路径>` 弹出关键截图供人工复核，不只报文字结论。
 - **小步改、快验证**：每改必验证；批量操作写幂等脚本。
 - **改 CSS 必须 bump `?v=`** 版本参数（纯静态站浏览器缓存）。
 - **部署前检查未跟踪文件**：引用未 git add 的图片 = Cloudflare 线上 404。
@@ -37,6 +39,6 @@
 
 ```powershell
 python -m http.server 8000            # 本地预览 + QA
-python tools/build_blog.py            # blog 构建（改 article.md 后）
-python tools/_audit_site_images.py    # 全站图片审计（目标 Broken: 0）
+python tools/build/build_blog.py      # blog 构建（改 article.md 后）
+python tools/audit/_audit_site_images.py  # 全站图片审计（目标 Broken: 0）
 ```

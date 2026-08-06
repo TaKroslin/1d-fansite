@@ -18,7 +18,7 @@
 - **Waypoints.js**：内嵌在 `js/main.js` 中（用于滚动触发 panel fade-in）
 - **Isotope.js**：按需加载，unpkg CDN (`https://unpkg.com/isotope-layout@3/dist/isotope.pkgd.min.js`)
 - **Icomoon**：自定义图标字体，base64 嵌入 CSS
-- **Markdown 渲染（仅 blog）**：`python-markdown` 库（`tools/build_blog.py` 离线渲染，无运行时依赖）
+- **Markdown 渲染（仅 blog）**：`python-markdown` 库（`tools/build/build_blog.py` 离线渲染，无运行时依赖）
 - **Pillow**：开发期一次性图片优化
 
 ## File Structure
@@ -62,7 +62,7 @@ E:\文档\GitHub\1d-fansite/
 │   ├── tour.html                    ← 433 个 tour date
 │   ├── shop.html                    ← 🚫 禁止改动 — 用户明确要求任何时候都不要动（不翻译、不改内容）
 │   ├── blog.html                    ← 🤖 自动生成 — blog 列表（不手改）
-│   ├── gallery.html                 ← 5 个 gallery 分类
+│   ├── gallery.html                 ← gallery 索引（Albums 分专辑集合 + 5 个分类：members/on-stage/behind-the-scenes/press/fan-art）
 │   ├── this-is-us.html              ← Mainland China fan-account 目录
 │   ├── about.html                   ← 项目说明
 │   ├── blog/                        ← 4 篇文章，路径 pages/blog/YYYY-MM-DD/slug/
@@ -76,22 +76,28 @@ E:\文档\GitHub\1d-fansite/
 │   │   ├── <album>/songs/<slug>.html← 歌词页（song-lyrics 双语结构）
 │   │   └── <album>/photos/<slug>.html ← 照片 slideshow 页（cycle2 + slideshow-nav.js）
 │   ├── tour/                        ← Tour archive
-│   └── gallery/                     ← 5 gallery 分类
+│   └── gallery/                     ← albums.html（🤖 脚本生成的分专辑集合页）+ 5 个分类子页（members/on-stage/behind-the-scenes/press/fan-art，均含 index.html）
 │
 ├── journal/                         ← 克隆的 20 篇 journal 文章
 │   └── YYYY-MM-DD/<slug>/index.html
 │
-└── tools/                           ← 构建 + 维护脚本
-    ├── build_blog.py                ← Markdown → HTML 构建器（每次编辑 article.md 后跑）
-    ├── translate_lyrics.py          ← 歌词双语注入（lyric_translations.py 字典 → HTML）
-    ├── translate_albums.py          ← 专辑页歌名双语注入
-    ├── lyric_translations.py        ← 歌词翻译字典（{album: {song: [(en, zh), ...]}}）
+└── tools/                           ← 构建 + 维护脚本（分类索引见 tools/README.md）
+    ├── build/
+    │   ├── build_blog.py            ← Markdown → HTML 构建器（每次编辑 article.md 后跑）
+    │   └── _build_albums_page.py    ← 生成 gallery/albums.html 分专辑集合页（幂等）
+    ├── translate/
+    │   ├── translate_lyrics.py      ← 歌词双语注入（lyric_translations.py 字典 → HTML）
+    │   ├── translate_albums.py      ← 专辑页歌名双语注入
+    │   ├── translate_tour.py        ← tour 场馆名双语
+    │   └── lyric_translations.py    ← 歌词翻译字典（{album: {song: [(en, zh), ...]}}）
+    ├── audit/
+    │   └── _audit_site_images.py    ← 全站图片审计（需要本地 server，HTTP urljoin 校验）
     ├── templates/
     │   ├── article.html             ← 文章页模板（{{title}} 等占位符）
     │   └── blog_list.html           ← 列表模板（裸 __POSTS_CARDS__ marker）
-    ├── _audit_site_images.py        ← 全站图片审计（需要本地 server，HTTP urljoin 校验）
-    ├── _qa*.py, _vfy*.py, _diag*.py ← 一次性 QA/调试脚本（完成后可清理）
-    └── _qa_screenshots/             ← Playwright 截图归档
+    ├── archive/                     ← 一次性 QA/调试脚本 + 历史杂物（150+ 个，见 README）
+    ├── README.md                    ← tools 工具索引（快速调用速查）
+    └── _qa_screenshots/             ← Playwright 截图归档（按任务建子文件夹）
 ```
 
 ⚠️ 未 git 跟踪目录：`onedirectionmusiccom-ukprod/`（3.9MB 死克隆，建议加 .gitignore，勿 `git add -A` 误纳入）。
@@ -291,7 +297,7 @@ footer
 
 ## Blog Markdown Workflow
 
-文章用 Markdown 写，front-matter 用 HTML 注释包起来（避免 YAML 解析依赖）。`tools/build_blog.py` 离线渲染成完整 HTML（不在浏览器跑 JS，Cloudflare 部署稳定）。
+文章用 Markdown 写，front-matter 用 HTML 注释包起来（避免 YAML 解析依赖）。`tools/build/build_blog.py` 离线渲染成完整 HTML（不在浏览器跑 JS，Cloudflare 部署稳定）。
 
 ### 文件结构
 
@@ -345,7 +351,7 @@ scaler: 60%
 ### 编辑流程
 
 1. 编辑 `pages/blog/YYYY-MM-DD/<slug>/article.md`
-2. `cd E:\文档\GitHub\1d-fansite && python tools/build_blog.py`
+2. `cd E:\文档\GitHub\1d-fansite && python tools/build/build_blog.py`
 3. 自动生成 3 个文件：
    - `pages/blog/.../index.html`（文章页）
    - `pages/blog.html`（列表）
@@ -357,7 +363,7 @@ scaler: 60%
 ### 新增文章 checklist
 
 1. 创建 `pages/blog/YYYY-MM-DD/<slug>/article.md`（复制现有 article.md 改 front-matter + 正文）
-2. 跑 `python tools/build_blog.py`（build 脚本已改为**全 front-matter 驱动**，不再有 META/SCALERS 字典；所有字段直接读 article.md front-matter）
+2. 跑 `python tools/build/build_blog.py`（build 脚本已改为**全 front-matter 驱动**，不再有 META/SCALERS 字典；所有字段直接读 article.md front-matter）
 3. **手改 `index.html` 添加首页卡片**（目前没有自动同步机制）
 4. 如正文含第三方视频，按下方「正文视频卡片」规范处理
 
@@ -489,7 +495,7 @@ header#nav.mobilised{display:flex;flex-direction:column;overflow:hidden;...}
 
 ### pages/blog.html
 - Body class: `duo blog-section`
-- 🤖 **自动生成** by `tools/build_blog.py`
+- 🤖 **自动生成** by `tools/build/build_blog.py`
 - 包含：blog 介绍 panel + 文章卡片（panel-group 两两排列） + moment panel + newsletter panel
 - 卡片背景使用 `images/gfx/5guys/logo-white.png`（黑底 + 白 logo）
 

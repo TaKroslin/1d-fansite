@@ -1,6 +1,6 @@
 # 翻译参考（translation / reference）
 
-## 1. LYRICS 字典格式（tools/lyric_translations.py）
+## 1. LYRICS 字典格式（tools/translate/lyric_translations.py）
 
 ```python
 LYRICS: Dict[str, Dict[str, List[Tuple[str, str]]]] = {
@@ -35,7 +35,7 @@ LYRICS: Dict[str, Dict[str, List[Tuple[str, str]]]] = {
 </div>
 ```
 
-## 2. TRANSLATIONS 字典格式（tools/translate_albums.py）
+## 2. TRANSLATIONS 字典格式（tools/translate/translate_albums.py）
 
 ```python
 TRANSLATIONS: dict[str, str] = {

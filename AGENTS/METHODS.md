@@ -71,7 +71,7 @@
 ### M8. QA 图片路径必须用 HTTP urljoin，不能 Path.resolve()
 - **现象**：`Path.resolve()` 报 MISSING，但浏览器正常加载。
 - **根因**：HTTP URL 的 `..` 超过 host 根会被**截断**（`/pages/music/albums/../../../../images/` → `/images/`），文件系统 resolve 会越过仓库根解析到上级目录。
-- **预防**：`tools/_audit_site_images.py` 用真实 HTTP 请求验证（需要本地 server 8000）。
+- **预防**：`tools/audit/_audit_site_images.py` 用真实 HTTP 请求验证（需要本地 server 8000）。
 
 ### M9. 批量替换时 album 页（3 层）vs songs 页（5 层）容易差层
 - **现象**：专辑页 yt-thumbs 图片 404。
@@ -271,10 +271,10 @@
 ### M41. 文章标题双语走 build_blog.py 的 title_zh，不要手改 HTML
 - **现象**：文章页 h2 标题（`{{title}}`）保持英文，首页卡片标题已意译——两处不一致。
 - **处理**：article.md front matter 加 `title_zh`，`build_blog.py` Post 增加 `title_zh` 字段 → `title_html` 变量（有值输出 en/zh 对，空则纯英文），模板 `article.html` h2 用 `{{title_html}}`；列表卡片 `_render_listing_card` 同步输出 en/zh；`<title>`/og:title 继续用 `{{title}}` 保持英文（SEO）。
-- **预防**：blog 相关任何标题改动都改 `tools/build_blog.py` + `tools/templates/article.html`，然后重建，别直接手改生成的 HTML（会被下次 build 覆盖）。
+- **预防**：blog 相关任何标题改动都改 `tools/build/build_blog.py` + `tools/templates/article.html`，然后重建，别直接手改生成的 HTML（会被下次 build 覆盖）。
 
 ### M42. 审计脚本跨平台失效：REPO 硬编码 Windows 路径
-- **现象**：`tools/_audit_site_images.py` 在 macOS 上输出 `Total local image refs checked: 0`（服务器明明 200）。
+- **现象**：`tools/audit/_audit_site_images.py` 在 macOS 上输出 `Total local image refs checked: 0`（服务器明明 200）。
 - **根因**：脚本头部 `REPO = Path("E:/文档/GitHub/1d-fansite")` 是 Windows 时代硬编码路径，迁移后找不到 HTML 文件 → 0 refs；且 checked 为 0 时不报错，容易误判"审计通过"。
 - **处理**：改为 `REPO = Path(__file__).resolve().parent.parent`（动态推导仓库根）。
 - **预防**：任何脚本里的仓库根路径一律动态推导（`__file__` 两级），禁止硬编码盘符；审计脚本 checked 为 0 时视作失败而非成功。

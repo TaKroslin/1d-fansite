@@ -135,7 +135,7 @@ Blog posts are authored in Markdown and then built into static HTML — no hand-
 
 **Step 2: Register the post**
 
-Add an entry to `META` and `SCALERS` in `tools/build_blog.py`:
+Add an entry to `META` and `SCALERS` in `tools/build/build_blog.py`:
 ```python
 "2026-08-01/your-post-slug": {
     "title": "Your Post Title",
@@ -150,7 +150,7 @@ Add an entry to `META` and `SCALERS` in `tools/build_blog.py`:
 **Step 3: Build**
 
 ```bash
-python tools/build_blog.py
+python tools/build/build_blog.py
 ```
 
 This auto-generates:
@@ -160,7 +160,7 @@ This auto-generates:
 
 All generated HTML is pure static — no JS rendering, works perfectly on Cloudflare Pages.
 
-To edit an existing post, just edit its `article.md` and re-run `python tools/build_blog.py`.
+To edit an existing post, just edit its `article.md` and re-run `python tools/build/build_blog.py`.
 
 ### 2. Add a new gallery category
 

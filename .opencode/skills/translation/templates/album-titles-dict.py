@@ -4,7 +4,7 @@ Format: {"English Song Title (as on page)": "中文标题"}
 
 - key 必须与 pages/music/albums/<album>.html 页面原文完全一致
   （大小写敏感，不带 "1. " 等序号前缀）。
-- 维护后运行 python tools/translate_albums.py（幂等）。
+- 维护后运行 python tools/translate/translate_albums.py（幂等）。
 """
 TRANSLATIONS: dict[str, str] = {
     # ---- Up All Night (2011) ----
