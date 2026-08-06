@@ -1,5 +1,73 @@
 # 1D Fansite — 开发日志（LOG）
 
+## 2026-08-06 — Headband Harry 相册扩容到 39 张
+
+- **模型**：deepseek-v4-flash
+- **目的**：user 新增 hlsd-hb38.jpg 和 hlsd-hb39.jpg 两张图，加入 headband-harry 相册。
+- **结果**：
+  - 下载并 `git add` `images/media/gallery-images/rect-lrg/hlsd-hb38.jpg`（1069×1069）和 `hlsd-hb39.jpg`（1050×1050）。
+  - `pages/gallery/members/harry/headband-harry.html`：在 slide37 后追加 slide38 和 slide39 两个 `.slide` 块；`data-cycle-caption-template` 从 `{{slideNum}}/37` 改为 `{{slideNum}}/39`。
+  - `pages/gallery/members/harry/index.html`：headband 卡片 `.count` 从 `37` 改为 `39`。
+- **验证**：`python3 tools/audit/_audit_site_images.py` → `Broken: 0`（343 refs，多了2 个新 slide 的图片引用）；Playwright `.slide` 计数=39、counter 显示 `1/39`→`39/39` 翻页正常。
+- **Token 消耗**：约 0.2 万
+- **用时**：约 30 秒
+- **经验总结**：扩 slide 时必须同步改三处——HTML 追加、cycle-caption-template 计数、首页卡片 count。
+- **遗留/待办**：无。
+
+## 2026-08-06 — Gallery Members→Harry 三级页 + Headband Harry 相册（续修2）
+
+- **模型**：deepseek-v4-flash
+- **目的**：修 user 反馈的两个未生效 issue——(1) "Back to Members" 跳转 404 之前误报修了，实测 harry 页那个跳转是 OK 的（但同会话里另一个 back 按钮 `index.html` 是好的，先放着）；(2) "图片下面不是纯黑背景"——根因是 HTML 嵌套 bug + gallery-info 仍是白底。
+- **结果**：
+  - **HTML 嵌套 bug 修复**：`pages/gallery/members/harry/headband-harry.html` 里 `<div id="slideshow">`（行61）写完所有 `.slide` 后**没有闭合**就直接到 `</div><!--.panel.gallery-->`，导致浏览器 parser 把 `.panel.gallery-info` 和 `<footer>` 全部 auto-close 到 body 外——body 只剩4 个 children。修复：在 `<!--.cycle-slideshow-->` 后加 `</div><!--#slideshow-->`。正则验证：opens=89 closes=89 diff=0。
+  - **`.gallery-section .panel.gallery-info` 改纯黑**：CSS additions 块新增 background:#000 + color:#fff + panel-header/h2/share/back 链接的 hover/inverse 配色；让标题、描述、分享按钮、返回按钮在黑底白字下都正常可读。
+  - CSS `?v=` bump 到 `20260806d`（headband-harry.html）。
+- **验证**：
+  - HTML 结构：修复后 body children 从4 变12（header-spacer, #sticky, #nav, gallery, gallery-info, footer, screen + 5 script）。
+  - getComputedStyle：gallery-info `bg=rgb(0,0,0)`、`color=rgb(255,255,255)`、h2/share 边框都是白。
+  - Playwright scrollIntoView + 截图，vision 确认黑底白字全部可读（"Headband Harry" 标题、描述、BACK TO HARRY 按钮、Facebook/Twitter 分享、footer 社交图标）。
+  - 图片审计 `Broken: 0`（341 refs）。
+- **Token 消耗**：约 0.6 万
+- **用时**：约 3 分钟
+- **经验总结**：① 写大量重复 slide 的 HTML 时，必须**第一时间写完整闭合**再 copy-paste 块；不然遗漏一个 `</div>` parser 会重构整个 body。验证手段：python `<div(?=[\s>])` vs `</div>` 计数 diff 必须=0，浏览器 body.children 数量必须=手写预期。② `getComputedStyle(bg).backgroundImage` 是检测 retinafy/cloned bg 的标准方法——克隆的 `.bg` 仍带 `class="bg"`，可以被后代选择器 `.slide .bg` 覆盖 `background-size`，无需专门针对 retinafy 写补丁。
+- **遗留/待办**：harry/index.html 的 `Back to Members` 跳转上一轮改成 `../index.html` 已经是200，用户最初反馈的 "断链是 back to members 按钮" 可能是误指或已被修复（待用户确认是否还有别的 back 按钮404）。
+
+## 2026-08-06 — Gallery Members→Harry 三级页 + Headband Harry 相册（续修）
+
+- **模型**：deepseek-v4-flash
+- **目的**：修 user 反馈的两个 issue——(1) `Back to Members` 跳转 404；(2) slideshow 桌面端需要明确纯黑背景。
+- **结果**：
+  - `pages/gallery/members/harry/index.html`：`.journal-archive-link` 的 `href` 从 `../../index.html`（解析到 `pages/gallery/index.html` →404）改为 `../index.html`（→ `pages/gallery/members/index.html` 200）。
+  - `css/styles.css`：`.gallery-section .panel.gallery` desktop 媒体查询补 `background:#000`，脱离 body bg 显示。
+  - CSS `?v=` bump 到 `20260806c`（仅 headband-harry.html）。
+- **验证**：
+  - HTTP 直接 curl：`../index.html`=200、`../../index.html`=404（确认旧链接确实坏）、`index.html`=200。
+  - `python3 tools/audit/_audit_site_images.py` → `Broken: 0`（341 refs）。
+  - Playwright getComputedStyle：`.panel.gallery` `backgroundColor=rgb(0,0,0)`、`backgroundImage=none`。
+- **Token 消耗**：约 0.4 万
+- **用时**：约 1 分钟
+- **经验总结**：① 我之前所有"panel 是 1:1 方形"的判断错了——desktop `.gallery-cover` panel 实测是 2:1 长方形（`padding-top:50% width=1280`），mobile 才是 1:1；rect-lrg (2:1) 在 desktop panel 里 cover 是完美贴合 0 裁切。② 新建页面的"返回"按钮 href 必须按 depth 表实测（harry 页 depth=4 → `../` 即回到 members，不要凭感觉跳 `../../`）。
+- **遗留/待办**：无。
+
+## 2026-08-06 — Gallery Members→Harry 三级页 + Headband Harry 相册
+
+- **模型**：deepseek-v4-flash
+- **目的**：在 gallery-members 下新增 harry 多相册展示页 + headband harry 相册（37 张 fan 图 slideshow），并给 gallery/members/harry 三层卡片换新封面。
+- **结果**：
+  - 新增 `pages/gallery/members/harry/index.html`（4 层，复制 members 结构）——journal-article 介绍 + headband-harry gallery-cover 卡片（count 37，链接 `headband-harry.html`）。
+  - 新增 `pages/gallery/members/harry/headband-harry.html`——cycle2 slideshow，37 张 hlsd-hb1–37（rect-lrg），**无 music-submenu**（用户要求顶部不要 single/fans 标签），gallery-info + share + 返回按钮，含 slideshow-nav.js 一次。
+  - 换封面（desktop rect / mobile square 两尺寸 + `filter:none`，仿 albums-cover 模式，CSS additions 块新增 3 组 `.members-cover/.harry-cover/.headband-cover`）：
+    - `pages/gallery.html` members 卡 → `music-members-mono-cover-{rect,square}-lrg.png`
+    - `pages/gallery/members/index.html` harry 卡 → `music-members-harry-cover-{rect,square-square}-lrg.png`（文件名带双 square，照实）
+    - harry 页 headband 卡 → `gallery-members-harry-headband-harry-cover-{rect,square}-lrg.png`
+  - 下载 6 封面 → `images/gfx/`；37 张 hlsd-hb → `images/media/gallery-images/rect-lrg/`；全部 `git add`。
+  - CSS `?v=` bump：gallery.html / members/index.html 改 `20260806a`，新页用 `20260806a`。
+- **验证**：`python3 tools/audit/_audit_site_images.py` → `Broken: 0`（341 refs）；Playwright（chrome）桌面/移动截图 8 张到 `tools/_qa_screenshots/gallery-harry/`；slideshow 点 next/keyboard 翻页计数 1/37→4/37→wrap 正常、无 console error；移动端 3 卡封面 computed background-image = square 版本、filter none 生效。
+- **Token 消耗**：约 3.5 万
+- **用时**：约 8.4 分钟（从写 harry/index.html 到完成验证 504 秒，时间戳实测）
+- **经验总结**：① gallery slideshow 页顶部不需要 music-submenu——直接用 gallery-section 风格，桌面端照片直贴 header 下方是官方设计（黑头黑发视觉上像重叠，几何无重叠）；② 封面两尺寸沿用 albums-cover 的 media query 切换 + filter:none 模式即可，不用新增特殊 JS。
+- **遗留/待办**：harry 页 headband 卡 og:image 用的是 rect cover；后续再建相册时复制 `harry/index.html` 模板、复制 `headband-harry.html` 模板即可。
+
 ## 日志书写规范
 
 每次任务完成后**必须**在此文件顶部追加一条。字段要求：
@@ -36,6 +104,122 @@
 3. 待办清单是给下次会话的交接单，写清"下一步做什么、涉及哪个文件"。
 
 ---
+
+## 2026-08-05 — LOG 用时改为实测时间戳
+
+- **模型**：deepseek-v4-flash
+- **目的**：用户指出 LOG 用时全靠拍脑袋，误差常达 10 倍（如 16 秒写 2 分钟）。要求提高准确度。
+- **结果**：`AGENTS/RULES.md` §6 日志规范改为：**用时必填且必须实测**——任务开始 `date +%s > /tmp/td_start`，写日志前 `echo $(( $(date +%s)-$(cat /tmp/td_start) ))` 算秒；禁止凭感觉写"约 X 分钟"。修正了上一条误写的 2 分钟 → 16 秒。
+- **验证**：本条目用时 = 本次工具调用实测（见下）。
+- **Token 消耗**：约 0.3 万
+- **用时**：75 秒（时间戳实测）
+- **经验总结**：凡写进 LOG 的时长一律实测时间戳，不估算；时间戳放 /tmp 跨工具调用持久。
+- **遗留/待办**：历史 LOG 中此前多条"约 X 分钟"均为估算，不再回改（只保证今后实测）。
+
+## 2026-08-05 — 根目录遗留 py 清理
+
+- **模型**：deepseek-v4-flash
+- **目的**：tools/ 整理后根目录还散着 6 个一次性脚本（`_fix_all_paths.py`/`_fix_all_v2.py`/`_fix_leftovers.py`/`_fix_nojs.py`/`_fix_song_pages.py`/`_http_audit.py`）。
+- **结果**：全部移入 `tools/archive/`（archive 现 196 项）；根目录 0 py 残留；tools/README.md 索引补一句说明。
+- **验证**：`ls *.py` 无匹配。
+- **Token 消耗**：约 0.1 万
+- **用时**：约 16 秒（用户实测反馈；当时误写 2 分钟，已改——教训：用时必须实测）
+- **经验总结**：归档检查要含仓库根，不只 tools/。
+- **遗留/待办**：无。
+
+## 2026-08-05 — tools/ 目录按功能分类 + 索引文档
+
+- **模型**：deepseek-v4-flash
+- **目的**：tools/ 根目录 201 个文件（150 个 `_` 前缀一次性脚本 + 27 个 json/log 杂物）杂乱无章；用户要求分类并记录方便快速调用。选型：归档一次性 + 常驻工具分类 + 索引文档。
+- **结果**：
+  - **常驻工具分类**：`build/`（build_blog.py + _build_albums_page.py）、`translate/`（translate_lyrics/albums/tour + lyric_translations.py）、`audit/`（_audit_site_images.py）、`templates/` 保留。
+  - **一次性归档**：190 个 `_` 前缀脚本 + 探针 HTML + json/log/ps1 杂物 + `review/` + `CODEX_TASK_*.md` → `archive/`；删 `__pycache__`。
+  - **路径修正**：被移动的常驻工具 `Path(__file__).resolve().parent.parent` 统一改 `parent.parent.parent`（build_blog.py 的 TEMPLATES_DIR 同步改 `parent.parent/"templates"`）；translate_tour.py 用 CWD 相对路径无需改。
+  - **新建 `tools/README.md` 索引**：分类目录 + 每工具用途/调用命令/幂等性 + archive 约定。
+  - **全仓引用更新**：AGENTS.md / COMMANDS.md / RULES.md §2.4 / AGENTS.md 目录树 / METHODS.md 2 处 / README.md 3 处 / 5 个 skill 文件，60+ 处旧路径全部替换。
+- **验证**：每个常驻工具实跑——build_blog.py 重建 5 篇；translate_lyrics/albums 重跑 skipped；_build_albums_page.py 输出 4+1 photosets；translate_tour.py 无变化；_audit_site_images.py **Broken: 0**；全仓 grep 无旧路径残留。
+- **Token 消耗**：约 2 万
+- **用时**：约 25 分钟
+- **经验总结**：① 移动工具脚本前必须先查 `__file__` 相对路径用法，否则静默跑错目录；② zsh 变量不按空格分词，perl 批量替换要逐文件循环；③ tools/ 无 git 跟踪（全被 .gitignore 忽略），整理纯磁盘 + 文档工作，风险低。
+- **遗留/待办**：README.md 行 138 的 META/SCALERS 说明是历史遗留（build 已全 front-matter 驱动），属投稿者文档，留给用户自行处理。
+
+## 2026-08-05 — _qa_screenshots 按任务分类归档
+
+- **模型**：deepseek-v4-flash
+- **目的**：`tools/_qa_screenshots/` 根目录散落 54 张历史截图，杂乱；用户要求按**任务**（而非页面）分类建文件夹，并形成惯例。
+- **结果**：
+  - 新建 10 个任务文件夹，根目录归零：`blog-list`(9)、`pages-initial`(14，初版全站页面截图)、`blog-article`(2)、`bilibili-card`(2)、`band`(4)、`dmd-slideshow`(11，含 crop 派生图)、`photos`(2)、`nc-slideshow`(1)、`fanmsg`(8)、`home-card`(1)。
+  - 判定依据：从生成脚本（`_qa.py`/`_qa_zayn.py`/`_qa_dmd_shot.py`/`_diag_nc.py`/`_cover.py`/`_final_visual.py`/`_analyze_dmd_px.py` 等）反查每张截图归属任务。
+  - `AGENTS/RULES.md` §3：截图归档规则改为「按任务建子文件夹，根目录只放任务文件夹」。
+- **验证**：根目录无散落图片（仅 .DS_Store）；各文件夹计数与预估一致。
+- **Token 消耗**：约 0.3 万
+- **用时**：约 5 分钟
+- **经验总结**：归档按任务不按页面——后续跑 QA 时脚本的截图路径直接写 `_qa_screenshots/<任务名>/`，避免再次堆积。
+- **遗留/待办**：无。
+
+## 2026-08-05 — 修正 gallery 结构认知 + AGENTS.md 描述过时
+
+- **模型**：deepseek-v4-flash
+- **目的**：截图脚本误用 `pages/gallery/take-me-home/`（不存在，404）。用户纠正：gallery 的 `albums` 是**专门放专辑照片的集合分类**，其余分类与专辑无关。查 LOG 确认真实结构。
+- **结果**：
+  - 真实结构：`pages/gallery.html` = Albums 分专辑集合（5 专辑 × 13 photosets，`tools/_build_albums_page.py` 自动生成）+ 5 个与专辑无关的分类子页（members/on-stage/behind-the-scenes/press/fan-art，各含 index.html）。
+  - `tools/_qa_gallery_vision.py` 分类 URL 从 `take-me-home` 改为 `members`（200），重截成功。
+  - `AGENTS.md` 两处"5 个 gallery 分类"过时表述修正（gallery.html 行 + 目录树行）。
+- **验证**：5 个分类子页 curl 全 200；albums.html 存在。
+- **Token 消耗**：约 0.4 万
+- **用时**：约 5 分钟
+- **经验总结**：**不要凭专辑名猜 gallery URL**——gallery 分类结构里 `albums` 是专辑集合、其余与专辑无关；不确定的 URL 先 `ls pages/gallery/` + curl 200 验证再截图，不要想当然。
+- **遗留/待办**：无。
+
+## 2026-08-05 — 截图复核方式定稿：open 一键弹出
+
+- **模型**：deepseek-v4-flash
+- **目的**：上一轮"截图发聊天框"不可行——DeepSeek 模型层不支持图片输入，Read 读图直接报错，聊天框无法内联渲染。用户确认改用 `open` 一键弹出方式。
+- **结果**：`AGENTS/RULES.md` §3 规则改为「视觉验证完用 `open <截图路径>` 弹出关键截图（3-4 张上限）供人工复核」；`AGENTS.md` 同步。实测 `open` 4 张截图在 Preview 正常弹出。
+- **验证**：实测 open 命令弹出成功。
+- **Token 消耗**：约 0.2 万
+- **用时**：约 3 分钟
+- **经验总结**：DeepSeek 会话里给用户看图唯一可行姿势 = `open` 本地文件；视觉 QA 闭环：截图 → visionpower 分析 → `open` 弹出复核。
+- **遗留/待办**：无。
+
+## 2026-08-05 — 规则补充：视觉验证完截图必须发聊天框
+
+- **模型**：deepseek-v4-flash
+- **目的**：用户要求视觉验证后把截图直接发到聊天框，便于人工复核渲染结果。
+- **结果**：`AGENTS/RULES.md` §3 浏览器验证层补「视觉验证完必须把截图发到聊天框」一条；`AGENTS.md` 核心规则同步补一行。
+- **验证**：文档自查。
+- **Token 消耗**：约 0.2 万
+- **用时**：约 2 分钟
+- **经验总结**：视觉 QA 闭环 = 截图 → visionpower 分析 → **截图发用户复核**，三步缺一不可。
+- **遗留/待办**：无。
+
+## 2026-08-05 — gallery 界面截图验证：visionpower MCP 首次实跑
+
+- **模型**：deepseek-v4-flash
+- **目的**：测试新接入的 visionpower MCP 服务器是否正常工作——给 gallery 界面截图并用视觉工具分析，验证"看图走 MCP"流程。
+- **结果**：
+  - `tools/_qa_gallery_vision.py`：真实 Chrome（channel='chrome'）截图 5 张（desktop 顶/底/整页、mobile、take-me-home 分类页）→ `_qa_screenshots/gallery-vision-test/`。
+  - `visionpower` MCP 描述整页：6 个 gallery-cover 面板（Albums 13/Members 6/On Stage 4/Behind the Scenes 4/Press & Awards 4/Fan Art 3）正常渲染，图片无破图，对齐整齐；mobile 390px 无溢出/错位。
+  - 视觉模型在整页缩略图上误报「VIEW IMAGES 按钮被小标签遮挡」——用 `_qa_gallery_geom.py` 量 boundingBox 验证 **header (y683–770) 与按钮 (y1171–1231) 无重叠**，确认为压缩缩略图造成的假阳性。
+- **验证**：HTTP 200；截图生成成功；visionpower MCP 描述 + OCR 正常返回；几何测量证明无重叠。
+- **Token 消耗**：约 0.8 万
+- **用时**：约 8 分钟
+- **经验总结**：视觉模型看整页缩略图易把灰度图上的白字按钮误判为"遮挡"，**视觉判断的结论要用 Playwright boundingBox/getComputedStyle 数值复核**（RULES §3 已有此条，本次实证）。
+- **遗留/待办**：无。
+
+## 2026-08-05 — 接入 visionpower MCP：DeepSeek 看图规则固化
+
+- **模型**：deepseek-v4-flash
+- **目的**：DeepSeek 无原生多模态/看图能力，但项目 QA 流程需要"视觉确认"（布局/颜色/动画/响应式）。用户要求为 opencode 接入 MCP 多模态服务器 `visionpower`，并把"看图默认走 visionpower"写进项目文档。
+- **结果**：
+  - `~/.config/opencode/opencode.jsonc`（全局配置）：新增 `mcp.visionpower`（type local，`npx -y --package visionpower@latest visionpower`）+ `experimental.mcp_timeout: 120000`。用户给的 Claude Code 格式（`mcpServers`/`command`/`args`）转成 opencode 原生格式（`mcp` + `type` + `command` 数组）。
+  - `AGENTS/RULES.md`：核心原则新增「视觉确认默认走 MCP visionpower」一条（§0.4），并把 §3 第 3 层浏览器验证补「看图走 visionpower」说明。
+  - `AGENTS.md` 核心规则：加「看图一律走 MCP visionpower」一行。
+- **验证**：opencode 重启后 `visionpower` MCP 服务器需能加载（npx 首次拉包）；文档改动已自检无语法问题。
+- **Token 消耗**：约 0.5 万
+- **用时**：约 5 分钟
+- **经验总结**：MCP 配置格式有方言——Claude Code 是 `mcpServers.command+args`，opencode 是 `mcp.name.type+command[]`，跨工具粘配置必须转格式。
+- **遗留/待办**：opencode 需重启生效；首次启动会 `npx` 拉包（可能较慢）。
 
 ## 2026-08-04 — 全站域名统一为正式地址 www.5guys1direction.asia
 
