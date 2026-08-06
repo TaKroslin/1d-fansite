@@ -1,5 +1,25 @@
 # 1D Fansite — 开发日志（LOG）
 
+## 2026-08-06 — Harry 新增 Live on Tour 相册（46 张）
+
+- **模型**：deepseek-v4-flash
+- **目的**：headband harry 下面新增 live on tour 卡片 + slideshow，复用 headband-harry 模板速战速决。
+- **结果**：
+  - 下载 46 张照片（liveontour-1..25.jpg 已在下载 + liveontour-26..46.heic 需转 jpg）→ 全部入 `images/media/gallery-images/rect-lrg/liveontour-N.jpg`（HEIC 用 `sips -s format jpeg` 转，浏览器不支持 HEIC）。
+  - 2 张封面 `gallery-members-harry-liveontour-{rect,square}-lrg.png`（2400×1200 / 1200×1200）→ `images/gfx/`。
+  - `pages/gallery/members/harry/index.html`：headband 卡下面追加 `liveontour-cover` 卡片（count 46，链接 `live-on-tour.html`）。
+  - 新建 `pages/gallery/members/harry/live-on-tour.html`（cp headband-harry.html 改写）：46 slide、caption `/46`、og 用 liveontour-rect cover、gallery-info 文案/分享/Back 链接、`#slideshow` 显式闭合（吸取上次教训，写完 div 闭合再填 slide）。
+  - CSS：`.liveontour-cover` 加入去灰度组 + mobile 切 `-square-lrg`。`?v=` bump 到 `20260806e`（harry index + live-on-tour）。
+- **验证**：
+  - 图片审计 `Broken: 0`（390 refs，比上次 343 多 46 slide + 1 cover）。
+  - Playwright：46 slides、计数 1/46→2/46→循环、body children=12、无 console error；mobile 卡封面切 square-lrg、desktop 卡封面 rect-lrg 均正确。
+  - div 平衡检查：live-on-tour opens=closes=107、index 29，diff=0。
+  - HTTP：live-on-tour.html / harry index 均 200。
+- **Token 消耗**：约 1.2 万
+- **用时**：约 4 分钟
+- **经验总结**：① HEIC 照片必须先 `sips -s format jpeg` 转 jpg，浏览器不认 HEIC；② 复制 slideshow 模板时把 `<div id="slideshow">` 闭合写好再批量填 slide，可完全避免上次的 parser 重构问题；③ 扩相册三处同步（HTML slide、caption-template、index 卡 count）已验证过，这次直接照做。
+- **遗留/待办**：已 `git add` 全部新文件，未 commit/push（等 user 指示）。vision API 已限流（429），视觉复核待恢复后补。
+
 ## 2026-08-06 — Headband Harry 相册扩容到 39 张
 
 - **模型**：deepseek-v4-flash
