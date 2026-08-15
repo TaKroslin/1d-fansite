@@ -1,5 +1,27 @@
 # 1D Fansite — 开发日志（LOG）
 
+## 2026-08-16 — 全站 cover 三尺寸上线（rect-sml/med 生成）+ og:image med 化 + teenage 照片 51→49
+
+- **模型**：deepseek-v4-flash
+- **目的**：user 指出所有 gfx 封面（自绘 PNG）都做了 rect/square 两个尺寸 master，要求从各 lrg master 批量生成 sml/med 变体，页面封面 bg（gallery/members/harry/louis/albums/photos 各页）改用 `-sml`（retinafy 自动升级），og:image 用 `-rect-med`（社交分享规范），CSS mobile 的 `-square-lrg` 切到 `-square-sml`。另：louis teenage slideshow 里 user 手动删了 2 张图（teenage-13/15），需同步移除引用与文案计数。
+- **结果**：
+  - 写 `tools/_gen_cover_sizes.py`（一次性，已归档 `tools/archive/`）：对 `images/media/gallery-images/{rect,square}-lrg/` 每张图用 Pillow 生成 `-sml`（350px）/`-med`（700px）副本到同目录；路径深度继续沿用子目录（`gallery-images/{rect,sml/med}-lrg→sml/med` 同名）。全站生成完成。
+  - 改页面 cover bg → `-rect-sml`：gallery.html、members 各成员卡、harry/louis 分类、首页 dfce33 hash 卡、全部 5 专辑 photos.html 列表封面（13 处 hash）、albums.html 集合封面。og:image → `-rect-med`（12+ 处）。
+  - CSS `?v=` 全站统一 bump → `20260816a`（148 pages/ + index.html + journal 等，416 处 diff）。
+  - 修 `_build_albums_page.py` bug：cover 循环此前缩进错误（挂在 album 循环外），导致 albums.html 只生成 1 张 cover；已嵌回循环内（错误位于 release-header 循环后）。重跑后 albums.html 13 cover + 5 release-header 与 HEAD 仅有 rect-lrg→rect-sml 差异，零意外。
+  - teenage.html：删除 teenage-13/15 两个 slide，og:description/description/intro 文案 51→49；slideshow 剩余 49 slide。
+- **验证**：
+  - `_audit_site_images.py`：全站 491 refs，**Broken: 0**（修复前有 2 个 teenage 缺失引用）。
+  - HTTP 抽验：首页 + albums + 各 photos + teenage + 新 sml 图全 200。
+  - Playwright 程序验证：albums.html `.bg` 18 块无 none、teenage 49 slide 全渲染、全站 HTTP>=400 errors 0。
+  - diff 核对 `_build_albums_page.py` 输出与 HEAD：仅 13 处 `rect-lrg→rect-sml`。
+  - 截图归档 `tools/_qa_screenshots/cover-sizes/`（9 张：index/albums/photos/teenage × desktop/mobile + teenage slide2），`open` 已弹出供人工复核。
+  - **visionpower 视觉 MCP 遇到 429 Token 配额上限**（`rate_limit_error 2056`），改用上述程序化验证代替，并弹截图供人工复核。
+- **Token 消耗**：约 3.5 万
+- **用时**：约 40 分钟
+- **经验总结**：① `_build_albums_page.py` 这类"提取-生成"脚本跑前务必先 diff 旧产物，避免覆盖手工改动；② Python 缩进改动用 sed/Edit 批量时，严格匹配原行缩进，否则 IndentationError；③ visionpower 有 Token Plan 配额，连续调用会 429，批量视觉验证时分散调用或提前告知 user；④ 审计 Broken:0 是硬指标，新 refs 全验证再收尾；⑤ `_venv/bin/python -m http.server` 替代 `python`（本机无系统 python，命令要带 `.venv/bin/`）。
+- **遗留/待办**：本次全部改动未 git add/commit（等 user 指示）。60 个未跟踪文件（本次全部新增 gfx 图）部署前必须 `git add` 再同步 Cloudflare，否则线上 404。teenage 源图目录 `rect-lrg/teenage/` 只有 49 张（13/15 已确认手动删除），clean。封面 og 已全部 med；hero-2015 gfx 的 rect-lrg og 属既有设计未动。
+
 ## 2026-08-15 — Gallery Members→Louis 三级页 + Baby Louis/X Factor 两个 slideshow
 
 - **模型**：deepseek-v4-flash

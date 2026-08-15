@@ -298,28 +298,28 @@ html.lang-zh .lyric-passage{display:block}
 }
 @media (max-width: 767px){
   .panel.gallery-cover.members-cover .bg{
-    background-image:url(../images/gfx/music-members-mono-cover-square-lrg.png)!important;
+    background-image:url(../images/gfx/music-members-mono-cover-square-sml.png)!important;
   }
   .panel.gallery-cover.harry-cover .bg{
-    background-image:url(../images/gfx/music-members-harry-cover-square-square-lrg.png)!important;
+    background-image:url(../images/gfx/music-members-harry-cover-square-square-sml.png)!important;
   }
   .panel.gallery-cover.headband-cover .bg{
-    background-image:url(../images/gfx/gallery-members-harry-headband-harry-cover-square-lrg.png)!important;
+    background-image:url(../images/gfx/gallery-members-harry-headband-harry-cover-square-sml.png)!important;
   }
   .panel.gallery-cover.liveontour-cover .bg{
-    background-image:url(../images/gfx/gallery-members-harry-liveontour-square-lrg.png)!important;
+    background-image:url(../images/gfx/gallery-members-harry-liveontour-square-sml.png)!important;
   }
   .panel.gallery-cover.louis-cover .bg{
-    background-image:url(../images/gfx/gallery-members-louis-cover-square-lrg.png)!important;
+    background-image:url(../images/gfx/gallery-members-louis-cover-square-sml.png)!important;
   }
   .panel.gallery-cover.teenage-cover .bg{
-    background-image:url(../images/gfx/gallery-members-louis-teenage-square-lrg.png)!important;
+    background-image:url(../images/gfx/gallery-members-louis-teenage-square-sml.png)!important;
   }
   .panel.gallery-cover.baby-louis-cover .bg{
-    background-image:url(../images/gfx/gallery-members-louis-baby-louis-square-lrg.png)!important;
+    background-image:url(../images/gfx/gallery-members-louis-baby-louis-square-sml.png)!important;
   }
   .panel.gallery-cover.x-factor-cover .bg{
-    background-image:url(../images/gfx/gallery-members-louis-x-factor-square-lrg.png)!important;
+    background-image:url(../images/gfx/gallery-members-louis-x-factor-square-sml.png)!important;
   }
 }
 
