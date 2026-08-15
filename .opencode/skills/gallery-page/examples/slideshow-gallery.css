@@ -1,0 +1,64 @@
+/* =================================================================
+   FIVE GUYS: Desktop gallery slideshow — full-size photos (no crop)
+   The official 3:2 slideshow crops each slide to a landscape box
+   (background-size:cover). Fan-editorial photos are mixed ratios
+   (mostly portrait, some landscape/square), so on desktop we switch
+   to a full-height letterbox: each slide's .bg becomes contain, the
+   panel becomes ~100vh tall, and each photo shows in full (height
+   fills the screen, width adapts, black bars where the ratio differs).
+   Scoped to .gallery-section .panel.gallery so the official album
+   photos slideshows keep the 3:2 cover crop.
+   ================================================================= */
+@media only screen and (min-width:768px){
+  .gallery-section .panel.gallery{
+    padding-top:0!important;
+    height:calc(100vh - 5.85em);
+    overflow:hidden;
+    background:#000;
+  }
+  .gallery-section .panel.gallery #slideshow{
+    position:absolute;
+    width:100%;
+    height:100%;
+    top:0;
+    left:0;
+  }
+  .gallery-section .panel.gallery #slideshow .slide{
+    position:absolute;
+    width:100%;
+    height:100%;
+    top:0;
+    left:0;
+  }
+  .gallery-section .panel.gallery #slideshow .slide .bg{
+    background-size:contain!important;
+    background-repeat:no-repeat!important;
+    background-position:center center!important;
+  }
+  .gallery-section .panel.gallery-info{
+    background:#000;
+    color:#fff;
+  }
+  .gallery-section .panel.gallery-info .panel-header,
+  .gallery-section .panel.gallery-info .panel-header a,
+  .gallery-section .panel.gallery-info .panel-header a:visited,
+  .gallery-section .panel.gallery-info .panel-header span{
+    color:#fff!important;
+    border-color:#fff!important;
+  }
+  .gallery-section .panel.gallery-info h2{
+    color:#fff;
+  }
+  .gallery-section .panel.gallery-info .share a,
+  .gallery-section .panel.gallery-info .share a:visited,
+  .gallery-section .panel.gallery-info .journal-archive-link a.more{
+    color:#fff;
+    border-color:#fff;
+  }
+  .gallery-section .panel.gallery-info .share a:hover,
+  .gallery-section .panel.gallery-info .share a:visited:hover,
+  .gallery-section .panel.gallery-info .journal-archive-link a.more:hover{
+    background:#fff;
+    color:#000;
+  }
+}

@@ -11,6 +11,9 @@ tools/_qa_screenshots/
 # Official-site dead clone cache (3.9MB, never commit)
 onedirectionmusiccom-ukprod/
 
+# PSD design sources (never commit, working files only)
+images/psd/
+
 # tools/ one-off task files (QA probes, scrapers, downloads, review artifacts)
 tools/_*.ps1
 tools/_*.html

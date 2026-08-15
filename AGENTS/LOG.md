@@ -1,5 +1,49 @@
 # 1D Fansite — 开发日志（LOG）
 
+## 2026-08-15 — Gallery Members→Louis 三级页 + Baby Louis/X Factor 两个 slideshow
+
+- **模型**：deepseek-v4-flash
+- **目的**：user 在 ~/Downloads 放了 6 张封面 PNG（louis 分类页 + baby-louis + x-factor 各 rect/square）+ 6 个 psd + 两个照片文件夹（baby louis 51 张、x factor louis 15 张）。要求把文件复制到相关目录、新建 louis 三级页面与两个 slideshow，psd 移入 psd 文件夹且不追踪（文件夹图标 文件夹不管）。
+- **结果**：
+  - 封面 PNG → `images/gfx/`（gallery-members-louis-{cover,baby-louis,x-factor}-{rect,square}-lrg.png，2400×1200 / 1200×1200）；psd → `images/psd/`（**未 git add**，符合要求）。
+  - 照片 → `images/media/gallery-images/rect-lrg/baby-louis/baby-louis-N.jpg`（51 张，原始 .jpeg/.JPG 统一转角为小写 .jpg）与 `.../x-factor-louis/x-factor-louis-N.jpeg`（15 张）。
+  - 新建 `pages/gallery/members/louis/index.html`（B2 多相册页，复制 harry 结构）：2 个 gallery-cover 卡片（baby-louis 51 / x-factor 15），og:image 用 louis cover。
+  - 新建 `pages/gallery/members/louis/baby-louis.html`（51 slide，`.jpg`）、`x-factor.html`（15 slide，`.jpeg`）：gallery-section + contain 模式（沿 live-on-tour 做法），data-cycle-caption-template `{{slideNum}}/51`、`/15`。
+  - `pages/gallery/members/index.html`：Louis 占位黑卡 → `louis-cover` + cover png + `count 2` + href `louis/index.html`。
+  - css additions：`.louis-cover/.baby-louis-cover/.x-factor-cover` 加入「去灰度组」+ mobile square 切换；`?v=` bump `20260806e→20260815a`（members/index + 3 个 louis 页）。
+- **验证**：
+  - div 平衡：louis index 29=29、baby-louis 117=117、x-factor 45=45（diff 0）。
+  - slide 计数与图片引用：baby-louis 51=51、x-factor 15=15（无重复无遗漏）。
+  - CSS braces 969=969；audit `Broken: 0`（459 refs，比上次多 69：51+15+3 covers，吻合）。
+  - HTTP：4 页面 + 6 cover png + 首尾照片全 200。
+  - Playwright 截图归档 `tools/_qa_screenshots/louis/`（11 张：desktop/mobile × 各页 + slideshow 翻页）；截图脚本 `_shot_louis.py` 一次性。视觉复核已 `open` 弹出供人工确认。
+  - git：75 A + 7 M + 85 R（R 为上任务 rename）；psd 未 add（`?? images/psd/`）；skills 文件 M 为遗留与本次无关。
+- **Token 消耗**：约 2.2 万
+- **用时**：约 15 分钟
+- **经验总结**：① 下载照片扩展名混杂（.jpeg/.JPG）时统一成小写 .jpg 再引用，slideshow 引用更干净；② B2 多相册页流程已第二次走通（harry→louis），五个成员的成员卡片在有子页前保持占位黑卡；③ court 卡片 count 语义 = 子相册数（harry 2 / louis 2），不是总照片数。
+- **遗留/待办**：已 git add 本次全部新文件，未 commit（等等 user 指示）。视觉复核截图已弹出待 user 确认。Liam/Niall/Zayn 成员页仍是占位（等后续相册）。
+
+## 2026-08-15 — Gallery fan 照片归类目录整理（hlsd-hb / liveontour）
+
+- **模型**：deepseek-v4-flash
+- **目的**：user 反馈 gallery 的 fan 投稿照片（hlsd-hb 系列 + liveontour 系列）散乱放在 `rect-lrg/` 根目录，要求建成文件夹分类、并同步改所有引用路径。
+- **结果**：
+  - 新建 `images/media/gallery-images/rect-lrg/hlsd-hb/`、`.../liveontour/` 两个子目录。
+  - `git mv` 39 个 `hlsd-hb*.{jpg,jpeg}` → `hlsd-hb/`；46 个 `liveontour-*.jpg` → `liveontour/`（保留 git 历史，rename 计数 85）。
+  - 批量改路径（Python regex）：
+    - `pages/gallery/members/harry/headband-harry.html`：`rect-lrg/hlsd-hbN` → `rect-lrg/hlsd-hb/hlsd-hbN`（39 处）。
+    - `pages/gallery/members/harry/live-on-tour.html`：`rect-lrg/liveontour-N` → `rect-lrg/liveontour/liveontour-N`（46 处）。
+  - 官方 hash 照片（130+ 张）与原 `images/gfx/...liveontour-{rect,square}-lrg.png` 封面不动；CSS 引用 gfx cover 无需改。
+- **验证**：
+  - `rg --pcre2 'rect-lrg/(hlsd-hb\d+|liveontour-\d+)(?!/)'` 全站 grep 旧路径残留 = 0。
+  - HTTP：两个 slideshow 页面 200 + 子目录图片 `hlsd-hb/hlsd-hb1.jpeg`、`liveontour/liveontour-1.jpg` 均 200。
+  - `python3 tools/audit/_audit_site_images.py` → `Broken: 0`（390 refs）。
+  - `git status`：85 rename + 2 modified HTML（另有 2 个 skill 文件 modified 属历史遗留与本任务无关，未碰）。
+- **Token 消耗**：约 0.6 万
+- **用时**：约 3 分钟
+- **经验总结**：fan 相册照片目录规范——按系列建子文件夹 `rect-lrg/<series>/`，slide 用 `git mv` 保留历史；改路径用 Python regex（`rect-lrg/<name>` → `rect-lrg/<dir>/<name>`）副作用小、可精确计数。
+- **遗留/待办**：已 git mv + 改路径，未 commit（等 user 指示）。`git status` 中另有与本任务无关的未提交改动（skills 文件 M ×2、`images/psd/` 与 slideshow-gallery.css 未跟踪）——是 user 历史手动改动，勿混入本次 commit。
+
 ## 2026-08-06 — Harry 新增 Live on Tour 相册（46 张）
 
 - **模型**：deepseek-v4-flash

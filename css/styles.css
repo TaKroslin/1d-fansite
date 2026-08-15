@@ -288,7 +288,11 @@ html.lang-zh .lyric-passage{display:block}
 .panel.gallery-cover.members-cover .bg,
 .panel.gallery-cover.harry-cover .bg,
 .panel.gallery-cover.headband-cover .bg,
-.panel.gallery-cover.liveontour-cover .bg{
+.panel.gallery-cover.liveontour-cover .bg,
+.panel.gallery-cover.louis-cover .bg,
+.panel.gallery-cover.teenage-cover .bg,
+.panel.gallery-cover.baby-louis-cover .bg,
+.panel.gallery-cover.x-factor-cover .bg{
   -webkit-filter:none!important;
   filter:none!important;
 }
@@ -304,6 +308,18 @@ html.lang-zh .lyric-passage{display:block}
   }
   .panel.gallery-cover.liveontour-cover .bg{
     background-image:url(../images/gfx/gallery-members-harry-liveontour-square-lrg.png)!important;
+  }
+  .panel.gallery-cover.louis-cover .bg{
+    background-image:url(../images/gfx/gallery-members-louis-cover-square-lrg.png)!important;
+  }
+  .panel.gallery-cover.teenage-cover .bg{
+    background-image:url(../images/gfx/gallery-members-louis-teenage-square-lrg.png)!important;
+  }
+  .panel.gallery-cover.baby-louis-cover .bg{
+    background-image:url(../images/gfx/gallery-members-louis-baby-louis-square-lrg.png)!important;
+  }
+  .panel.gallery-cover.x-factor-cover .bg{
+    background-image:url(../images/gfx/gallery-members-louis-x-factor-square-lrg.png)!important;
   }
 }
 
