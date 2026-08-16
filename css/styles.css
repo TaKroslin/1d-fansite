@@ -485,3 +485,28 @@ html.lang-bilingual .lyric-passage .zh{display:block!important}
    Chinese mode. Match the force-hide. */
 html.lang-zh .en{display:none!important}
 html.lang-zh .lyric-line .en{display:none!important}
+
+/* =================================================================
+   FIVE GUYS ONE DIRECTION — 404 page ("Wrong Direction")
+   Auto-height white panel carrying a monochrome (grayscale) photo
+   background + white wash overlay, so the black copy stays readable.
+   Reuses the official .four-zero-four big-h2 styling; overrides the
+   1:1 square so all copy is visible on desktop and mobile.
+   ================================================================= */
+.panel.four-zero-four{position:relative;background:#fff;height:auto;padding:0;overflow:hidden}
+.panel.four-zero-four .bg{filter:grayscale(100%)}
+.panel.four-zero-four::after{content:'';position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(255,255,255,.62)}
+.panel.four-zero-four .panel-content{position:relative;z-index:1;height:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:1.1em;padding:4em 12%}
+.panel.four-zero-four .fzf-logo{width:34%;max-width:300px}
+.four-zero-four .fzf-headline{font-family:'Playfair Display';font-weight:700;font-size:250%}
+.four-zero-four .fzf-copy{font-family:'Source Sans Pro';font-size:118.75%;line-height:1.6;max-width:42em}
+.four-zero-four .fzf-kicker{font-family:'Source Code Pro';font-weight:600;text-transform:uppercase;letter-spacing:.15em;color:#666}
+.four-zero-four .fzf-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:1em;margin-top:1em}
+.four-zero-four a.more,.four-zero-four a.more:visited{color:#000;border-color:#000}
+.four-zero-four a.more:hover,.four-zero-four a.more:visited:hover{background-color:#000;color:#fff}
+@media only screen and (max-width:767px){
+  .panel.four-zero-four .panel-content{padding:3em 7%}
+  .panel.four-zero-four .fzf-logo{width:50%}
+  .four-zero-four .fzf-headline{font-size:190%}
+  .four-zero-four .fzf-copy{font-size:106.25%}
+}
