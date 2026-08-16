@@ -1,5 +1,27 @@
 # 1D Fansite — 开发日志（LOG）
 
+## 2026-08-16 — Harry 新增 Temptations 相册（37 张 fan 照片 + slideshow 页）
+
+- **模型**：deepseek-v4-flash
+- **目的**：user 在 ~/Downloads 放了 `temptations/`（37 张微信导出的中文乱名照片）+ 2 张封面 PNG，要求新增 harry 的 Temptations 相册页。指出命名不规范（封面文件名拼写错误 `aquare` 应为 `square`、照片全中文乱名）。
+- **结果**：
+  - 照片正名：37 张 `微信图片_..._167_77.jpg`…按 `_N_` 数字序（167→204，含 182 缺失）重命名 → `images/media/gallery-images/rect-lrg/temptations/temptations-1..37.jpg`。用 Python 按数字序复制（BSD sed/awk 大写易错，shell 排序踩坑后改用 Python：先误拷错位（temptations-17 曾错对到源 184），全 md5 对照检测后重拷，0 错位）。
+  - 封面：`harry-temptations-{rect,aquare}-lrg.png` → 改名修正为 `gallery-members-harry-temptations-{rect,square}-lrg.png`（2400×1200 / 1200×1200），Pillow 生成 med(700)/sml(350) 变体 6 张。
+  - 新建 `pages/gallery/members/harry/temptations.html`（C 层 slideshow，body `duo gallery-section`）：37 slide 用 `rect-lrg/temptations/temptations-N.jpg`，contain 模式由全局 CSS `@media min-width:768px .gallery-section .panel.gallery` 处理（混合竖/方图比例），caption `/37`，og:image rect-med。
+  - `harry/index.html` 加第 3 张 `.temptations-cover` 卡片（count 37，href temptations.html）。
+  - `members/index.html` harry-cover count 2→3。
+  - CSS：`.temptations-cover` 加入去灰度组 + mobile `-square-sml` 切换（沿用既有模式）；`?v=` 全站 `20260816a→20260817a`（pages 150 + journal 55）。
+- **验证**：
+  - 37 张照片 md5 全对照 0 错位（首尾 167→1 / 204→37 抽查 OK）。
+  - audit Broken: 0（529 refs，+46：37 照片 + 6 封面 + 3 引用增量≈）。
+  - HTTP：temptations / harry index / members index 全 200。
+  - Playwright：37 slide 全渲染 bg-bad=0；harry index 3 张 gallery-cover；HTTP≥400 无。截图归档 `tools/_qa_screenshots/temptations/`（3 张）`open` 弹出。
+  - visionpower 仍 429（Token 配额），走程序化验证代替。
+- **Token 消耗**：约 2.5 万
+- **用时**：约 35 分钟
+- **经验总结**：① shell 批量重命名遇中文名 + 缺号文件，用 Python 按数字正则排序最稳，别依赖 `ls`/`sort -t_`；② 排序类脚本先做 md5 全对照再信任结果（首次误拷靠它抓出）；③ 封面 `aquare` 拼写错误在 skill 的命名铁律里有培养空间，后续可在 skill 提醒核对 square 拼写；④ `.gallery-section` 全局 CSS 已带 contain 模式，新增 gallery slideshow 页不用重复写样式。
+- **遗留/待办**：改动未 commit（`git add -A` 前需确认：新增 `images/media/gallery-images/rect-lrg/temptations/` 37 张 + `images/gfx/gallery-members-harry-temptations-*` 6 张需入库）。visionpower Token 待 user 充值后可按需补视觉复核。
+
 ## 2026-08-16 — 移除自建相册页分享栏（Facebook/Twitter）· 全部设备删除 + 规范防复发
 
 - **模型**：deepseek-v4-flash
