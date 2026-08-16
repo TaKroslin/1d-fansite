@@ -1,5 +1,27 @@
 # 1D Fansite — 开发日志（LOG）
 
+## 2026-08-16 — 新增自定义 404 页「Wrong Direction」（单色背景 + 双语幽默文案）· 已部署
+
+- **模型**：deepseek-v4-flash
+- **目的**：user 要一个幽默的 404 页，让人会然一笑；文案需表达两种可能原因（运营/链接出错 OR 用户网络出错）。设计方向选「Wrong Direction」双关（站名/歌名梗）。
+- **结果**：
+  - 新建根级 `404.html`（深度 0，复制 index 骨架 body `duo`，保留 header/nav/footer，双语 `.en/.zh`，og:url 用正式域名）。
+  - 布局经历两版：先「双 panel（独立 404 方块 + 下方文章文案）」→ user 反馈桌面首屏只见白方块显"朴素"，改为**单块自适应高度 panel**，全部内容首屏可见。
+  - 之后 user 提供 Louis & Zayn 照片（`~/Downloads/louis-tomlinson-and-zayn-malik-f2bmwfpwgy.webp`，599×601），要求做**单色背景**：Pillow 转灰度 + 放大 1500px + 轻锐化 → `images/gfx/404/louis-zayn.jpg`（129KB）；CSS 加 `.bg` 照片背景 + `::after` rgba(255,255,255,.62) 白色洗白遮罩 + `.fzf-content` z-index:1 保证黑字可读。
+  - 内容：5guys 黑 logo → 巨型 404（官方 `.four-zero-four` h2，Source Code Pro 300 黑）→ Playfair 标题 *Wrong Direction. / 走错方向了。* → 双语正文（链接没接牢 OR 网络丢半路，别慌别哭）→ 灰彩蛋 *It's not the Story of My Life. It's just a 404.* → 黑 `.more`×2（Back to Home / Report a broken link mailto）。
+  - `css/styles.css` additions 块新增 `.four-zero-four` 系列规则（只追加）；`?v=` 404.html 单独 bump `20260817b→d`（其余页面不动）。
+  - `wrangler.jsonc` `assets` 加 `"not_found_handling": "404-page"`（CF Workers 纯静态模式自定义 404 必需，与根 `404.html` 缺一不可）。
+  - 已 commit `0759a00` 并 push main（首次 push 网络超时，重试成功）。
+- **验证**：
+  - 全站图片审计 Broken: 0（529 refs）；404 页引用的 8 个资源本地 curl 全 200（审计脚本只扫 index+pages，根 404.html 需手动补验）。
+  - Playwright 桌面/移动截图：单 panel 白底 554/422px 高、logo/404/按钮位置正确、按钮黑边黑字、header/footer 可见；截图归档 `tools/_qa_screenshots/404/` 并 `open` 弹出。
+  - 线上：`curl https://www.5guys1direction.asia/definitely-not-a-page-12345` → HTTP 404 + 页面含 "Wrong Direction." + 背景图引用，确认 not_found_handling 生效。
+  - visionpower 全程 429（Token 套餐用尽），截图复核靠 user 肉眼 + 程序化验证兜底。
+- **Token 消耗**：约 2 万
+- **用时**：约 60 分钟
+- **经验总结**：① CF Workers assets 自定义 404 必须同时满足「根目录 `404.html` + `assets.not_found_handling:"404-page"`」；② python `http.server` 不服务 404.html，本地验证 404 行为要走 `wrangler dev` 或部署后 curl 假路径；③ 粘贴进聊天的图片不落盘且模型不支持看图，需 user 存盘给路径；④ `tools/audit/_audit_site_images.py` 只扫 `index.html`+`pages/**`，新增根级页面（404.html）的图片引用需手动 curl 补验。
+- **遗留/待办**：visionpower 充值后可按需补视觉复核；原图仅 600px，如 user 有更高清版可重出更锐背景；`AGENTS/AGENTS.md` File Structure 未加 404.html 行（已在本条日志记录，如需补文档）。
+
 ## 2026-08-16 — Harry 新增 Temptations 相册（37 张 fan 照片 + slideshow 页）
 
 - **模型**：deepseek-v4-flash
