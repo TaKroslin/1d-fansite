@@ -1,5 +1,24 @@
 # 1D Fansite — 开发日志（LOG）
 
+## 2026-08-16 — 移除自建相册页分享栏（Facebook/Twitter）· 全部设备删除 + 规范防复发
+
+- **模型**：deepseek-v4-flash
+- **目的**：user 原要求移动端隐藏自建相册页（headband-harry / live-on-tour / baby-louis / teenage / x-factor）的 `.share` 分享栏；确认几个回合后决定**桌面也删**（太丑），并要求把「以后都不要有」写进规范 / skills。
+- **结果**：
+  - 5 个页面彻底删除 `.share` 块（每页 4 行：fbshare + tweetshare + 容器）——不保留任何设备显示。
+  - 此前已加的 CSS media query（`.panel.gallery-info .share{display:none}`）已移除，CSS 相对 `20260816a` 无净改动。
+  - `?v=` 保持 `20260816a` 不动（b16 中间态已还原回 a16）。
+  - 顺带修 `_build_albums_page.py:82` 硬编码 `20260803b→20260816a`（符合此前全站 v= 统一，避免重跑回退旧版本号）。
+  - RULES.md §7 加防复发条款：自建相册/slideshow 页禁止 `.share` 分享栏；官方克隆自带分享保留不动。
+- **验证**：
+  - 5 页 share 计数全 0；div 平衡（open==close 各页持平）；无 icon-facebook/Share on 残留。
+  - 审计 Broken: 0（491 refs）；teenage/x-factor HTTP 200。
+  - git 暂存仅 7 M（5 页 + LOG + albums.html v= 更新 + RULES）+ 未跟踪 build 脚本改动。
+- **Token 消耗**：约 1 万
+- **用时**：约 20 分钟
+- **经验总结**：① 删除元素优先整个移除而非 CSS 隐藏（桌面也删时直接删 HTML + 清 CSS 死代码）；② 分享栏这类「审美性冗余」要主动扩范围问清用户（mobile 隐藏 vs 全删）；③ 构建脚本里硬编码 v= 是 v= 统一失效的根因，改脚本时同步查硬编码版本号；④ RULES.md 新增条款要在 LOG 中留档，双保险。
+
+
 ## 2026-08-16 — 全站 cover 三尺寸上线（rect-sml/med 生成）+ og:image med 化 + teenage 照片 51→49
 
 - **模型**：deepseek-v4-flash

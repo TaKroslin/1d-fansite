@@ -1,5 +1,6 @@
 # Local dev / housekeeping scripts (one-off QA, extraction, debug)
 _*.py
+!_build_albums_page.py
 _*.json
 _*.txt
 _*.md

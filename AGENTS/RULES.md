@@ -213,6 +213,7 @@
 - **歌词源**：官网 > Genius > AZLyrics > lyrics.ovh（免费无 key 最可靠；`api.lyrics.ovh` 需 URL 编码空格，歌名变体可能决定命中）。
 - **已死数据源**：`cdn.smehost.net` 全死；Instagram CDN（scontent-lhr8-1.cdninstagram.com）失效；Wayback Machine 慢且不稳。
 - **web_search 可能 402**（plan 余额用完）：此时用后台 agent（BYOK）替代，或直接访问已知 URL。
+- **自建相册/slideshow 页不放 `.share` 分享栏**：自建 gallery 相册页（如 gallery/members/* 下的 slideshow）禁止加 Facebook/Twitter `.share` 分享按钮（视觉冗余，坏了审美）。2026-08-16 已从全部 5 个相册页移除。新建相册页时不要在内容区加 `.share` 块；官方克隆页（journal 等）自带的分享元素保留不动。
 
 ---
 
