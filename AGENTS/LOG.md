@@ -1,5 +1,26 @@
 # 1D Fansite — 开发日志（LOG）
 
+## 2026-08-23 — 首页 Liam Payne 生日纪念 panel（黑白双人 cut-out 设计）· 未部署
+
+- **模型**：deepseek-v4-flash-vision
+- **目的**：Liam 生日临近，把首页原有 placeholder `liam-bday-panel`（`#LiamPayne` 纯文本 + 内联 `<style>` 背景图方案）升级成最终视觉方案。user 全程主导设计决策。
+- **设计决策（用户确认）**：
+  - 两张切图：年轻 Liam（X Factor 时期，手抱头）↔ 年长 Liam（鸭舌帽夹克，微笑），黑白，左右分置，中间留白放字（desktop `rect`）/ 上方留白（mobile `square`）。
+  - 大标题用与 `#16YearsOf1D` 同款居中 Playfair Display 大标题「Happy Birthday Liam!」；下方纪念 tag「You're always the cutest guy.」+ 年份「1993 — 2024」（出生年—离世年）。
+  - 删除「A fan tribute.」行（与站点内容不符）。
+- **实现**：
+  - 图片：`~/Downloads/liam-bday-2026-rect.png` / `-square.png` → `images/gfx/liam-bday-2026-{rect,square}.png`（已 add，跟踪）。
+  - `index.html`：删除 `<head>` 内整段 obsolete 内联 `<style>`（引用不存在的 `images/gfx/liam-bday/rect.png`，审计 2 条 Broken 的根因）；`liam-bday-panel` 内文替换为 `.liam-stage`（含 desktop/mobile 双 img + `.liam-headline`）+ `.liam-copy-bottom`（tagline + years）；`?v=20260823a→b`。
+  - `css/styles.css` additions 块追加 `.panel.journal-article.liam-bday-panel` 系列规则（只追加）：`.liam-stage` 定高 `min(78vh,640px)`、`.cut img` contain/bottom、`::after` 底部渐隐遮硬切脚、`.liam-headline` Playfair 居中 `clamp(2.2rem,7vw,5.4rem)`、`.liam-copy-bottom` 居中；767px 断点切 square 图 `scale(1.18)` 底部锚定放大、headline 顶部、copy-bottom 静态流。
+  - 关键：`.panel.journal-article .panel-header{display:none!important}`（既有规则），故生产页 header 不显示，stage 是 panel 直接子元素全宽，无需 `article-holder` 边距。
+- **验证**：
+  - 全站图片审计 Broken: 2 → 0（2 条 Broken 正是被删的 `liam-bday/rect.png`）。
+  - Playwright 桌面/移动：hero 下 panel 正确渲染（desktop 人物左右/标题居中，mobile 标题顶/人物下）；截图归档 `tools/_qa_screenshots/liam-preview/` 并 `open` 弹出。
+  - 桌面/移动均有 Console 错误仅 fonts.gstatic CORS（本地 http 常见，非产物问题）。
+- **遗留**：未部署（未 commit/push）；2 张新图仍是 untracked，部署前需 `git add`。动画进场未做（待 user 点头）。
+- **Token 消耗**：约 1.8 万
+- **经验**：mobile 空是因为误用 desktop rect 图（窄屏 contain 缩小浮空）；改用专用 square 图 + 底部锚定 scale 放大即可撑满。审计 Broken 多半来自过期内联 `<style>` 里的死路径，不只是 `pages/`。
+
 ## 2026-08-16 — 新增自定义 404 页「Wrong Direction」（单色背景 + 双语幽默文案）· 已部署
 
 - **模型**：deepseek-v4-flash
