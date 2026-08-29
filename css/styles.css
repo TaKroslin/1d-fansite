@@ -589,3 +589,119 @@ html.lang-zh .lyric-line .en{display:none!important}
   .panel.journal-article .liam-sub{font-size:94%;max-width:92%}
   .panel.journal-article .liam-years{margin-top:.55em;font-size:84%}
 }
+
+/* =================================================================
+   FIVE GUYS: Serialised novel — blog entry + hub + chapter reading
+   (sample build 2026-08-30; real chapter data wired in later)
+   =================================================================
+   Hierarchy: pages/blog.html (square entry card, first on the list)
+              -> pages/blog/<novel>/index.html (hub of chapter cards)
+              -> pages/blog/<novel>/chapters/<slug>/index.html
+   Reading pages: article layout + sticky right-hand chapter catalog
+   (contents) + prev/next chapter buttons above the footer's
+   back-to-top. */
+
+/* Blog listing entry card — first on the list, spans the FULL row
+   (two square widths). WHITE, no image: promo headline + small blurb
+   + Read button, stacked and centered. NOTE: padding % resolves against
+   the panel-group width (full row), not the panel's own width.
+   Mobile keeps the global square rule. */
+.panel.journal-news.homepage-news.novel-feature-card{background:#fff;width:100%;padding:25% 0 0 0}
+.novel-feature-card .inline{border-color:#000}
+.novel-feature-card .feat-row{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.1em;padding:3.5em 10% 1em;text-align:center}
+.panel.journal-news.homepage-news.novel-feature-card .feat-row h2{position:static;left:auto;top:auto;width:auto;margin:0}
+.novel-feature-card .feat-row .blurb{font-family:'Cousine',monospace;font-size:93.75%;line-height:155%;color:#000;-moz-opacity:.62;-khtml-opacity:.62;-webkit-opacity:.62;opacity:.62;max-width:56%}
+.novel-feature-card .feat-row .blurb p{margin:0}
+.panel.journal-news.homepage-news.novel-feature-card .feat-row .info{position:static;left:auto;bottom:auto;width:auto}
+.novel-feature-card .info .more{font-size:93.75%!important;padding:.65em 1.9em}
+@media only screen and (max-width:767px){
+  .novel-feature-card .feat-row{gap:.7em;padding:2.6em 7% .8em}
+  .novel-feature-card .feat-row .blurb{max-width:88%;font-size:81.25%}
+}
+
+/* Novel hub: tighten the gap between the intro panel and the chapter
+   cards below it (desktop + mobile). */
+.novel-hub .panel.journal-article .article-holder{padding-bottom:1.2em}
+.novel-hub .panel.journal-article .article-holder h2{margin-bottom:.6em}
+.novel-hub .panel.journal-article .text p:last-of-type{margin-bottom:0}
+@media only screen and (max-width:767px){
+  .novel-hub .panel.journal-article .article-holder{padding-bottom:1em}
+  /* Mobile chapter cards stay the small 3:1 rectangle (beat the global
+     square !important rule with higher specificity + !important).
+     Mobile panel = 100% of the group, so padding % = own width: 1/3. */
+  .panel.journal-news.homepage-news.novel-chapter-card{padding:33.333% 0 0 0!important}
+  .panel.journal-news.homepage-news.novel-chapter-card h2 span{display:inline;margin:0}
+  .panel.journal-news.homepage-news.novel-chapter-card .row{padding:0 5.5%}
+}
+
+/* Novel hub chapter cards — small WHITE rectangles (1/3 of the square
+   height, width unchanged): number + name on the left, small Read
+   button on the right, both vertically centered. No cover image.
+   Mobile falls back to the global square rule; the row stays flexed. */
+.panel.journal-news.homepage-news.novel-chapter-card{background:#fff;padding:16.666% 0 0 0}
+.novel-chapter-card .inline{border-color:#000}
+.novel-chapter-card .row{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:space-between;gap:1.5em;padding:0 7%}
+.panel.journal-news.homepage-news.novel-chapter-card .row h2{position:static;left:auto;top:auto;width:auto;margin:0;text-align:left;font-size:281%}
+.panel.journal-news.homepage-news.novel-chapter-card .row .info{position:static;left:auto;bottom:auto;width:auto}
+.novel-chapter-card .num{font-family:'Source Code Pro',monospace;font-weight:700;-moz-opacity:.45;-khtml-opacity:.45;-webkit-opacity:.45;opacity:.45;margin-right:.5em}
+.panel.journal-news.homepage-news.novel-chapter-card .info .more{font-size:81.25%!important;padding:.6em 1.6em;color:#000;border-color:#000}
+.panel.journal-news.homepage-news.novel-chapter-card .info .more:hover{background-color:#000;color:#fff}
+
+/* Novel hub placeholder cards (chapters not yet wired)
+   Higher specificity than the blog-section fade-me opacity:1!important fix,
+   and appended later, so the dimming wins. */
+.blog-section .panel.journal-news.homepage-news.is-placeholder{-moz-opacity:.45!important;-khtml-opacity:.45!important;-webkit-opacity:.45!important;opacity:.45!important}
+.blog-section .panel.journal-news.homepage-news.is-placeholder a{cursor:default}
+
+/* Novel hub last-card filler — the 111-card grid ends on a single card;
+   this non-clickable pair-mate closes the list with one line. Dimming uses
+   !important to beat any JS inline opacity on blog-section panels. */
+.blog-section .panel.journal-news.homepage-news.novel-filler{cursor:default}
+.novel-chapter-card.novel-filler .row{justify-content:center;text-align:center}
+.panel.journal-news.homepage-news.novel-chapter-card.novel-filler h2{text-align:center}
+
+/* Chapter reading page — two-column: main text + right catalog. */
+.panel.journal-article.novel-chapter{background:#fff}
+.novel-layout{display:flex;align-items:flex-start;margin:0 3.5%;padding:1.8em 0 2em}
+/* Wider reading column: the official .journal-article .article-holder
+   margin:0 26% keeps winning cascade ties, so anchor with the page-level
+   .novel-chapter class and !important the margin. */
+.panel.journal-article.novel-chapter .novel-layout .article-holder{flex:1 1 auto;min-width:0;margin:0!important;padding-bottom:0}
+.novel-layout .article-holder h2{margin-left:0;margin-right:0}
+
+/* Right-hand sticky catalog (chapter cross-links, current highlighted) */
+.novel-catalog{flex:0 0 16em;max-width:16em;margin:2.2em 0 0 3em;position:sticky;top:4.5em;align-self:flex-start;font-family:'Source Code Pro',monospace;font-size:87.5%;text-transform:uppercase;letter-spacing:.05em}
+.novel-catalog h3{font-family:'Source Code Pro',monospace;font-weight:700;font-size:100%;text-transform:uppercase;letter-spacing:.15em;border-bottom:.12em solid #000;padding:0 0 .6em;margin:0 0 1em}
+.novel-catalog ol{list-style:none;margin:0;padding:0}
+.novel-catalog li{margin:0;padding:.45em 0;border-bottom:.05em solid rgba(0,0,0,.15)}
+.novel-catalog li a,.novel-catalog li a:visited{color:#000;border-bottom:0;display:block}
+.novel-catalog li a:hover,.novel-catalog li a:visited:hover{color:#666;border-bottom:0}
+.novel-catalog .num{display:inline-block;min-width:2.4em;font-weight:700}
+.novel-catalog li.active a{font-weight:700}
+.novel-catalog li.active .num::before{content:"\25b6 ";font-size:70%}
+.novel-catalog li.placeholder a{-moz-opacity:.45;-khtml-opacity:.45;-webkit-opacity:.45;opacity:.45;cursor:default}
+
+/* Prev / next chapter buttons — placed at the end of the article body,
+   above the footer's back-to-top button. */
+.chapter-nav{display:flex;justify-content:space-between;align-items:center;gap:1em;margin:3em 5% 0;padding-top:2em;border-top:.05em solid rgba(0,0,0,.25)}
+.chapter-nav .more,.chapter-nav a.more:visited{font-size:125%;color:#000;border-color:#000}
+.chapter-nav .more:hover,.chapter-nav a.more:visited:hover{background-color:#000;color:#fff}
+.chapter-nav .more i{font-size:75%;margin:0 .35em 0 0;position:relative;top:.05em}
+.chapter-nav .more.next i{margin:0 0 0 .35em}
+.chapter-nav a.disabled,.chapter-nav .more.disabled{-moz-opacity:.35;-khtml-opacity:.35;-webkit-opacity:.35;opacity:.35;pointer-events:none}
+
+/* Mobile: chapter catalog collapses behind a toggle button (desktop
+   keeps the always-visible sticky rail). */
+.catalog-toggle{display:none;width:100%;margin:1.6em 0 0;padding:.75em 1em;text-align:center;font-family:'Source Code Pro',monospace;font-weight:600;font-size:93.75%;letter-spacing:.1em;text-transform:uppercase;color:#000;border:.15em solid #000;background:none;cursor:pointer}
+.catalog-toggle .cat-show{display:none}
+.novel-layout.catalog-open .catalog-toggle .cat-hide{display:none}
+.novel-layout.catalog-open .catalog-toggle .cat-show{display:inline}
+.catalog-toggle:hover{background:#000;color:#fff}
+@media only screen and (max-width:767px){
+  .novel-layout{display:block;margin:0 5%}
+  .novel-catalog{display:none}
+  .catalog-toggle{display:block}
+  .novel-layout.catalog-open .novel-catalog{display:block;position:static;width:100%;max-width:100%;margin:1.6em 0 0}
+  .chapter-nav{margin:2em 0 0}
+  .chapter-nav .more{font-size:100%;padding:.7em 1.2em}
+}

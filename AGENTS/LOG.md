@@ -1,5 +1,230 @@
 # 1D Fansite — 开发日志（LOG）
 
+## 2026-08-30 — hub Editorial/Moment 卡文案改短（big-pickle）· 待用户审查
+
+- **模型**：big-pickle
+- **目的**：用户要求 hub 底部 "editorial moments" 卡（即 `.panel.moment`，头部 Editorial/Moment）文字太长，改成一行 "The story is complete"。
+- **处理**：`novel_hub.html` moment 卡 h2 由 `The story is complete — all 110 chapters live here / 110 章，全本完载，最后一章也在这里` 改为 `The story is complete / 全文完`（双语各一句）。版本 `20260830o→p`，重建 112+5 页。
+- **验证**：EN/ZH 文本正确、无溢出（moment 是 Codystar 大字号卡，一行即可）；版本全 p；audit Broken: 0；截图已 open。
+- **Token 消耗**：约 0.3 万
+- **用时**：同一会话
+- **经验**：用户说"editorial moments"对的是 `Editorial/Moment` 头部卡，与下方 Submissions/Newsletter（投稿）卡是两个——改之前先按 panel-header 命名对号，别改错卡。
+- **遗留/待办**：未 commit/push。
+
+## 2026-08-30 — filler 卡底色回白：去掉整卡半透明（big-pickle）· 待用户审查
+
+- **模型**：big-pickle
+- **目的**：用户反馈"把卡片的底色改掉了，改回白色"。
+- **根因**：filler 的 `background` 本来就是 `#fff`（与章卡一致），变灰的是我此前给整卡套的 `opacity:.55!important` 半透明——压在黑色页面背景上整卡透出灰调；用户看到即"底色被改"。
+- **处理**：删掉 `.blog-section .panel.journal-news.homepage-news.novel-filler` 里的全部 opacity 规则，保留 `cursor:default`；页面无 JS 透明度干扰（该卡无 fade-me 类）。版本 `20260830n→o`，重建 112+5 页。
+- **验证**：computed opacity=1、bg rgb(255,255,255) 与章卡一致、字体仍 identical、无链接；版本全 o 无残留；audit Broken: 0；截图已 open。
+- **Token 消耗**：约 0.3 万
+- **用时**：同一会话
+- **经验**：透明度是全卡属性，会让白色卡在深色背景上整体显灰——"想要白色"先查 opacity 而不是 background；半透明装饰要慎用在需要和白卡并排的内容上。
+- **遗留/待办**：未 commit/push。
+
+## 2026-08-30 — filler 卡再修：短文案 + 与章卡同排版（big-pickle）· 待用户审查
+
+- **模型**：big-pickle
+- **目的**：用户反馈 ① filler 卡字体和前面章卡不一致；② 英文文案太长，要求换成短句 **"Here They Are Home"**。
+- **根因与处理**：
+  - 文案：EN 改 `Here They Are Home`；中文配了短句 `他们到家了`（可在双语切换下显示，待用户确认是否要中文）。
+  - 字体不一致根因：**章卡标题文字包在 `<span class="scaler" style="font-size:60%">` 里**，实际渲染 = h2(281%)×60% = 28.23px；filler 当时没包 scaler → 渲染成完整 47px，且我之前还硬设了 `font-size:150%;line-height:1.55`。修复：删掉 filler h2 的字号/行高覆盖（桌面+移动两条），并给 filler 文案也包上同样的 scaler span → computed 与章卡**逐字段完全一致**（Playfair 28.2349px/700/33.88 lh/1.176 ls），只保留 `text-align:center`。
+  - 版本 `20260830m→n` 维持同一 buildid，重建 hub。
+- **验证**：Playwright——prev 卡与 filler 的 font-family/size/weight/lh/ls/transform 七字段 identical=true；与上一卡同位同高；桌面/移动无溢出（移动 17.98px）；EN/ZH 文本正确；opacity .55、cursor default（沿用上一轮）；版本全 n 无残留；audit Broken: 0；桌面+移动截图已 open。
+- **Token 消耗**：约 0.6 万
+- **用时**：同一会话
+- **经验**：① 复用组件排版 = 复用其 DOM 结构（scaler 技巧属于排版的一部分，漏包 span 就有 47px vs 28px 的坑）；② 校对"一致"用 computed 逐字段对比，别只看字号；③ 覆盖规则能删就删，让元素吃默认层，而非曲线调大小凑。
+- **遗留/待办**：中文文案"他们到家了"是否保留待定；未 commit/push。
+
+## 2026-08-30 — 小说 hub 末位补齐卡（novel-filler）· 待用户审查
+
+- **模型**：big-pickle
+- **目的**：hub 111 张卡是奇数，最后一组只有 1 张卡、右侧空缺；用户要求在末尾放一张不可点击的卡，上面写一句话（文案由我拟定）。
+- **结果**：
+  - `build_novel.py` 新增 `FILLER_TPL`（复用卡片骨架，无 `<a>`，带 .en/.zh 双语文案）：**"全文完 —— 谢谢你把这条回家的路走完。" / "The end — thank you for walking all the way home with them."**（呼应书名 The Only Direction Home）。`build_hub` 循环里末组只有 1 张时自动补进 filler（组数仍 56，末组 2 卡=110+filler）；将来章数变偶数时 filler 自动消失，无需维护。
+  - CSS：`.blog-section .panel.journal-news.homepage-news.novel-filler{opacity:.55!important}`（5 类压第 63 行 `.blog-section .panel.fade-me{opacity:1!important}` 的 3 类——先写了 2 类选择器不生效，实测 computed opacity=1，升级到 ≥4 类+!important 才打赢）；`.row` 居中；h2 桌面 150%/移动端 100%（媒体块内同特异性后置覆盖），实测不溢出、与 110 同位同高。
+  - 版本 `20260830k→m`（build_novel/build_blog/blog_list），重建 112+5 页。
+- **验证**：Playwright——filler 存在、无 href、对齐 prev 同排同高、末 group 卡数=2、opacity computed=0.55、cursor default、桌面 640×213 / 移动 390×130 均不溢出、EN/ZH span 2 个；版本全 m 无残留；audit Broken: 0；桌面+移动截图已 open。
+- **Token 消耗**：约 0.8 万
+- **用时**：同一会话
+- **经验**：① 奇数卡片完整网格 = 末位单卡补 filler 配对，比改偶数章更干净；② 全站 `.blog-section .panel.fade-me{opacity:1!important}`（3 类）是 opacity 坎，私有面板 dim 必须 ≥4 类+!important（placeholder 同款先例）；③ 同特异性时靠"后置"赢，媒体块覆盖记得把特异性补足再靠顺序压桌面规则。
+- **遗留/待办**：待用户审查文案（"谢谢你把这条回家的路走完"可否）；未 commit/push。
+
+## 2026-08-30 — 小说按钮中文文案操作逻辑修正（big-pickle）· 待用户审查
+
+- **模型**：big-pickle（用户称呼）
+- **目的**：用户指出按钮中文翻译不符合操作逻辑，确认范围后共修 4 处：
+- **结果**：
+  1. hub 大按钮 `从前言读起/Begin at the prologue` → `开始阅读/Start reading`（动作指令式，破坏语——原句像建议不像按钮动作）。
+  2. 卡片按钮 `读` → `阅读`（单字"读"不自然且不像操作动作）；改在 `CARD_TPL` + 模板。
+  3. 章节页目录折叠按钮：原 `章节目录/Chapter contents`（名词，静态，不反映切换动作）→ 双向文案 `cat-hide(展示 展开目录/Show contents)` / `cat-show(收起目录/Hide contents)`，CSS 里 `.novel-layout.catalog-open` 时隐藏前者显示后者，JS 无需改。实测：开→"SHOW/HIDE CONTENTS"+目录 block+aria-expanded=true，关→还原。
+  4. 上下章禁用态：前言页(00)上一章、末章(110)下一章仍显示"上一章/下一章"但点不动→禁用位改 `没有上一章/没有下一章`（EN `No previous/next chapter`），构建脚本按 prev/nxt 是否存在注入新 token `PREV_EN/PREV_ZH/NEXT_EN/NEXT_ZH`。
+  - 版本 `20260830j→k`（build_novel CSS_VERSION、build_blog css_href、blog_list.html），重建 112+5 页，全站仅剩 k（117 处引用）。
+- **验证**：Playwright——hub 大按钮 EN/ZH、卡片 ZH、ch00 prev/next、ch110 prev/next、ch01 移动端 toggle 开/关两态 innerText+display+aria 全对；audit Broken: 0；截图 2 张已 open。
+- **Token 消耗**：约 0.7 万
+- **用时**：同一会话
+- **经验**：① 可交互控件（折叠按钮）文案要用"动作"而非"名词"，且要随状态切换（cat-hide/cat-show 双 span + CSS 按容器类切换，避开 JS 文本替换）；② 禁用态控件仍显示"可执行动作"文案=操作矛盾，禁用位单独给"没有xx章"更诚实；③ 大 CTA 用祈使动宾（开始阅读），别用"从前言读起"这类状语式指引。
+- **遗留/待办**：未 commit/push。
+
+## 2026-08-30 — 今日工作终审（DeepSeek 收尾复审）· 待用户审查
+
+- **模型**：DeepSeek（deepseek-v4-flash-vision-exp；用户明确由 DeepSeek 负责最后审查收尾）
+- **目的**：为今天的小说全部工作（样本 7 轮 + 全量接入 + 修正轮）做最终复审收尾。
+- **审查结论（全部通过）**：
+  - 静态：生成件无残留 `__TOKEN__`；无 `00-prologue`/`01-sample` 死引用；全站版本仅剩 `20260830j`；111 章目录 `chapter.md + index.html` 成对无缺；无 .DS_Store；章节页 prev/next/目录/hub 相对链接全部存在；hub 111 张卡 href 全部命中；blog.html 入口卡链接正确；posts.json 无小说污染。
+  - 浏览器（Playwright，监听 404/pageerror/console.error）：hub、ch01、ch110、blog.html 四页零 JS 错误；唯一 HTTP 404 = moment 面板图片 retinafy `-sml→-med` 静默探测（全站既有行为，AGENTS.md 已记录"可接受"）；hub EN/ZH 切换正常；ch01 移动端目录按钮展开 111 条；audit Broken: 0（608 引用）。
+- **交付物清单**：111 章节页 + hub + 数据源（`pages/blog/the-only-direction-home/`）；`tools/build/build_novel.py` + 两个模板；blog 入口卡模板/生成件；`?v=20260830j` 全站一致。
+- **git 状态**：未提交。修改 11 个（LOG/styles.css/blog.html+4 篇文章页+posts.json/build_blog.py/blog_list.html），未跟踪 5 项（小说目录、build_novel.py、两个模板、旧 QA 脚本 `tools/_qa_novel_sample_20260830.js`，后者引用已删样本页，属历史脚本留着归档）。上线前人工审查后 `git add + commit + push`，Cloudflare Workers 自动构建。
+- **Token 消耗**：约 0.8 万
+- **用时**：同会话未分开计
+- **经验**：终审固定套路 = 静态（token/死链/版本/目录对齐全查）+ 运行时（404+JS 错误监听）+ 交互（双语/移动端目录/链接跳转）+ audit 终值 + git 未跟踪检查；retinafy 静默 404 过滤掉别当新问题。
+- **遗留/待办**：待用户审查视觉与文案后提交发布；后续改稿直接编辑 `chapters/NN/chapter.md` 重跑 `build_novel.py`。
+
+## 2026-08-30 — 小说接入修复第二轮：章卡栅格错乱（嵌套 panel-group）+ 简介/标题精简 · 待用户审查
+
+- **模型**：big-pickle
+- **目的**：用户反馈两处——① `blog.html` 入口卡标题和简介太长；② hub 页简介太长且下方章节卡片全部错乱。
+- **结果**：
+  - **"卡片乱套"根因**：`CARD_TPL` 模板自带 `<div class="panel-group">` 开头却不负责闭合 group（闭合在 build_hub 拼接时补），导致**每个卡片各开一层 group**，两层嵌套每行叠进内层——几何塌陷成 213→107→53→27→13 递减，`groupCardCounts=[111,1,109,1,...]`（第一个 group 吞掉全部卡片）。修复：CARD_TPL 去掉 group 层，build_hub 显式 `'<div class="panel-group">\n' + inner + '</div>'` 两卡一组。实测全部卡片 640×213 统一、57 个 group 里章卡组全部 2 张、末组 110 单张收尾、移动端 390×130（3:1）。
+  - **简介精简**：hub 简介砍到一段（五个人/一条回家路/由热爱而写）+ 统计行（110 章 · 约 85 万字 · 已完载）+ 按钮，intro 高度 828→545、文字 769→257 字符；blog 入口卡 h2/blurb 同步缩短（去"webmaster's own"啰嗦前缀，110 章完载 + 一句话 blurb）。两卡实测无溢出。
+  - 版本 `?v=20260830j`（build_novel/build_blog/blog_list）。注意：build_novel.py 的 `CSS_VERSION = "20260830i"` 用 `sed '=20260830i'` 匹配不到（前导是 `"` 引号），首轮 sed 只升了 py 内 f-string 行和模板，脚本漏升——直接改脚本引号内再重跑 112 页确认全部 j。
+- **验证**：Playwright 几何断言——hub 111 卡高/宽唯一值 [213]/[640]、组内卡数 [2,2,2,2]、末卡 640×213；mobile 首 4 卡高 [130×4]、卡宽 390；blog 卡 1280×320 无 blurb/feat-row 溢出；audit Broken: 0。截图 4 张已 `open`。
+- **Token 消耗**：约 1.1 万
+- **用时**：同会话未分开计
+- **经验**：① 模板生成 HTML 时 group/容器闭合必须单一责任（谁开谁关），否则嵌套级联且视觉效果是"逐行塌缩"——发现即查 group 计数与每高递减；② 版本号 sed 三种写法（`?v=X`、`f"...?v=X"`、`CSS_VERSION = "X"`）匹配串要分别核，跑完用 `grep -r 版本号` 扫全量核对再验收。
+- **遗留/待办**：数据源 `chapters/NN/chapter.md`；未 commit/push。
+
+## 2026-08-30 — 小说接入修正轮：hub CSS 路径修复 + 双语口径纠正（110 章/去"免费"）· 待用户审查
+
+- **模型**：big-pickle（本轮起；用户确认当前模型即 big pickle，之前 GLM-5.3-flash 描述作废）
+- **目的**：用户四点反馈——① hub 页 CSS 丢失变 H5 裸排；② 中文口径纠正：只有小说正文和章节标题原样中文，blog 入口卡 / hub 介绍要做**真中英双语**；③ 一共 110 章，前言不算章节；④ 去掉"免费阅读"提法（同人小说 = 粉丝热情互相分享）。
+- **结果**：
+  - **CSS 丢失根因**：hub 模板 `ROOT_HUB` 误设为 `..`（hub 深度 3，CSS/JS/logo/nav/footer 全部 404）。改为 `../../..`。章节页 `ROOT_CHAPTER` 为 5 级不变（此前正常）。
+  - **双语口径**：章节页 h2 标题去掉 `.en/.zh` 双 span → 唯一纯文本中文；正文本就无 span。hub 介绍 / stats / 时刻面板 / 投稿面板 + blog 入口卡 h2/blurb 改为**真双语**（.en 真实英文译文，.zh 中文）。目录条目保持纯文本中文。
+  - **章节数**：全站文案 111 章 → 110 章（前有序言一篇）；hub og/keywords、blog 卡、moment/newsletter、章节页 DESC、keywords 全部核对修正。章节页 keywords 顺手清掉残留 `第__NUM2__章`（NUM2 恒空产生"第章"脏字符）。
+  - **去"免费"**：blog 卡 blurb/h2 与 newsletter 面板改"由热爱写成 / 粉丝互相分享"口吻，不再提免费。
+  - 版本 `?v=20260830i`（build_novel/build_blog/blog_list 三处），重跑 build_novel + build_blog。
+- **验证**：hub body computed bg=rgb(0,0,0)（CSS 生效）、卡片白底；EN/zh 切换后 hub 简介正确换语言；ch01 标题 "第一章 林森浩" 纯文本（en/zh span 数=0）、正文原样、目录首条 "00 前言"、正文列 912px；blog 入口卡英文文案正常；`grep 111 章/免费` 生成件与模板 0 命中；audit Broken: 0（608 引用）。截图 4 张已 `open`。
+- **Token 消耗**：约 1.4 万
+- **用时**：同会话未分开计
+- **经验**：模板里"相对深度"token 极易写错——hub（3 级）与章节页（5 级）不能共用一个 root，且**改完必须用 computed style 验证 CSS 真的加载了**（看 innerText/静态 grep 查不出裸排）；文案全局一致性用 `grep` 残留词做回归（111/免费）。
+- **遗留/待办**：待用户审查视觉与文案；数据源 `chapters/NN/chapter.md`；未 commit/push。
+
+## 2026-08-30 — 小说全量接入：111 章建页 + hub 目录 + 各处文案 · 待用户审查
+
+- **模型**：big-pickle（本轮起生效；上轮 GLM-5.3-flash 记录作废统一改此）
+- **目的**：① 用户把 111 个章节 md 放在根目录 `chapters/`，要求移到合适位置；② 为所有章节创建页面；③ 小说原生中文、不做翻译，标题/正文原封不动；④ 更新各处介绍与小字。
+- **结果**：
+  - **数据源落位**：`chapters/NN_标题.md`（00–110 共 111 个）→ `pages/blog/the-only-direction-home/chapters/NN/chapter.md`（md 与生成的 index.html 同目录，沿用 article.md 惯例；root 副本已删）。校验：编号 0–110 连续无重复，正文非空白字符约 84.9 万 → 口头语约 85 万字。
+  - **新增 `tools/build/build_novel.py`**（幂等，跑完生成 111 章节页 + hub）：读 `chapter.md` 首个 `# ` 作标题（短名剥 `第X章` 前缀），python-markdown 渲染正文；章节页沿用第七轮定稿模板（`tools/templates/novel_chapter.html`）：正文 912px 宽、右上 sticky 目录 111 条 + active 三角、上/下一章、移动端目录折叠按钮；目录/卡片条目为纯文本（无 .en/.zh span，双语状态恒显中文）；标题 `.en`/`.zh` 塞同一中文（符合"中文英文都显示中文"，日后英文可补）。
+  - **hub 模板** `tools/templates/novel_hub.html`：真实简介（前言提炼：五条路、direction/home 双线、111 章 · 约 85 万字 · 中文首发 · 已完本）+ 111 张章节卡 + moment 面板改"全本完载"文案。moment 背景图路径修成 3 层 `../../../`（首版 audit 抓到 Broken:1）。
+  - **blog 入口卡**（blog_list.html）：占位标题/blurb 换成真实文案（111 章、中文、免费、五个人一条回家路）。旧样本目录 `00-prologue/`、`01-sample/` 已删。
+  - 版本 `?v=20260830h`（模板/build py/build_novel 统一），重跑 build_novel（111 页+hub）+ build_blog。
+- **验证**：audit Broken: 0（608 本地引用）；Playwright 20 项断言全过——hub 111 卡、标题/统计/按钮/时刻文案、卡到章节跳转；ch55 正文列 912px、33 段真实正文、目录 111 条 active=55、prev=54/next=56；目录跳 01 ✓；mobile 目录按钮展开 111 项 aria=true；blog 入口卡新文案+链接。截图 4 张已 `open`（hub/ch55/blog-entry/ch00-mobile）。
+- **Token 消耗**：约 2.6 万
+- **用时**：同会话未分开计
+- **经验**：① hub（深度 3）与章节页（深度 5）的资产相对深度不同，模板里图片路径不能复用同一个 `__ROOT__` token，必须每处按实际深度写；② 模板用 `__TOKEN__` 替换时记得子串会互相覆盖（本轮 `NOVEL` 长于其他 token 无碍，但 `NUM`/`NUM2` 这种前缀关系易踩），脚本里已删干净；③ 全量目录 111 条塞进章节页 aside 可行（sticky 细分无碍）。
+- **遗留/待办**：待用户审查视觉与文案；`chapters/NN/chapter.md` 为正式数据源，后续改稿直接改它再跑 build_novel.py；未 commit/push。
+
+## 2026-08-30 — 小说样本第七轮：移动端目录折叠按钮 · 待用户审查
+
+- **模型**：GLM-5.3-flash（同会话第七轮；另：用户指出此前 LOG 模型名误写为 big-pickle，已 sed 全量改为 GLM-5.3-flash）
+- **目的**：移动端没有目录（`.novel-catalog` 直接 `display:none`），设计一个按钮让移动端可展开目录。
+- **结果**：
+  - 新组件 `.catalog-toggle`：全宽黑框按钮（Source Code Pro 600 uppercase，93.75%，文字 "Chapter contents / 章节目录"，hover 反色白底黑字），样式对齐 `.more` 体系；仅 `≤767px` 显示。
+  - 触发展开：`.novel-layout` 加 `.catalog-open` → `display:none` 的 catalog 变 `display:block;position:static;width:100%`，插在正文（翻页按钮组）之后。按钮 `aria-expanded` / `aria-controls="novel-catalog"`。
+  - 纯页面底部内联 `<script>`（带 `__5GUYS_NOVEL_CATALOG__` 守卫，jQuery toggleClass），未动官方 JS。
+  - 按钮插入位置：两个章节页 `.chapter-nav` 之后、holder 内（顺序 = 正文 → 上/下一章 → 目录按钮 → 展开列表）。`?v=20260830g`（5 处），重跑 build。
+- **验证**：mobile@390——按钮 `block`、目录初始 `none` → tap 后 `.catalog-open` true、目录 `block`、6 个章节项渲染、`aria-expanded=true`；desktop@1280——按钮 `none`、目录常驻 `block` + `position:sticky` 不变。截图 `chapter-mobile-catalog-open.png` 已 `open`；audit Broken: 0。
+- **Token 消耗**：约 0.9 万
+- **用时**：同会话未分开计
+- **经验**：① Playwright `page.tap()` 前置需 `hasTouch:true`，否则报 "page does not support tap"；② 页面级交互兜底选 jQuery 内联 + 全局守卫，成本最低。
+- **遗留/待办**：同前——待用户审查后写 `tools/build/build_novel.py` 接数据；未 commit/push。
+
+- **模型**：GLM-5.3-flash（同会话第六轮，小改）
+- **目的**：用户指出移动端正文边距问题——上一轮 mobile `.novel-layout{margin:0}` 让文字贴屏幕边。
+- **结果**：mobile 媒体块 `.novel-layout` margin 0→`0 5%`（与全站移动文章 `margin:0 5%` 一致）；`.chapter-nav` 在 holder 内已有边距，margin 5%→0 对齐正文边缘。`?v=20260830f`（5 处），重跑 build。
+- **验证**：390 视口下 layout/text 左右各留 20px（5%），翻页按钮与正文左缘对齐；截图已 `open`。
+- **Token 消耗**：约 0.3 万
+- **用时**：同会话未分开计
+- **经验**：desktop 改 margin 时留意 media 块里同选择器的 mobile 值是否也要跟着调（上一轮只顾了 desktop 3.5%，mobile 还是历史 0）。
+- **遗留/待办**：同前——待用户审查后写 `tools/build/build_novel.py` 接数据；未 commit/push。
+
+## 2026-08-30 — 小说样本第五轮：章节页正文加宽 + 去头图 · 待用户审查
+
+- **模型**：GLM-5.3-flash（同会话第五轮：章节阅读页排版）
+- **目的**：用户反馈——① 章节页正文+标题太窄，"整个左边都可以用来显示"，边距收窄自然一点；② 章节页不要头图。
+- **结果**：
+  - 实测定位根因：正文列只有 275px——`.novel-layout` flex 生效但官方 `.journal-article .article-holder{margin:0 26%}` 在同 specificity (0,2,0) 下压过了 `margin:0`（computed margin 299.5px 证实），flex item 再被 margin 挤扁。
+  - 修复：选择器升级为 `.panel.journal-article.novel-chapter .novel-layout .article-holder`（0,4,0）+ `margin:0!important`；`.novel-layout` 边距 5%→3.5% 并加 `padding:1.8em 0 2em`（补头图删除后的顶部呼吸感）。
+  - 两个章节页删 `.article-cover` div（博客文章模板不受影响）；`?v=20260830e` 全部 5 处同步，重跑 build。
+- **验证**：audit Broken: 0；正文列 275px→912px（71% 视口），左边距 45px；目录 sticky x=1001 不变；chapter-nav 仍在 back-to-top 上方；mobile 正文 390 全宽、目录隐藏、头图无。截图 3 张已 `open`（visionpower 仍 429）。
+- **Token 消耗**：约 0.8 万
+- **用时**：同会话未分开计
+- **经验**：① 官方 CSS 对 `.article-holder` 的 margin 有多镇重复声明，flex 容器里同名覆盖必须带页面级前缀 + `!important` 才保险；② "flex 生效但某一属性没生效"时，先看 computed margin/padding 再反推哪条规则在赢，别假设整块规则都挂了（这次 flex/min-width 是我的、margin 是官方的，同块分属性打架）。
+- **遗留/待办**：同前——待用户审查后写 `tools/build/build_novel.py` 接数据；未 commit/push。
+
+## 2026-08-30 — 小说样本第四轮：入口卡通栏+小字简介 / hub 缩距 / 移动端章节卡 3:1 · 待用户审查
+
+- **模型**：GLM-5.3-flash（同会话第四轮）
+- **目的**：用户反馈三点——① blog 入口卡宽度要通栏（两个方卡宽，右边不能空），且太空要多写小字；② hub 介绍板块与章节卡之间空隙太大（桌面+移动）；③ 移动端章节卡还是正方形，要小长方形。
+- **结果**：
+  - **关键发现**：panel 的 padding 百分比按**包含块（panel-group 全行宽）**解析，不是 panel 自身宽度——前几轮 16.666%/25% 的真实换算一直依赖这个。入口卡 `width:100%` + `padding:25%`（=全行 1280×320）。
+  - 入口卡重构：新增 `.feat-row`（flex column 居中，h2 大标题 scaler 55%→80% + `.blurb` 小字简介（Cousine 93.75%、opacity .62、max-width 56%）+ Read 按钮），模板同步加 blurb 文案（中英）。
+  - hub 页 body 加 `novel-hub` 钩子，`.article-holder` padding-bottom 6em→1.2em（移动 3em→1em），介绍→卡片间距实测 0px。
+  - 移动端章节卡：`!important` 覆盖全局正方形规则，但 **padding 值不是 16.666% 而是 33.333%**——移动端 panel=100% 组宽，padding% 此时等于自身宽度占比，1/3 高要 1/3 padding。实测 3.00 ✓。
+  - `?v=20260830d`（模板 + build py + hub + 两章节页），重跑 build。
+- **验证**：audit Broken: 0；entry@1280 = 1280×320 通栏、h2/blurb/按钮纵向堆叠不出框；entry@390 = 390×390 正方形；hub@1280 间距 0、卡 3.00；hub@390 间距 0、卡 3.00、名称按钮同行不溢出、垂直居中。截图 4 张（entry 桌面/移动 + hub 桌面/移动）已 `open`（visionpower 仍 429）。
+- **Token 消耗**：约 1.3 万
+- **用时**：同会话未分开计
+- **经验**：① **float panel 的 padding% 解析基准是 panel-group 宽度**——panel 宽 50% 时两倍关系凑巧成立，panel 宽 100%（通栏/mobile）时必须按自身宽度重算（3:1 → 33.333%）；这类"数值巧合"换断点就翻车。② 查这种问题直接 `getComputedStyle().paddingTop` 反推实际生效规则最快。
+- **遗留/待办**：同前——待用户审查后写 `tools/build/build_novel.py` 接数据；未 commit/push。
+
+## 2026-08-30 — 小说样本第三轮：入口卡 2:1 宽幅 + 章节卡左右结构 + 按钮缩小 · 待用户审查
+
+- **模型**：GLM-5.3-flash（同会话第三轮，用户澄清两处长方形不是同一种）
+- **目的**：用户澄清——blog 入口卡 = 两个方卡拼一起的**2:1 宽幅**（类 gallery rect 封面视觉）；hub 章节卡才是 3:1 小条；且两处按钮过大（官方 `.info a.more` 有 `font-size:125%` 高优先级规则），要重新设计并打磨。
+- **结果**：
+  - 入口卡 `padding:25% 0 0 0`（2:1，640×320@1280），h2 top 38% / info bottom 13% 居中排布；按钮 `93.75%!important`（40px 高，原 125% 约 48px+超宽 padding）。
+  - 章节卡重构为**左右结构**：新增 `.row`（absolute 铺满 + flex + space-between + 垂直居中，padding 0 7%）包裹 h2（章节号+名，居左）和 Read 按钮（居右贴边 45px）；按钮 `81.25%!important`（34px 高）。`.num` 用 Source Code Pro 700 + opacity .45。
+  - **两个 specificity 坑**：① `.novel-chapter-card .row h2`(0,2,1) 压不住官方 `.panel.journal-news.homepage-news h2`(0,3,1) 的 absolute+width:80%——补齐到 `.panel...novel-chapter-card .row h2`(0,5,1) 才生效（第一轮验证 h2"居中"是 margin:15% 巧合值，假阳性）；② 按钮 font-size 必须 `!important`（同 RULES §2.2 z-index 同款逻辑）。
+  - **批量 sed 翻车一次**：Python 正则给 6 张卡包 `.row` 时，DOTALL+懒惰匹配从 intro 的 h2 一路吞到第一张卡 h2，把 row 开标签插进 article-holder、卡1 结构错位。手修 2 处 + Playwright DOM 断言收尾（cards=6、rowsInCards=6、introStrayRow=false、无嵌套 panel-group）。
+  - `?v=20260830c`（hub + 两章节页 + blog_list 模板 + build_blog.py）。
+- **验证**：audit Broken: 0；入口卡 ratio 2.00 / 按钮字体 15.7px；6 卡全 3.00、h2 static、垂直居中偏差<8px、按钮统一贴右 45px；mobile 入口与章节卡均回 1:1 且 row 内容不出框。截图 3 张已 `open`（visionpower 仍 429）。
+- **Token 消耗**：约 1.5 万
+- **用时**：同会话未分开计
+- **经验**：① 官方 `.panel.journal-news.homepage-news` 系列选择器权重高（0,3,1–0,5,1），覆盖卡内元素必须带完整前缀 `.panel.journal-news.homepage-news.<mod>`；② 几何断言要验"因果"而不是"结果"（h2 那次居中是 absolute margin 的巧合，position 还是 absolute）；③ 跨块正则包裹元素前先想 anchor 会不会命中第一个同名结构——这次 intro h2 和卡片 h2 同为 `\t\t<h2><span class="scaler"`，应该先按 panel 边界切块再处理。
+- **遗留/待办**：同前——待用户审查后写 `tools/build/build_novel.py` 接数据；未 commit/push。
+
+## 2026-08-30 — 小说样本改版：入口卡/章节卡换白底长方形 · 待用户审查
+
+- **模型**：GLM-5.3-flash（同会话第二轮，用户审查第一版后改设计）
+- **目的**：用户改需求——blog 入口卡桌面改**白底长方形**（非正方形、无图，放 promo 文案 "The Latest Novel by the Webmaster. Come and check it out!"），手机保持正方形；hub 章节卡改成**小尺寸白底长方形**（高度=正方形的 1/3，宽度不变，只放章节号+名称+按钮，无封面图）。
+- **结果**：
+  - CSS additions 更新 novel 块：`.novel-feature-card`/`.novel-chapter-card` 均为 `background:#fff;padding:16.666% 0 0 0`（3:1）；`.inline` hover 边框白底看不见 → 两卡都覆盖 `border-color:#000`；章节卡 `.num` 用 Source Code Pro 粗体、`.info .more` 黑边黑字；白底黑字全靠默认 journal-news 黑色继承（原内联白色 style 全删）。**移动端正方形不用写规则**——全局 mobile 规则 `padding:100% 0 0 0!important` 自动赢回（desktop 规则 specificity 高但无 !important，媒体查询内 !important 优先）。
+  - `blog_list.html` 模板入口卡重写（panel-header 顶部小说名+Novel/小说，h2 居中 promo 文案，Read the novel 居中黑按钮），`?v=20260830b`；build_blog.py css_href 同步 b；重跑 build。
+  - hub 页 6 张章节卡全部换成 `novel-chapter-card`（无 panel-header；00/01 真实链接，02-05 `is-placeholder` 置灰 + span.more "Coming soon"）；hub + 两个章节页 `?v=` bump 到 b。
+- **验证**：audit Broken: 0（610 refs，比上轮少 1 = 入口卡不再引用 logo 图）；blog.html/hub 200；Playwright：入口卡 ratio 3.00、`rgb(255,255,255)` 底、黑字黑按钮、排第一；hub 6 卡全 3.00 白底、占位 op 0.45；mobile 入口/章节卡均 1.00 正方形。截图 3 张（blog-entry-desktop / hub-desktop / hub-mobile）已 `open`。
+- **Token 消耗**：约 1.2 万
+- **用时**：实测见上一条（同会话，未分开计）
+- **经验**：① 白底卡上加黑 `.inline` 边框否则 hover 无反馈（官方 inline 是白色 border）；② 不想写 mobile 规则时，可依赖全局 mobile `!important` 规则回退正方形，desktop 只写无 !important 的比例覆盖即可。
+- **遗留/待办**：同上条——待用户审查后接数据（`tools/build/build_novel.py`），未 commit/push。
+
+## 2026-08-30 — 小说连载样本（blog 入口卡 + 枢纽页 + 章节阅读页含目录/上下章）· 待用户审查
+
+- **模型**：GLM-5.3-flash
+- **目的**：user 在写小说《The Only Direction Home》（Novel 仓库 `~/项目/Novel/Chapters/` 有 111 个 .md），要在 blog 单开连载入口：blog 首页最前方形卡 → 小说枢纽页（章节卡片网格，同 blog 列表版式）→ 章节阅读页（类 blog 文章，右侧 sidebar 目录跨章跳转，正文下方上一章/下一章按钮，位于回到顶部之上）。**数据未给，本次只做样本空页供审查**。
+- **结果**：
+  - CSS additions 追加 `FIVE GUYS: Serialised novel` 块（只追加）：`.novel-feature-card`（入口卡背景 40% contain）、`.is-placeholder` 占位卡置灰（必须 `!important` + 前置 `.blog-section` 提 specificity，否则被博客卡 fade-me opacity:1!important 覆盖）、`.novel-layout` flex（正文）+ `.novel-catalog`（右侧 sticky 目录，当前章 `.active` 三角标记、`.placeholder` 置灰）、`.chapter-nav`（Prev/Next `.more` 黑底白字反转、`.disabled` 置灰、图标 icon-left/right-arrow）；`?v=20260830a`。
+  - blog_list.html 模板 `__POSTS_CARDS__` 前插入口卡（`panel-group` 单卡、`Serialised Novel/连载小说`+`Novel/小说`+`Read the novel/阅读小说`，href `blog/the-only-direction-home/index.html`），版本 20260816a→20260830a；build_blog.py article 模板 v 同步 20260804i→20260830a；重跑 build → blog.html 入口卡生效（不手改，防被重写）。
+  - 新页：`pages/blog/the-only-direction-home/index.html`（枢纽 depth 3：intro + 6 张章节卡 [前言/第1章真实链接 + 第2-5章占位] + moment/newsletter）；`chapters/00-prologue/`、`chapters/01-sample/`（阅读页 depth 5，01 仅为端到端测上下章而建，active 标记/prev/next 互链完整）。小说名来自 `~/项目/Novel/The Only Direction Home.pdf`，中文书名/章节名均为占位。
+- **验证**：audit Broken: 0（611 refs）；blog.html/枢纽/两章页 + 全部引用的 css/js/图片 HTTP 200；Playwright：入口卡 `ratio 1.00` 且排第一、枢纽卡全 1:1、占位卡 opacity 0.45、目录 sticky 位于正文右侧、`.active` 1 个、chapter-nav 在 back-to-top 上方（bottom 1372 < top 1505）、mobile 目录隐藏 nav 保留、标题居中、按钮黑边黑字、prev disabled 生效。截图 5 张 `tools/_qa_screenshots/novel-sample-20260830/` 已 `open` 弹出复核。**visionpower 429（Token 套餐用尽）**，视觉靠程序化几何校验 + user 肉眼。
+- **Token 消耗**：约 3 万
+- **用时**：1044 秒（首文件 mtime → 日志时，含全部验证）
+- **经验**：① 入口卡要想"只加一次且防重写"，必须改模板/blog_list.html 而不是手改生成的 blog.html；② `.blog-section .panel.fade-me{opacity:1!important}` 会吞普通 opacity，占位类要用更高 specificity + !important；③ 截图脚本路径 `path.join(__dirname,'..','_qa_screenshots')` 会写到仓库根而非 tools/_qa_screenshots，写成 `__dirname/'_qa_screenshots'`。
+- **遗留/待办**：待 user 审查样本版式；通过后把 `~/项目/Novel/Chapters/` 数据接入——建议写 `tools/build/build_novel.py`（front-matter 驱动，读 chapters/00_*.md 生成枢纽卡片 + 章节页 + catalog 序列 + prev/next），数据源结构见 user 的 Novel 仓库；未 commit/push。
+
 ## 2026-08-23 — 首页 Liam Payne 生日纪念 panel（黑白双人 cut-out 设计）· 未部署
 
 - **模型**：deepseek-v4-flash-vision
