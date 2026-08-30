@@ -22,7 +22,7 @@ CHAPTERS = os.path.join(NOVEL, "chapters")
 NOVEL_TITLE = "The Only Direction Home"
 SITE = "FIVE GUYS ONE DIRECTION"
 CANON = "https://www.5guys1direction.asia"
-CSS_VERSION = "20260830p"
+CSS_VERSION = "20260830zh2"
 CLI_DIR = os.path.dirname(os.path.abspath(__file__))
 TEMPLATES = os.path.join(CLI_DIR, "..", "templates")
 
@@ -32,10 +32,11 @@ ROOT_CHAPTER = "../../../../.."
 CARD_TPL = """<div class="panel journal-news homepage-news novel-chapter-card">
 
 		<div class="inline"></div>
+		<div class="count"><span>{num}</span></div>
 
 		<div class="row">
 
-		<h2><span class="scaler" style="font-size: 60%;"><a href="chapters/{num}/index.html"><span class="num">{num}</span>&nbsp;{short}</a></span></h2>
+		<h2><span class="scaler" style="font-size: 60%;"><a href="chapters/{num}/index.html">{short}</a></span></h2>
 
 		<div class="info">
 			<a href="chapters/{num}/index.html" class="more"><span class="en">Read</span><span class="zh">阅读</span></a>

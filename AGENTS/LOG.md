@@ -1,5 +1,121 @@
 # 1D Fansite — 开发日志（LOG）
 
+## 2026-08-30 — 中文字体再配对：正文基准 思源黑→霞鹜文楷，首页显示→得意黑，思源黑退居兜底（big-pickle）· 待复现验证
+
+- **模型**：big-pickle（DeepSeek 派生）
+- **目的**：用户反馈原英文字体「简约/有风格/代码感」，换成思源黑体就平淡——大幅减少思源黑体在全站的使用。
+- **决策**：用户先看对比预览（得意黑/更纱/思源等宽/霞鹜文楷/思源黑 5 候选，`tools/_qa_screenshots/font-preview/`），选定「文章→霞鹜文楷、首页显示→得意黑」。
+- **处理**：
+  1. 新增 `assets/fonts/lxgw-wenkai/LXGWWenKaiSubset.woff2`（霞鹜文楷**比例**版 642KB，按全站 `.zh` 字符集 2815 字符子集化）＋ LICENSE.txt；等宽版仍归 Cousine/Courier 角色。
+  2. `apply_zh_css.py` 更新：`html .zh` 基准由 Noto Sans SC 改为 `'LXGW WenKai'（首选）… 'Noto Sans SC'（末尾兜底）`；新增首页显示覆盖 `body.home-section .panel:not(.journal-article) > h2 .zh, … .panel-header .zh → Smiley Sans`；@font-face 注册比例版文楷。
+  3. `fetch_fonts.py` 接入文楷比例版（下载镜像+子集化+许可同步，幂等）；新增 `tools/fonts/bump_zh_version.py`（幂等全站 `styles.css?v=` 升级，跳过 `__VER__` 占位模板）。
+  4. 全站 `?v=` 20260830zh1/zh2 → **20260830zh3**（327 页；novel 模板保留占位符）。
+- **验证**：Playwright（chrome）5 页复探：首页「博客最新文章」h2 → Smiley Sans ✓、blog 文章标题 → Noto Serif SC（Playfair 角色保留）✓、blog 文章正文 div.zh → **LXGW WenKai** ✓、歌词行 `.zh` → **LXGW WenKai** ✓、moment「全文完」→ Fusion Pixel ✓、newsletter h2 → Smiley ✓；5 个字体面 `document.fonts.check` 全 Y；翻译切换 `lang-zh`/`lang-bilingual` 正常；HTTP styles.css?v=zh3 / 新 woff2 均 200；图片审计 Broken: 0/608；无残留 zh1/zh2 引用。截图 `tools/_qa_screenshots/zh3/*.png` 已弹出。
+- **Token 消耗**：未记录
+- **用时**：未单独记录
+- **经验**：① 一次性「降级思源黑」= 改基准 + 新增首页覆盖 + 新增字体资产 + 全站 bump 四步连锁，必须全套做完统一验证；② 调试临时脚本一律 Write 落盘再跑，shell heredoc 内联 `\u` 转义与引号会被 shell 加工；③ Playwright 探针查 `.zh` 需兼容「.zh 自身即目标」与「.zh 在祖先内」两种形态，否则误报 SKIP。
+- **遗留/待办**：文章标题（Playfair 角色）暂走思源宋体（按已确认 serif 配对保留），如需标题同变文楷另改 pairing；novel 模板 `__VER__` 重建时版本号偏旧；未 commit/push。
+
+## 2026-08-30 — 固化 Gallery 风格卡片外框与 hover 规范（Codex）
+
+- **目的**：将本次小说卡片修复沉淀为以后构建相似 panel 的可复用规范。
+- **处理**：在 `AGENTS/AGENTS.md` 的 Panel System 中记录 `.inline` 等距物理 inset、移动端 specificity、计数菱形留白与反色、文字不位移、独立 CTA 边框，以及 390px/桌面端 computed box 验收要求，并附 HTML/CSS 骨架。
+- **结果**：后续相似卡片可直接按 Gallery 风格复用，避免百分比外框导致四边视觉不等和移动端元素重叠。
+- **遗留/待办**：未修改页面代码；未 commit/push。
+
+## 2026-08-30 — 翻译切换中文字体配对集成：自托管 6 套字体 + 语义角色映射 + 全站覆盖校验（big-pickle）· 待复现验证
+
+- **模型**：big-pickle（DeepSeek 派生）
+- **目的**：用户「确保翻译的时候字体正常对应等」——把 10 族英文语义字体在 `lang-zh`/`lang-bilingual` 下映射到中文等价字体，自托管避免 Google Fonts 国内加载问题，全站无豆腐块。
+- **处理**：
+  1. 新增 `tools/fonts/fetch_fonts.py`（下载+子集化，幂等，含 ghfast 镜像回退）与 `tools/fonts/apply_zh_css.py`（`/*==CJK-FONTS-BEGIN/END==*/` 标记可重跑）。
+  2. 字体资产落地 `assets/fonts/`：Smiley Sans（得意黑）、Fusion Pixel（缝合像素体）、ZCOOL KuaiLe（站酷快乐体，按站点字符集子集化 322KB）、LXGW WenKai Mono（霞鹜文楷等宽，子集 636KB）、Noto Serif SC + Noto Sans SC（Google 中文子集，latin 一并）。全部 OFL/免费商用，附 LICENSE.txt；TTF 源已 gitignore。
+  3. `css/styles.css` 末尾追加 @font-face + 语义角色 `.zh` 配对：Oswald/Six Caps→Smiley Sans；Playfair/Times→Noto Serif SC；Source Sans/Code Pro→Noto Sans SC；Cousine/Courier→霞鹜文楷等宽；Vampiro→站酷快乐体（备选霞鹜/思源宋）；Codystar(moment)→缝合像素体。
+  4. `?v=` 全站 bump 至 `20260830zh1`（325 页；后续 Codex 小说外框会话部分页升至 zh2，均 ≥ 历史版本，缓存均可刷新，未再全量重写以免互相覆盖）。
+- **验证**：Playwright 4 代表页（home/hub-moment/lyrics/journal）font probe 全 matched=Y + faceLoaded=Y，翻译按钮切换 `lang-zh`/`lang-bilingual` 正常；HTTP 全站图片审计 Broken: 0/608；fontTools 对全站 1568 个 `.zh` CJK 字符做码点覆盖校验：fusion 0 缺、mono 0 缺、smiley 0 缺，kuai 仅缺「埼」1 字（不在 GB2312 源字库，该字只在 tour `.location` 基准正文角色出现，由已自托管的 Noto Sans SC 全覆盖兜底，无豆腐块）。截图 `tools/_qa_screenshots/*-zhmode.png`。
+- **Token 消耗**：未记录
+- **用时**：未单独记录
+- **经验**：① Python 字符差集校验必须统一 str/int（char vs ord），跨类型差集会恒等于全集造成假阳性；② 子集字体按「全站 `.zh` 并集 + 脚本契约字符集」子集化，构造上即保证当前内容零缺字，比逐条宽度差值探针更可靠；③ VisionPower 视觉验证受 Token 上限 429 阻塞，截图已归档留人工复核。
+- **遗留/待办**：截图人工复核（`open tools/_qa_screenshots/*.png`）；新增中文内容后需重跑 `python tools/fonts/fetch_fonts.py` 保持子集覆盖（Smiley/Noto 为全量无需）；未 commit/push。
+
+## 2026-08-30 — 小说外框改为等距 inset，修复移动端覆盖与重叠（Codex）· 待用户审查
+
+- **模型**：Codex
+- **目的**：解决用户反馈的 Blog 入口卡与 hub 章节卡黑框四边留白不等、移动端黑框压住内部元素的问题，并复核 Start reading 边框。
+- **根因**：此前使用 `width/height:96%` 与 `top/left:2%`，百分比分别相对卡片宽高计算，横纵物理留白天然不同；站点移动端 `.panel.journal-news.homepage-news .inline` 的更高特异性规则又覆盖了新框的位置。
+- **处理**：入口卡和章节卡统一改为同一组 `inset:clamp(8px,1.25vw,20px)`、`width/height:auto`、`box-sizing:border-box`；hover/focus 的显示规则同步提高特异性；CSS 版本 `20260830zh1→zh2`，重建 Blog、hub 与 111 个章节页。
+- **验证**：真实浏览器 390px：hub 卡 390×130px，外框四边留白均 8px、边框均 1px，菱形 bounding box 约 53×53px，标题 x=101px，`scrollWidth=390`；1280px：章节卡外框四边留白均 16px、边框均 2px。Blog 入口移动端/桌面端外框分别为 8px/16px 等距，文字 transform 为 none，按钮和计数菱形 hover 后黑底白字；Start reading 移动端四边均 2px。截图已保存并检查：`/private/tmp/novel-qa/hub-mobile-hover.png`、`/private/tmp/novel-qa/blog-desktop-hover.png`。JS 语法检查通过；`git diff --check` 仅报告项目原有 `tour` 页面尾随空格。
+- **Token 消耗**：未记录
+- **用时**：未单独记录
+- **经验**：需要视觉等距的响应式装饰框应使用同一组物理 inset，而不是对宽高分别使用百分比；同时必须检查旧移动端规则的 specificity，否则桌面端修复不会真正落到移动端。
+- **遗留/待办**：待用户视觉审查；未 commit/push。
+
+## 2026-08-30 — 小说 panel 外框等宽与移动端适配修正（Codex）· 待用户审查
+
+- **模型**：Codex
+- **目的**：修正用户反馈的 panel 黑框四边不协调、移动端与内部元素重叠，以及 Start reading 按钮下边框偏细。
+- **结果**：入口卡和章节卡外框统一使用 96% 内框与 `.12em` 等宽边框；章节菱形保持较小尺寸并使用 1px 等宽边框；Start reading 强制 `.15em solid` 四边统一；版本 `20260830r→s`，重建 blog、hub 与 111 个章节页。
+- **验证**：Chrome 计算样式：桌面 panel 外框四边均 2px、移动端均 1px；章节菱形四边均 1px；Start reading 桌面四边均 3px、移动端均 2px；移动端 scrollWidth=390；`git diff --check` 通过。
+- **Token 消耗**：未记录
+- **用时**：未单独记录
+- **经验**：`border` 的各边可能被旧 CSS 的 `border-bottom` 单独覆盖，即使视觉上只是“看起来不齐”，也要直接读取四边 computed border 再修复。
+- **遗留/待办**：待用户视觉审查；未 commit/push。
+
+## 2026-08-30 — 章节计数菱形缩小、右移与细化（Codex）· 待用户审查
+
+- **模型**：Codex
+- **目的**：修正章节卡计数菱形贴左、尺寸过大、边框和数字过粗的问题。
+- **结果**：菱形由 12% 缩至 9.5% 卡宽，左定位调整为 7.5%，边框改为 `.07em`，数字改为 Source Code Pro 400；标题列同步调整至 26% 起始位置；保留 Gallery hover 时黑底白字效果；版本 `20260830q→r`，重建 hub、111 个章节页和 blog 列表。
+- **验证**：Chrome 桌面端菱形约 87×87px、移动端约 54×54px；两端边框均约 1px、数字字重 400；标题 x 分别为 166px/101px，与菱形分离；hover 外框和黑底白字仍正常；无横向溢出；截图已生成并打开。
+- **Token 消耗**：未记录
+- **用时**：未单独记录
+- **经验**：旋转方框的视觉尺寸是旋转后的 bounding box，不能只按 CSS width 判断；小 panel 需要单独降低边框和字重，不能直接照搬 Gallery 大 panel 的数值。
+- **遗留/待办**：待用户视觉审查；未 commit/push。
+
+## 2026-08-30 — 小说 panel 严格对齐 Gallery hover 动画（Codex）· 待用户审查
+
+- **模型**：Codex
+- **目的**：按用户明确的 Gallery 封面 hover 规范，修正 Blog 小说入口和 hub 章节卡的按钮、外框、计数菱形与文字行为。
+- **结果**：按钮 hover/focus 时填充黑底白字；panel 由 CTA 触发 `.hover` 并显示 96% 尺寸黑色内框；章节计数菱形同步黑底白字；删除所有标题/正文位移动画；hub `Start reading` 增加独立按钮 hover；hub 补载 `novel-reading.js`，重建 111 个章节页。
+- **验证**：真实 Chrome 移动端确认入口卡/章节卡外框为 `block`、按钮和菱形均为黑底白字、章节 row/title transform 为 `none`、scrollWidth=390；Start reading hover 为黑底白字；`git diff --check` 和 JS 语法检查通过。
+- **Token 消耗**：未记录
+- **用时**：未单独记录
+- **经验**：Gallery 的 hover 不是单纯 `:hover` 样式，而是由 CTA hover 给 panel 加 `.hover` 再联动 `.inline` 和 count；复用时必须同时接入 JS 触发链与 CSS 状态链。
+- **遗留/待办**：待用户视觉审查；未 commit/push。
+
+## 2026-08-30 — 小说章节计数框级联修正与 Gallery hover 机制接入（Codex）· 待用户审查
+
+- **模型**：Codex
+- **目的**：修正用户反馈的章节菱形计数框与标题重叠，并让 Blog 小说入口真正复用 Gallery 的 `.hover` panel 动画机制。
+- **结果**：章节编号改为按卡片宽度 12% 缩放的旋转方框，标题列左移避让；修正移动端旧高特异性 padding 覆盖问题；入口卡通过 `mouseenter/focus` 给 panel 加 `.hover`，由 `.inline` 显示 Gallery 风格外框，文字不移动；blog 模板补充 `novel-reading.js` 引用；重新生成 hub/章节页。
+- **验证**：真实 Chrome 移动端测得章节卡 390×130、计数框 68×68、标题 x=97.5、页面 scrollWidth=390，无横向溢出；Blog CTA hover 后 panel 获得 `hover` class 且 `.inline` 从 `none` 变为 `block`；`git diff --check` 和 JS 语法检查通过；修正截图已打开。
+- **Token 消耗**：未记录
+- **用时**：未单独记录
+- **经验**：同一组件的移动端旧规则可能以更高 specificity 覆盖新增样式；计数框这类装饰元素必须同时核对自身 bounding box、标题 bounding box 和页面 scrollWidth。
+- **遗留/待办**：待用户视觉审查；未 commit/push。
+
+## 2026-08-30 — 小说板块视觉反馈修正：无缝铺排与 Gallery 章节计数框（Codex）· 待用户审查
+
+- **模型**：Codex
+- **目的**：根据用户反馈修正入口卡、hub 分割线、introduction 底色和章节计数设计。
+- **结果**：入口卡文字取消 hover 位移，仅保留外框动画；删除 hub 组间分割线，保留白色/浅蓝色卡片轮换并紧密铺排；introduction panel 恢复纯白；章节卡复用 gallery 的旋转计数框，编号与标题分离，避免长标题挤压；重建 111 个章节页和 hub。
+- **验证**：构建成功；`git diff --check`、JS 语法检查通过；hub 章节计数框 111 个，章节页 111 个；真实 Chrome 抽查生成 blog/hub/chapter 桌面与移动截图，移动端 hub 卡片 390×130、章节计数框正常显示，阅读页进度条正常生成；截图已打开供复核。
+- **Token 消耗**：未记录
+- **用时**：526 秒
+- **经验**：Gallery 的旋转 count 组件适合表达章节编号，但必须将编号从标题文本中拆出，并为 filler 卡恢复对称 padding；紧密铺排应通过相邻卡片的颜色轮换区分，而不是增加结构性分割线。
+- **遗留/待办**：待用户视觉审查；未 commit/push。
+
+## 2026-08-30 — 小说板块复用全站色板与动画增强（Codex）· 待用户审查
+
+- **模型**：Codex
+- **目的**：用户确认小说板块沿用现有站点色板，解决 hub、入口卡和阅读页过于干巴的问题。
+- **结果**：复用淡蓝、金色、黑白体系；入口卡增加淡蓝信息背景与 hover 边框；章节卡增加交替浅灰、金色 hover、`.inline` 扩展边框和轻微位移动画；hub 简介增加淡蓝统计色块；阅读页增加顶部阅读进度条、正文行距/段距优化、当前目录金色高亮；新增 `js/novel-reading.js`，支持进度更新、移动端目录选择后收起和左右方向键翻章；版本 bump 至 `20260830q`，重建 111 个章节页、hub 和 blog 列表。
+- **验证**：构建脚本成功；`git diff --check`、JS `--check`、Python `py_compile` 通过；章节页 111、进度标记 111、阅读脚本标记 111。图片审计因当前沙箱禁止绑定本地 8000 端口，返回 547 个环境导致的假断链，未作为有效站点结论。
+- **Token 消耗**：未记录
+- **用时**：实测未记录
+- **经验**：已有 `.inline`、Moments 金色、Homepage Video 淡蓝和 `prefers-reduced-motion` 体系足够支撑小说视觉升级，不需要新增动画库；生成页必须通过模板和 build 脚本统一更新。
+- **遗留/待办**：待用户进行桌面端与移动端视觉审查；未 commit/push。
+
 ## 2026-08-30 — hub Editorial/Moment 卡文案改短（big-pickle）· 待用户审查
 
 - **模型**：big-pickle

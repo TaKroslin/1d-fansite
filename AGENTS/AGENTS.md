@@ -209,6 +209,39 @@ E:\文档\GitHub\1d-fansite/
 
 **`.more` 按钮：** Source Code Pro 600 uppercase，白色边框 `0.15em solid #fff`，hover 反转（白底黑字）。
 
+**可复用卡片 hover / 外框规范（Gallery 风格）：**
+
+- 卡片外框使用独立的 `.inline` 层，不要让标题、正文或整行内容发生位移；hover 只负责显示外框和切换 CTA 状态。
+- 外框四边必须使用同一组**物理 inset**，推荐 `inset:clamp(8px,1.25vw,20px)`，并同时设置 `width:auto;height:auto;box-sizing:border-box`。不要用 `width/height:96%` 配合 `top/left:2%`，因为宽高百分比会造成横向和纵向留白不一致。
+- 移动端已有 `.panel.journal-news.homepage-news .inline` 高特异性规则，新增卡片外框选择器必须达到同等或更高特异性；hover 的 `display:block` 也要同步提高特异性，否则会出现桌面端有效、移动端被覆盖的情况。
+- 有计数时，计数菱形单独控制尺寸与字重，必须留在外框内部并与标题保持间距；hover 时菱形填充黑色、数字反色。小卡片不要直接照搬 Gallery 大卡片的粗边框和大字号。
+- 外框与计数框的边框四边必须读取 computed style 验证，不能只凭截图判断；至少检查 390px 和桌面宽度下的四边 inset、元素 bounding box 与 `document.documentElement.scrollWidth`。
+- 独立的顶部 CTA（如 `Start reading`）可以有自己的 hover，但必须显式设置 `border-style:solid` 和统一 `border-width`，不要依赖旧规则中可能单独覆盖 `border-bottom` 的写法。
+
+推荐结构：
+```html
+<div class="panel panel-card">
+  <div class="inline"></div>
+  <div class="count"><span>01</span></div>
+  <div class="row">...</div>
+</div>
+```
+
+推荐 CSS 骨架：
+```css
+.panel.panel-card .inline {
+  position:absolute;
+  inset:clamp(8px,1.25vw,20px);
+  width:auto;
+  height:auto;
+  box-sizing:border-box;
+  border:.12em solid #000;
+  display:none;
+}
+.panel.panel-card.hover .inline,
+.panel.panel-card:focus-within .inline { display:block; }
+```
+
 ### B. Panel 类型全览
 
 | Type | CSS Class | 背景 | 特点 |

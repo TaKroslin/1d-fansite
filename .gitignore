@@ -53,3 +53,6 @@ dist/
 .env*
 !.env.example
 .venv/
+
+# CJK full-font sources (subsetting only; woff2 is what ships)
+assets/fonts/**/*.ttf

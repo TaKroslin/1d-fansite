@@ -1,0 +1,2 @@
+Fusion Pixel Font — SIL OFL 1.1 & MIT (dual-licensed).
+See https://github.com/TakWolf/fusion-pixel-font/tree/master/license

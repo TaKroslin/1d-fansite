@@ -705,3 +705,174 @@ html.lang-zh .lyric-line .en{display:none!important}
   .chapter-nav{margin:2em 0 0}
   .chapter-nav .more{font-size:100%;padding:.7em 1.2em}
 }
+
+/* Novel visual lift — reuse the site's existing blue/gold panel language.
+   The motion is deliberately restrained so long-form reading remains calm. */
+.panel.journal-news.homepage-news.novel-feature-card{background:#fff}
+/* Use the same physical inset on every side. The site's mobile journal-news
+   rule also targets .inline, so this selector intentionally matches its
+   specificity; otherwise mobile would restore the old 10% / 80% geometry. */
+.panel.journal-news.homepage-news.novel-feature-card .inline,
+.panel.journal-news.homepage-news.novel-chapter-card .inline{position:absolute;inset:clamp(8px,1.25vw,20px);width:auto;height:auto;box-sizing:border-box;border:.12em solid #000;display:none}
+.panel.journal-news.homepage-news.novel-feature-card.hover .inline,
+.panel.journal-news.homepage-news.novel-feature-card:focus-within .inline,
+.panel.journal-news.homepage-news.novel-chapter-card.hover .inline,
+.panel.journal-news.homepage-news.novel-chapter-card:focus-within .inline{display:block}
+.novel-feature-card .feat-row h2,.novel-feature-card .feat-row .blurb,.novel-feature-card .feat-row .info{transition:none}
+.novel-feature-card .feat-row .more{background:#fff}
+.novel-feature-card .feat-row .more:hover,.novel-feature-card .feat-row .more:focus{background:#000;color:#fff}
+.novel-feature-card.hover .info .more,.novel-feature-card.hover .info .more:hover,.novel-feature-card.hover .info .more:focus{background:#000!important;color:#fff!important;border-color:#000!important}
+
+.novel-intro{background:#fff!important}
+.novel-intro .article-holder{position:relative}
+.novel-intro .article-holder h2{color:#000}
+.novel-intro .article-holder .text strong{display:inline-block;padding:.35em .7em;background:rgba(206,211,241,.75);font-family:'Source Code Pro',monospace;font-size:88%;letter-spacing:.04em}
+.novel-chapter-card{transition:background-color .333333s ease}
+.novel-chapter-card:nth-child(even){background:#eef2f4}
+.novel-chapter-card.hover,.novel-chapter-card:focus-within{background:#fff3d0}
+.novel-chapter-card .row{transition:none}
+.novel-chapter-card .info .more{transition:background-color .333333s ease,color .333333s ease,border-color .333333s ease}
+.novel-chapter-card.hover .info .more,.novel-chapter-card.hover .info .more:hover,.novel-chapter-card.hover .info .more:focus{background:#000!important;color:#fff!important;border-color:#000!important}
+
+/* Gallery-style rotated chapter counter. The counter is independent from
+   the title so long English/Chinese chapter names can wrap safely. */
+.novel-chapter-card .count{position:absolute;z-index:2;top:50%;left:7.5%;width:9.5%;height:0;padding-top:9.5%;border:.07em solid #000;transform:translateY(-50%) rotate(45deg);font-family:'Source Code Pro',monospace;font-size:120%;font-weight:400;color:#000;overflow:hidden}
+.novel-chapter-card .count span{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;transform:rotate(-45deg)}
+.novel-chapter-card.hover .count{background:#000;color:#fff}
+.panel.journal-news.homepage-news.novel-chapter-card .row{padding-left:26%;}
+.novel-chapter-card.novel-filler .row{padding-left:7%}
+
+.novel-progress{position:fixed;top:0;left:0;width:100%;height:.3em;background:rgba(217,224,241,.55);z-index:10000;pointer-events:none}
+.novel-progress-bar{display:block;width:0;height:100%;background:rgba(255,233,178,.95);transition:width .12s linear}
+.novel-chapter .article-holder .text{font-size:clamp(1rem,1.15vw,1.22rem);line-height:1.95}
+.novel-chapter .article-holder .text p{margin-bottom:1.35em}
+.novel-chapter .article-holder h2{line-height:1.15}
+.novel-catalog li.active{background:rgba(255,233,178,.9);padding-left:.45em;padding-right:.45em;transition:background-color .333333s ease}
+.chapter-nav{border-top-color:#d9e0f1}
+.novel-start-reading{transition:background-color .333333s ease,color .333333s ease,border-color .333333s ease}
+.novel-start-reading{border-width:.15em!important;border-style:solid!important}
+.novel-start-reading:hover,.novel-start-reading:focus,.novel-start-reading:visited:hover{background:#000!important;color:#fff!important;border-color:#000!important}
+
+@media (prefers-reduced-motion: reduce){
+  .novel-feature-card .feat-row h2,.novel-feature-card .feat-row .blurb,.novel-feature-card .feat-row .info,.novel-chapter-card,.novel-chapter-card .row,.novel-chapter-card .info .more,.novel-catalog li.active{transition:none}
+  .novel-progress-bar{transition:none}
+}
+
+@media only screen and (max-width:767px){
+  .novel-intro .article-holder .text strong{font-size:78%;line-height:1.5}
+  .novel-chapter-card .count{left:7.5%;width:9.5%;padding-top:9.5%;font-size:115%}
+  .panel.journal-news.homepage-news.novel-chapter-card .row{padding-left:26%;padding-right:5.5%}
+  .novel-chapter-card.novel-filler .row{padding-left:5.5%}
+  .novel-chapter .article-holder .text{font-size:1rem;line-height:1.9}
+  .novel-progress{height:.25em}
+}
+
+/*==CJK-FONTS-BEGIN==*/
+/* CJK webfont integration — EN→ZH paired fonts. OFL-1.1 / free for commercial. (2026-08-30)
+  基准(prose)→LXGW WenKai 霞鹜文楷 · 首页显示+Oswald/Six Caps→Smiley Sans · Playfair/Times→Source Han Serif ·
+  Vampiro One→ZCOOL KuaiLe · Cousine/Courier→LXGW WenKai Mono · Codystar→Fusion Pixel */
+@font-face{font-family:'Smiley Sans';src:url(../assets/fonts/smiley-sans/SmileySans-Oblique.woff2) format('woff2');font-weight:400 900;}
+@font-face{font-family:'Fusion Pixel';src:url(../assets/fonts/fusion-pixel/fusion-pixel-12px-proportional-zh_hans.woff2) format('woff2');font-weight:400;}
+@font-face{font-family:'ZCOOL KuaiLe';src:url(../assets/fonts/zcool-kuaile/ZCOOLKuaiLe-Subset.woff2) format('woff2');font-weight:400;}
+@font-face{font-family:'LXGW WenKai Mono';src:url(../assets/fonts/lxgw-wenkai-mono/LXGWWenKaiMono-Subset.woff2) format('woff2');font-weight:400;}
+@font-face{font-family:'LXGW WenKai Mono';src:url(../assets/fonts/lxgw-wenkai-mono/LXGWWenKaiMono-Subset.woff2) format('woff2');font-weight:700;}
+@font-face{font-family:'LXGW WenKai';src:url(../assets/fonts/lxgw-wenkai/LXGWWenKaiSubset.woff2) format('woff2');font-weight:400;}
+
+/* noto-serif-sc-chinese-simplified-400-normal */
+@font-face {
+  font-family: 'Noto Serif SC';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url(../assets/fonts/source-han-serif/files/noto-serif-sc-chinese-simplified-400-normal.woff2) format('woff2'), url(../assets/fonts/source-han-serif/files/noto-serif-sc-chinese-simplified-400-normal.woff) format('woff');
+}
+/* noto-serif-sc-chinese-simplified-700-normal */
+@font-face {
+  font-family: 'Noto Serif SC';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 700;
+  src: url(../assets/fonts/source-han-serif/files/noto-serif-sc-chinese-simplified-700-normal.woff2) format('woff2'), url(../assets/fonts/source-han-serif/files/noto-serif-sc-chinese-simplified-700-normal.woff) format('woff');
+}
+/* noto-serif-sc-latin-400-normal */
+@font-face {
+  font-family: 'Noto Serif SC';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url(../assets/fonts/source-han-serif/files/noto-serif-sc-latin-400-normal.woff2) format('woff2'), url(../assets/fonts/source-han-serif/files/noto-serif-sc-latin-400-normal.woff) format('woff');
+}
+/* noto-serif-sc-latin-700-normal */
+@font-face {
+  font-family: 'Noto Serif SC';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 700;
+  src: url(../assets/fonts/source-han-serif/files/noto-serif-sc-latin-700-normal.woff2) format('woff2'), url(../assets/fonts/source-han-serif/files/noto-serif-sc-latin-700-normal.woff) format('woff');
+}
+/* noto-sans-sc-chinese-simplified-400-normal */
+@font-face {
+  font-family: 'Noto Sans SC';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url(../assets/fonts/source-han-sans/files/noto-sans-sc-chinese-simplified-400-normal.woff2) format('woff2'), url(../assets/fonts/source-han-sans/files/noto-sans-sc-chinese-simplified-400-normal.woff) format('woff');
+}
+/* noto-sans-sc-chinese-simplified-600-normal */
+@font-face {
+  font-family: 'Noto Sans SC';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 600;
+  src: url(../assets/fonts/source-han-sans/files/noto-sans-sc-chinese-simplified-600-normal.woff2) format('woff2'), url(../assets/fonts/source-han-sans/files/noto-sans-sc-chinese-simplified-600-normal.woff) format('woff');
+}
+/* noto-sans-sc-chinese-simplified-700-normal */
+@font-face {
+  font-family: 'Noto Sans SC';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 700;
+  src: url(../assets/fonts/source-han-sans/files/noto-sans-sc-chinese-simplified-700-normal.woff2) format('woff2'), url(../assets/fonts/source-han-sans/files/noto-sans-sc-chinese-simplified-700-normal.woff) format('woff');
+}
+/* noto-sans-sc-latin-400-normal */
+@font-face {
+  font-family: 'Noto Sans SC';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url(../assets/fonts/source-han-sans/files/noto-sans-sc-latin-400-normal.woff2) format('woff2'), url(../assets/fonts/source-han-sans/files/noto-sans-sc-latin-400-normal.woff) format('woff');
+}
+/* noto-sans-sc-latin-600-normal */
+@font-face {
+  font-family: 'Noto Sans SC';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 600;
+  src: url(../assets/fonts/source-han-sans/files/noto-sans-sc-latin-600-normal.woff2) format('woff2'), url(../assets/fonts/source-han-sans/files/noto-sans-sc-latin-600-normal.woff) format('woff');
+}
+/* noto-sans-sc-latin-700-normal */
+@font-face {
+  font-family: 'Noto Sans SC';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 700;
+  src: url(../assets/fonts/source-han-sans/files/noto-sans-sc-latin-700-normal.woff2) format('woff2'), url(../assets/fonts/source-han-sans/files/noto-sans-sc-latin-700-normal.woff) format('woff');
+}
+/* 中文基准 = 霞鹜文楷（正文/按钮/菜单…默认），思源黑体退居末尾兜底 */
+html .zh{font-family:'LXGW WenKai','LXGW WenKai Mono','Kaiti SC','STKaiti','Noto Serif SC','Noto Sans SC','PingFang SC','Microsoft YaHei',serif;letter-spacing:.02em;}
+/* 首页显示：home 非文章面板的标题/面板头 → 得意黑 */
+body.home-section .panel:not(.journal-article) > h2 .zh,body.home-section .panel:not(.journal-article) .panel-header .zh{font-family:'Smiley Sans','Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif;font-weight:400;letter-spacing:.02em;}
+/* DISPLAY：Oswald / Six Caps → 得意黑 */
+.oswald .zh,.menu1 .zh,.panel.homepage-video .info .vc .cell .zh,.panel.newsletter h2 .zh,.panel.song-header h2 .zh,.panel.band-member.niall .text h2 .zh,.shop-music h2 .zh,.six-caps .zh,.panel.homepage-tour h2 .zh,.tour-intro h2 .zh,.tour-listing h2 .zh,.panel.journal-archive h2 .zh,.newsletter-intro h2 .zh{font-family:'Smiley Sans','Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif;font-weight:400;letter-spacing:.02em;}
+.menu1 .zh{font-weight:700;}
+/* SERIF：Playfair Display（700）/ Times (panel title, 400) → 思源宋体 */
+.playfair-display .zh,.menu4 .zh,.panel.release-menu .menu3 .zh,.panel.band-member.liam .text h2 .zh,.panel.journal-article h2 .zh,.panel.journal-archive ul li a .title .zh,.panel.journal-news.homepage-news h2 .zh,.four-zero-four .fzf-headline .zh,.countdown-timer .zh{font-family:'Noto Serif SC','Source Han Serif SC','Songti SC','SimSun',serif;font-weight:700;letter-spacing:.02em;}
+.times .zh,.panel .panel-header .title .zh,.panel.song-list .songs li .zh{font-family:'Noto Serif SC','Source Han Serif SC','Songti SC','SimSun',serif;font-weight:400;letter-spacing:.02em;}
+/* MONO：Cousine / Courier New → 霞鹜文楷等宽 */
+.cousine .zh,.menu6 .zh,.panel.tweet .panel-content .zh,.fan-twitter .tweet .zh,.panel.journal-instagram .instagram-hover .zh,.shop-merch h2 .zh,.panel.band-member.zayn .text h2 .zh,.countdown-label .zh,.panel.journal-article .liam-sub .zh,.novel-feature-card .feat-row .blurb .zh{font-family:'LXGW WenKai Mono','LXGW WenKai','Noto Sans SC','PingFang SC',monospace;font-weight:400;letter-spacing:.02em;}
+.courier-bold .zh,.menu3 .zh,.tour-submenu .zh{font-family:'LXGW WenKai Mono','Noto Sans SC',monospace;font-weight:700;letter-spacing:.02em;}
+/* HAND：Vampiro One → 站酷快乐体（备选 霞鹜文楷） */
+.vampiro-one .zh,.menu5 .zh,.panel.release-menu .menu2 .zh,.panel.band-member.harry h2 .zh{font-family:'ZCOOL KuaiLe','LXGW WenKai','Noto Serif SC','STKaiti','KaiTi',serif;font-weight:400;letter-spacing:normal;}
+/* PIXEL：Codystar（点阵）→ 缝合像素体 */
+.codystar .zh,.panel.journal-moments .panel-content h2 .zh,.panel.moment .panel-content h2 .zh{font-family:'Fusion Pixel',monospace;font-weight:400;letter-spacing:normal;}
+/*==CJK-FONTS-END==*/

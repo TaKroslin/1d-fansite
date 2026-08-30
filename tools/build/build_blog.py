@@ -323,7 +323,7 @@ def _build_article_html(post: Post) -> str:
     depth = len(Path(post.rel_url).parts) - 1  # number of ".."" needed
     root_prefix = _relative(depth)
     about_href = f"{root_prefix}pages/about.html"
-    css_href = f"{root_prefix}css/styles.css?v=20260830p"
+    css_href = f"{root_prefix}css/styles.css?v=20260830zh2"
     jquery_href = f"{root_prefix}js/jquery.min.js"
     main_js_href = f"{root_prefix}js/main.js"
 
