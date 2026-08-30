@@ -2,7 +2,7 @@
 
 > **FIVE GUYS ONE DIRECTION** — One Direction 粉丝社区网站。纯静态站（HTML/CSS/JS + jQuery），基于官方 onedirectionmusic.com 1:1 克隆 + fan editorial 内容。
 >
-> 维护者：Takion Kroslin / takionkroslin@icloud.com
+> 维护者：Takion Kroslin / contact@5guys1direction.asia
 
 ## 文档地图（开工前必读）
 

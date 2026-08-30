@@ -323,7 +323,7 @@ def _build_article_html(post: Post) -> str:
     depth = len(Path(post.rel_url).parts) - 1  # number of ".."" needed
     root_prefix = _relative(depth)
     about_href = f"{root_prefix}pages/about.html"
-    css_href = f"{root_prefix}css/styles.css?v=20260830zh2"
+    css_href = f"{root_prefix}css/styles.css?v=20260830zh10"
     jquery_href = f"{root_prefix}js/jquery.min.js"
     main_js_href = f"{root_prefix}js/main.js"
 
@@ -432,10 +432,29 @@ def _render_listing_cards(posts: list[Post]) -> str:
         for post in row:
             scaler = post.extra.get("scaler", _auto_scaler(post.title))
             chunks.append(_render_listing_card(post, scaler))
+        # When the article count is odd, the last row has a single card; add
+        # a decorative filler so the panel-group isn't left with an empty half.
+        if len(row) == 1:
+            chunks.append(_render_blog_filler())
         chunks.append('</div>')
     if not chunks:
         chunks.append("<!-- no posts yet -->")
     return "\n\n\n" + "\n".join(chunks) + "\n\n\n"
+
+
+def _render_blog_filler() -> str:
+    """Decorative placeholder card for the odd-card (left-over) half of the
+    last panel-group on the blog listing.  It links nowhere; `is-placeholder`
+    dims it to 45% and `novel-filler` centers its text.  The build only emits
+    it when the article count is odd (see _render_listing_cards), so when the
+    count is even the slot simply doesn't exist."""
+    return '''<div class="panel journal-news homepage-news novel-filler" style="background:url(../images/gfx/5guys/logo-black.png) center/42% no-repeat #fff;">
+
+		<div class="inline"></div>
+
+		<h2 style="color:#000;"><span class="scaler" style="font-size: 80%;"><span class="en">Five Guys, One Direction — more stories on the way.</span><span class="zh">五个男孩，一个 One Direction——更多故事在路上。</span></span></h2>
+
+	</div>'''
 
 
 def _auto_scaler(title: str) -> str:
@@ -485,7 +504,7 @@ def _render_listing_card(post: Post, scaler: str) -> str:
         )
     else:
         title_span = html.escape(post.title)
-    return f'''<div class="panel journal-news homepage-news" style="background:url({html.escape(img)}) center/contain no-repeat #000;">
+    return f'''<div class="panel journal-news homepage-news homepage-blog-card" style="background:url({html.escape(img)}) center/contain no-repeat #000;">
 
 		<div class="inline"></div>
 

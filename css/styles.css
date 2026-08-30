@@ -880,3 +880,25 @@ body.home-section .panel:not(.journal-article) > h2 .zh,body.home-section .panel
 /* PIXEL：Codystar（点阵）→ 缝合像素体 */
 .codystar .zh,.panel.journal-moments .panel-content h2 .zh,.panel.moment .panel-content h2 .zh{font-family:'Fusion Pixel',monospace;font-weight:400;letter-spacing:normal;}
 /*==CJK-FONTS-END==*/
+
+/* HOMEPAGE BLOG CARDS — Gallery-style hover (dark cards: white frame + white-fill CTA, no copy movement) */
+.panel.journal-news.homepage-news.homepage-blog-card .inline{position:absolute;inset:clamp(8px,1.25vw,20px);width:auto;height:auto;box-sizing:border-box;border:.12em solid #fff;display:none;pointer-events:none;z-index:2;}
+.panel.journal-news.homepage-news.homepage-blog-card.hover .inline,.panel.journal-news.homepage-news.homepage-blog-card:focus-within .inline{display:block;}
+.panel.journal-news.homepage-news.homepage-blog-card .info a.more{background-color:transparent;color:#fff!important;border-color:#fff!important;}
+.panel.journal-news.homepage-news.homepage-blog-card.hover .info a.more,.panel.journal-news.homepage-news.homepage-blog-card .info a.more:hover,.panel.journal-news.homepage-news.homepage-blog-card .info a.more:focus{background-color:#fff!important;color:#000!important;border-color:#fff!important;}
+.panel.journal-news.homepage-news.homepage-blog-card h2,.panel.journal-news.homepage-news.homepage-blog-card .panel-header,.panel.journal-news.homepage-news.homepage-blog-card .info{transition:none!important;}
+/* The generic .panel.journal-news .panel-header a/span rule forces the header
+   (date .title and .section-name "Blog") to color:#000!important.  On the dark
+   cover cards the visible glyphs are painted by inner <span class="en|zh">,
+   so the whole header + all child spans/links must be re-asserted white,
+   including -webkit-text-fill-color (which actually paints the glyphs). */
+.panel.journal-news.homepage-news.homepage-blog-card .panel-header,
+.panel.journal-news.homepage-news.homepage-blog-card .panel-header .title,
+.panel.journal-news.homepage-news.homepage-blog-card .panel-header .title a,
+.panel.journal-news.homepage-news.homepage-blog-card .panel-header .title span,
+.panel.journal-news.homepage-news.homepage-blog-card .panel-header .section-name,
+.panel.journal-news.homepage-news.homepage-blog-card .panel-header .section-name a,
+.panel.journal-news.homepage-news.homepage-blog-card .panel-header .section-name a:visited,
+.panel.journal-news.homepage-news.homepage-blog-card .panel-header .section-name a:focus,
+.panel.journal-news.homepage-news.homepage-blog-card .panel-header .section-name span
+{color:#fff!important;border-color:#fff!important;-webkit-text-fill-color:#fff!important;}

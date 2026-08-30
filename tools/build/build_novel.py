@@ -22,7 +22,7 @@ CHAPTERS = os.path.join(NOVEL, "chapters")
 NOVEL_TITLE = "The Only Direction Home"
 SITE = "FIVE GUYS ONE DIRECTION"
 CANON = "https://www.5guys1direction.asia"
-CSS_VERSION = "20260830zh2"
+CSS_VERSION = "20260830zh10"
 CLI_DIR = os.path.dirname(os.path.abspath(__file__))
 TEMPLATES = os.path.join(CLI_DIR, "..", "templates")
 

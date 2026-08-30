@@ -2,7 +2,7 @@
 
 > **FIVE GUYS ONE DIRECTION** — One Direction 粉丝社区网站。基于官方 onedirectionmusic.com 1:1 克隆（Studio Output / Kleber / Sony Music Entertainment UK Ltd.），在此基础上增加 fan editorial 内容。
 >
-> 维护者：Takion Kroslin（项目内统一署名） / 联系：takionkroslin@icloud.com
+> 维护者：Takion Kroslin（项目内统一署名） / 联系：contact@5guys1direction.asia
 
 本文件是**项目事实的单一来源**（技术栈、结构、设计系统、组件、工作流）。操作规则与踩坑记录不在这里，见同级 `RULES.md` / `METHODS.md` / `COMMANDS.md`。
 

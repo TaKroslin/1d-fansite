@@ -8,6 +8,7 @@ author: Takion Kroslin
 header_img: ../../../../images/gfx/5guys/logo-black.png
 header_img_size: 50% contain
 header_img_position: center
+cover_img: ../../../../images/blog/every-july-23rd-we-come-home-cover.png
 description: A close reading of the song that taught a generation that boybands could grow up, get quiet, and still mean everything.
 keywords: One Direction, Story of My Life, Midnight Memories, essay, FIVE GUYS ONE DIRECTION
 og_image: ../../../../images/media/article-images/rect-sml/2aef032aae73e39c7f3547a28fc157e4.jpg

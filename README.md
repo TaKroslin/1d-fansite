@@ -101,7 +101,7 @@ Or use any other static server (`npx serve`, VS Code Live Server, etc.). No buil
 
 ## How to add content
 
-> **All submissions, edits, account additions, and corrections go by email to [takionkroslin@icloud.com](mailto:takionkroslin@icloud.com).** That is the only channel — there is no CMS, no comment form, no admin login. This is deliberate; the whole site is plain HTML so it can be reviewed and updated in plain text by hand.
+> **All submissions, edits, account additions, and corrections go by email to [contact@5guys1direction.asia](mailto:contact@5guys1direction.asia).** That is the only channel — there is no CMS, no comment form, no admin login. This is deliberate; the whole site is plain HTML so it can be reviewed and updated in plain text by hand.
 
 ### 1. Add a new blog post (Markdown workflow)
 
@@ -217,7 +217,7 @@ These rules come from the original Studio Output system. Violating them produces
 - **The menu cycles fonts on hover.** Each `<li class="hover-cycle">` already has a `menu1`–`menu6` class assigned. The script rotates them every 75ms. Do not change the font classes; the rotation is part of the design.
 - **Logo is hidden behind an image.** The `<h1 class="logo"><a>...</a></h1>` text is hidden by CSS, replaced with the 1D diamond logo image. You can put any text inside the `<a>`, but the visible result is always the logo.
 - **Footer is three blocks:** `back-to-top` → `social` (icons) → `credits` (legal/contact). Always in that order. Always with the new copyright text `© {year} Takion Kroslin & 5 GUYS 1 DIRECTION`.
-- **All submissions by email.** Every CTA that asks the user to send something (a draft, an image, an account link, a bug report) opens a `mailto:takionkroslin@icloud.com?subject=...` link. Do not add a form; do not add a comments section; do not add an upload widget. Email is the API.
+- **All submissions by email.** Every CTA that asks the user to send something (a draft, an image, an account link, a bug report) opens a `mailto:contact@5guys1direction.asia?subject=...` link. Do not add a form; do not add a comments section; do not add an upload widget. Email is the API.
 - **No tracking, no analytics, no service worker.** The site has no Google Tag Manager, no cookies beyond the optional `smecookienotice` (which is dead code anyway), no CDN scripts beyond Google Fonts and jQuery. Keep it that way.
 - **Brand name is FIVE GUYS ONE DIRECTION.** Logo text, title tags, og:site_name, footer credits, social handles — all use the new name. "One Direction" is reserved for referring to the band itself.
 
@@ -238,6 +238,6 @@ These rules come from the original Studio Output system. Violating them produces
 
 Editorial, corrections, account additions, gallery submissions, fan art, bug reports, anything:
 
-**[takionkroslin@icloud.com](mailto:takionkroslin@icloud.com)**
+**[contact@5guys1direction.asia](mailto:contact@5guys1direction.asia)**
 
 Reply window is whenever the inbox is open. Most pitches get a response within 48 hours.

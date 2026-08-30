@@ -8,6 +8,7 @@ author: Takion Kroslin
 header_img: ../../../../images/gfx/5guys/logo-black.png
 header_img_size: 50% contain
 header_img_position: center
+cover_img: ../../../../images/blog/why-i-love-1d-so-bad-cover.png
 description: How Louis Tomlinson's solo pivot reshaped what a former boybander is allowed to sound like in 2026.
 keywords: One Direction, Louis Tomlinson, solo, essay, FIVE GUYS ONE DIRECTION
 og_image: ../../../../images/gfx/filmstrip-louis-smlc4ca.jpg

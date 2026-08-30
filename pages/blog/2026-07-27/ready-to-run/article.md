@@ -8,6 +8,7 @@ author: Takion Kroslin
 header_img: ../../../../images/gfx/5guys/logo-black.png
 header_img_size: 50% contain
 header_img_position: center
+cover_img: ../../../../images/blog/ready-to-run-cover.png
 description: The Four album track everyone skipped deserves another listen. Here's why.
 keywords: One Direction, Where Do Broken Hearts Go, Four, essay, FIVE GUYS ONE DIRECTION
 og_image: ../../../../images/media/article-images/square-sml/dfce33b787ff3ec44499e16b242251be.jpg

@@ -8,6 +8,7 @@ author: Takion Kroslin
 header_img: ../../../../images/gfx/5guys/logo-black.png
 header_img_size: 50% contain
 header_img_position: center
+cover_img: ../../../../images/blog/why-this-site-exists-cover.png
 description: The origin story of FIVE GUYS ONE DIRECTION — a Mainland China fan project that refuses to let the One Direction archive go dark.
 keywords: One Direction, fan project, China, archive, FIVE GUYS ONE DIRECTION
 og_image: ../../../../images/gfx/hero-2015-rect-lrg.jpg

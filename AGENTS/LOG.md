@@ -1,5 +1,100 @@
 # 1D Fansite — 开发日志（LOG）
 
+## 2026-08-30 — larry 文章新 header + 首页四个板块入口配封面（big-pickle）
+
+- **模型**：big-pickle
+- **目的**：用户重做了 larry 那篇博客（More Than a Ship）的 header 图，并给首页下面四个板块入口卡（Blog/Gallery/This Is Us/About）做了封面，要求从 Downloads 取回应用。
+- **处理**：
+  1. **larry header**：`~/Downloads/larry-header.png/.psd` → 覆盖 `images/blog/larry-header.png`（新 1200×150 宽幅，原 1200×500）+ `images/psd/larry-header.psd`。front-matter 早已指向 `../../../../images/blog/larry-header.png`，无需改字段；`header_img_size: 100% contain` 下按宽 100% 等比显示（约 1280×160，比例 8:1）。
+  2. **四张入口封面**：`Home {blog,gallery,this is us,about} cover.png` → `images/gfx/home-{blog,gallery,this-is-us,about}-cover.png`；PSD → `images/psd/home-*-cover.psd`。四张均 1200×1200 方形。
+  3. **首页四卡**（index.html 行区 397–491，原来是无背景的 `.panel.journal-news.homepage-news` 浅灰黑字）：改为 `homepage-blog-card` + `background:url(images/gfx/home-*-cover.png) center/cover no-repeat #000;`，并把 `.title`/`.section-name`/`h2 a`/`.more` 内联改为白字 + `-webkit-text-fill-color`（沿用上一条「深色卡白字」的同一套内联 white 方案），因此四卡顺带获得 gallery 白描边 hover 效果（复用已有 `.homepage-blog-card` 规则与首页 hover 脚本）。
+- **验证**：图片审计 `_audit_site_images.py` → 617 refs Broken: 0；4 张封面 + larry-header 本地 HTTP 均 200。Playwright：四卡 bg 命中各自 `home-*-cover.png`，`.title`/`.title span.en`/`.section-name span.en`/`h2 a`/`.more` 全为 `rgb(255,255,255)`；larry 文章页 `.article-cover img` = larry-header.png（1200×150，display 约 1280×160）。截图归档 `tools/_qa_screenshots/home-sections-{blog-gallery,thisisu-about}.png` + `larry-header.png`。
+- **Token 消耗**：未记录
+- **用时**：未记录
+- **经验**：本次只改 index.html 内联样式 + 图片，未动 CSS → **无需 bump `?v=`**；新增图片 `images/gfx/` 属部署资产，需 `git add`（PSD 在 `images/psd/` 被 gitignore，不部署）。
+- **遗留/待办**：截图已打开待人工复核；新增 PNG 尚未 `git add`（部署前必须 add，否则 Cloudflare 404）；未 commit/push。
+
+## 2026-08-30 — 全站联系邮箱 takionkroslin@icloud.com → contact@5guys1direction.asia（big-pickle）
+
+- **模型**：big-pickle
+- **目的**：用户开通 Cloudflare Email Routing（域名 `5guys1direction.asia`），把全站所有联系邮箱从 `takionkroslin@icloud.com` 全局替换为 `contact@5guys1direction.asia`，含说明文档与生成脚本/模板。
+- **根因/背景**：Email Routing 是纯转发，只能收不能发（无 SMTP）。配好后 DNS 已有 MX（route1/2/3.mx.cloudflare.net）+ SPF，测试转发成功。随后做全站邮箱替换。
+- **处理**：精确定位字符串 `takionkroslin@icloud.com`（全库命中 195 处源文件 157 个），用 `find | xargs grep -lF` + `perl -pi -e` 批量替换。非本站邮箱（helderijs@/geisserml@ 等第三方库源码）经审计列表确认不动。
+- **⚠️ 踩坑（重要）**：perl 在双引号字符串里做变量插值替换时，邮箱含 `@`（`takionkroslin@icloud.com`）会被当成 perl 数组符号（`@icloud`）解析为空，导致 `s/\Q$old\E/.../` 静默失效、替换不进任何文件。**必须用单引号 `'s/takionkroslin\@icloud\.com/.../g'` 字面量并转义 `@`/`.`**，一次成功。
+- **覆盖范围**：所有 `.html`（含 111 个 blog 章节页）、`README.md`、`AGENTS/AGENTS.md`、`AGENTS.md`、build 脚本 `tools/build/_build_albums_page.py`、模板 `tools/templates/{article,blog_list,novel_chapter,novel_hub}.html`（改生成源，避免后续 build 重新冒出旧邮箱）。
+- **验证**：全库（除 `.git`）残留旧邮箱文件数为 0；`mailto:takionkroslin` 残留 0；新邮箱 `mailto:contact@5guys1direction.asia` 共 181 处；索引/README 抽查无误；`tools/` 下无旧邮箱。`.git/reflog` 里 5 处旧邮箱为历史提交记录，不改。
+- **Token 消耗**：未记录
+- **用时**：未记录
+- **经验**：perl 变量插值 + 含 `@` 的字符串做替换必踩坑，一律改用单引号字面量+转义；改生成性邮箱前记住同时改「生成脚本 + 模板」，否则 build 一旦重跑旧值卷土重来。
+- **遗留/待办**：未 commit/push。无 CSS 改动，无需 bump `?v=`。
+
+## 2026-08-30 — 深色 blog 卡的「日期」与「Blog」小字被强制成黑色 → 改白 + 全站 CSS 版本统一（big-pickle）
+
+- **模型**：big-pickle
+- **目的**：首页与 blog 列表的深色博客卡上，`<a>` 覆盖图片后有白边框 "<code>Blog</code>" 链接变成黑色；且首页卡的日期（". title"><span class=...>"）也变成黑色。主卡片中心的标题/更多按钮正常白色。
+- **根因**：`styles.css` 有条通用规则 `.panel.journal-news .panel-header a{...color:#000!important}`。但真正的**绘制字形的是内层 `<span class="en">`（非 `<a>`）**，这个 span 的 `color` 与 `-webkit-text-fill-color` 都被那组 `!important` 规则压成黑，盖过 `<a>`/`.section-name` 容器上的内联 `color:#fff`（内联无 `!important`）。查 `getComputedStyle(链接<A>)` 会误报白——必须查内层 span 或直接采样像素。
+- **处理**：在 CSS `HOMEPAGE BLOG CARDS` 块追加高特异性规则，把深色卡 `.panel-header` 整体（日期 `.title` + 段落 `.section-name`）以及它们内层的 `<a>`/`<span>` 全部强制白字，并显式 `-webkit-text-fill-color:#fff!important`（字形由它渲染）：
+  `.panel.journal-news.homepage-news.homepage-blog-card .panel-header, ... .title, ... .title a, ... .title span, ... .section-name, .section-name a(:visited/:focus), .section-name span{color:#fff!important;border-color:#fff!important;-webkit-text-fill-color:#fff!important}`。一规则通吃首页与 blog 列表（同用 `homepage-blog-card`）。首两版只盖 section-name（zh8）→ 补 span（zh9）→ 再补 `.title` 日期与整体 header（zh10）。
+- **版本**：改 CSS 必 bump——全站统一到 `?v=20260830zh10`。因旧版本散落 `zh2`（文章页）/`zh6`（321 页）/`zh7`（首页），顺手把所有生成源脚本版本同步：`build_blog.py`、`build_novel.py`（CSS_VERSION）、`_build_albums_page.py`（原 20260816a 陈旧）、`templates/blog_list.html`、`index.html`。再用脚本把 345 个追踪 html 里 `styles.css?v=*` 批量替换，全站 327 页统一 `zh10`。
+- **验证**：Playwright 像素采样（元素 screenshot 统计亮像素占比）：修复前日期/标签 `0%=全黑`；修复后首页与 blog 列表各卡的日期与 Blog 均 >2%（白字形抗锯齿），如 card0 date 2.3%、blog 20.4%。`getComputedStyle` 只查外层 `<a>`/`.title` 会误判白，必须查 `.en/.zh` span 的 color + `-webkit-text-fill-color` 或采样像素。served CSS 含 header/span 规则、v=zh10。
+- **Token 消耗**：未记录
+- **用时**：未记录
+- **经验**：克隆站通用 `.panel.journal-news .panel-header a{/span}` 的 `color:#000!important` 会反杀深色卡里的整块 header 文字（日期 + 段落）。**别只查外层元素 computed color**——内层 `<span class="en/zh">` 才是绘制字形者，且日期在 `.title`、标签在 `.section-name` 是两处不同选择器，都要覆盖；眼见为实用像素采样（或查 `.en/.zh` span 的 color + `-webkit-text-fill-color`）。覆盖 `!important` 用同级以上 `!important`。全站版本应从生成源脚本统一管理，避免 zh2/zh6 散乱。
+- **遗留/待办**：截图 `tools/_qa_screenshots/home-card-header-white.png`（首页卡日期+Blog 白字紧裁）已打开待人工复核；未 commit/push。
+
+## 2026-08-30 — blog 列表：占位卡改白底黑字 + 列表卡套用 gallery hover（big-pickle）
+
+- **模型**：big-pickle
+- **目的**：上一条的奇数空缺装饰卡改为「白底黑字」；且 blog 列表的文章卡片也要用首页最新的 gallery 样式 hover（白描边 + 白底黑字 CTA、无位移）。
+- **处理**：
+  1. `build_blog.py` 的 `_render_blog_filler()`：占位卡从 `logo-white.png` 深底白字改为白底黑字——`background:#fff` + 中间 `logo-black.png center/42%` + h2 `color:#000`（去掉了 `is-placeholder` 的 45% 透明，避免白卡在浅底上看不见；保留 `novel-filler` 居中文字；logo 由 20% 放大到 42%）。
+  2. `_render_listing_card()`：文章卡片 class 由 `news homepage-news` → 加 `homepage-blog-card`，直接命中 `styles.css` 已存在的 gallery hover 规则（白描边 `.inline` + CTA hover 白底黑字，`transition:none` 无位移）。占位卡不加该类（无 `.more`、不交互）。
+  3. `tools/templates/blog_list.html`：正文前（`</body>` 前）追加 `__5GUYS_BLOG_HOVER__` 守卫的 hover 切换脚本（与首页 index.html 一致），`mouseenter/focus` 加 `.hover`、`mouseleave/blur` 移除。blog.html 由 build 生成，改模板即可。
+- **验证**：重建后 `pages/blog.html` 占位卡 `background:#fff`；5 张文章卡全带 `homepage-blog-card`、hover 脚本已注入。Playwright 实测：占位卡 bg rgb(255,255,255) + h2 黑字居中；首卡 hover 后 `.hover` 触发、白描边 display:block、CTA white-fill + black text 全部命中。`_audit_site_images.py` → 612 refs Broken: 0（占位卡不再引 logo 图，故比上条少 1）。
+- **Token 消耗**：未记录
+- **用时**：未记录
+- **经验**：gallery hover 的 CSS 是对 `.homepage-blog-card` 写死的，新页面直接复用 class + 一段 jQuery hover-toggle 脚本即可，无需新增 CSS；装饰占位卡刻意不加该类以保持非交互。
+- **遗留/待办**：截图 `tools/_qa_screenshots/blog-hover-zh.png` 已打开待人工复核；未 commit/push。CSS 未改，无需 bump `?v=`。
+
+## 2026-08-30 — blog 列表奇数列空缺自动填充装饰卡（big-pickle）
+
+- **模型**：big-pickle
+- **目的**：blog.html 文章数为奇数时，最后一个 panel-group 会空出半个方框；要求在该空缺放装饰占位卡，且文章数为偶数时自动隐藏。
+- **处理**：在 `tools/build/build_blog.py` 的 `_render_listing_cards` 中，当最后一行 `len(row)==1`（即文章数奇数）时，append `_render_blog_filler()` 装饰卡。占位卡复用现有 `is-placeholder`（45% 透明度 + cursor:default）与 `novel-filler`（居中文字）样式，背景 `logo-white.png center/20%`，双语文案 "Five Guys, One Direction — more stories on the way." / "五个男孩，一个 One Direction——更多故事在路上。"，无超链接。blog.html 是 build 自动生成，故每次重建自动按奇偶决定是否插入。
+- **验证**：重建 `build_blog.py` 后 `pages/blog.html` 第 195 行出现 filler，位于末行 panel-group 与 "Why This Site Exists" 并列；Playwright 实测 filler 几何 640×640、opacity 0.45、cardsInGroup=2；`_audit_site_images.py` → 613 refs Broken: 0；单元逻辑模拟 1–8 篇文章 → 奇数显示/偶数隐藏全部正确。
+- **Token 消耗**：未记录
+- **用时**：未单独记录
+- **经验**：列表/卡片二排布局的填充位应放在生成脚本里按奇偶判定，而不是写死在 HTML（否则增删文章后会错位）；此法天然满足"偶数时不需要"。
+- **遗留/待办**：截图 `tools/_qa_screenshots/blog-filler-zh.png` 已打开待人工复核；未 commit/push。
+
+## 2026-08-30 — 为 4 篇无封面博客文章应用新封面（big-pickle）
+
+- **模型**：big-pickle
+- **目的**：用户自制了 4 张 1200×1200 方形封面（Every July 23rd / Ready to Run / Why I Love 1D So Bad / Why This Site Exists），要求应用到文章并把 PSD 与图片规范命名归档。
+- **处理**：
+  1. PNG → `images/blog/<slug>-cover.png`（every-july-23rd-we-come-home / ready-to-run / why-i-love-1d-so-bad / why-this-site-exists）。全部 1200×1200 方形，符合 `cover_img`（卡片封面）规格。
+  2. PSD → `images/psd/<slug>-cover.psd`（沿用 larry-cover.psd 命名约定；`images/psd/` 在 .gitignore 中，属源文件不部署）。
+  3. 4 篇 `article.md` front-matter 新增 `cover_img: ../../../../images/blog/<slug>-cover.png`（header_img/文章页顶部保留 logo 横幅，按用户确认）。
+  4. `python tools/build/build_blog.py` 重建 blog.html / posts.json / 文章页——列表卡片改用 `center/contain` 背景引用各 cover。
+  5. 首页 4 张博客卡手写同步：背景从 `logo-white.png center/40%` 改为 `<slug>-cover.png center/cover`。
+- **验证**：`_audit_site_images.py` → 612 refs Broken: 0；4 张 cover 本地 HTTP 均 200；index/blog 页 200；4 张新图已 `git add`（部署前避免 404）；`git status` 未跟踪仅 0（PSD 在 gitignore）。截图已归档 `tools/_qa_screenshots/blog-covers-{home,listing}-zh.png`（VisionPower Token 上限 429 暂无法自动核验，留人工复核）。
+- **Token 消耗**：未记录
+- **用时**：未单独记录
+- **经验**：首页卡片是死代码不会自动同步，`cover_img` 只在 build 的 blog.html 列表生效，首页必须手改背景路径；方形卡背景用 `center/cover`、图片路径根级 `images/...`（无 `../`）。
+- **遗留/待办**：截图人工复核（`open tools/_qa_screenshots/blog-covers-*.png`）；新建封面后需 `git add`（images/psd 除外）再部署；未 commit/push。
+
+## 2026-08-30 — 小说页（hub/章节）正文与标题移动端仍黑体：正文非 .zh 结构 + 官方 .journal-article 规则压过配对（big-pickle）
+
+- **模型**：big-pickle
+- **目的**：用户反馈 iOS Safari 小说正文和标题仍用系统黑体。
+- **根因**：① 小说正文是裸 `<p>`（`<div class="novel-layout"><div class="article-holder"><h2>标题</h2><div class="text"><p>…`），**不在 `.zh` 内**，全站 `.zh` 配对规则落不到；② 正文/标题被官方克隆规则 `.panel.journal-article .article-holder .text{font-family:'Source Code Pro'}`（特异性 0,4,0）和 `.panel.journal-article…h2` 覆盖，初版小说规则（hub 0,2,2 / chapter 0,2,0）特异性不足。
+- **处理**：`apply_zh_css.py` 新增 novel 配对——`body.novel-hub .article-holder h2` 与 `.novel-layout .article-holder h2` → Noto Serif SC（对齐 Playfair 角色）；`body.novel-hub .panel.journal-article .article-holder .text` 与 `.panel.journal-article.novel-chapter .article-holder .text`（特异性盖过 0,4,0）→ LXGW WenKai；`.novel-catalog a` → LXGW WenKai Mono。全站 `?v=` → 20260830zh6（327 页）。
+- **验证**：Playwright 390px 视口，hub+ch61 的 title/body/catalog 计算字体全命中预期栈；css-zh6 HTTP 200；覆盖检查聚焦；desktop 同 CSS 行为一致。
+- **Token 消耗**：未记录
+- **用时**：未单独记录
+- **经验**：新配 PDF 页面里**非 `.zh` 中文**（小说/图集描述等）需要单独 role；选择器必须先数清官方兜底规则的特异性再设计，不然白写；`.text` 是官方克隆的公共类（Source Code Pro）。
+- **遗留/待办**：commit `4f00a65` 已推（HTTPS），工作树干净；hub-mobile.png 已存 `tools/_qa_screenshots/novel-fix/`（ch61 截图未完成）。图集/其他非 `.zh` 中文页面若用户再报字体缺失，沿用同样思路加 role。
+
 ## 2026-08-30 — 修复移动端「部分中文字体不显示」：Smiley 静态字体误用可变字重区间（big-pickle）
 
 - **模型**：big-pickle
