@@ -778,6 +778,9 @@ html.lang-zh .lyric-line .en{display:none!important}
 @font-face{font-family:'LXGW WenKai Mono';src:url(../assets/fonts/lxgw-wenkai-mono/LXGWWenKaiMono-Subset.woff2) format('woff2');font-weight:400;font-display:swap;}
 @font-face{font-family:'LXGW WenKai Mono';src:url(../assets/fonts/lxgw-wenkai-mono/LXGWWenKaiMono-Subset.woff2) format('woff2');font-weight:700;font-display:swap;}
 @font-face{font-family:'LXGW WenKai';src:url(../assets/fonts/lxgw-wenkai/LXGWWenKaiSubset.woff2) format('woff2');font-weight:400;font-display:swap;}
+body.novel-hub .article-holder h2, .novel-layout .article-holder h2{font-family:'Noto Serif SC','Source Han Serif SC','LXGW WenKai','Noto Sans SC','PingFang SC','Hiragino Sans GB','Microsoft YaHei',serif;}
+body.novel-hub .panel.journal-article .article-holder .text, .panel.journal-article.novel-chapter .article-holder .text{font-family:'LXGW WenKai','LXGW WenKai Mono','Kaiti SC','STKaiti','Noto Serif SC','Noto Sans SC','PingFang SC','Hiragino Sans GB','Microsoft YaHei',serif;}
+.novel-catalog a{font-family:'LXGW WenKai Mono','Cousine','Consolas','Noto Sans SC','PingFang SC','Hiragino Sans GB','Microsoft YaHei',monospace;}
 
 /* noto-serif-sc-chinese-simplified-400-normal */
 @font-face {
