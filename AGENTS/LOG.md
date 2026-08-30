@@ -1,5 +1,17 @@
 # 1D Fansite — 开发日志（LOG）
 
+## 2026-08-30 — 修复移动端「部分中文字体不显示」：Smiley 静态字体误用可变字重区间（big-pickle）
+
+- **模型**：big-pickle
+- **目的**：用户反馈移动端有字体不显示。定位为 CSS 根因并修复。
+- **根因**：`@font-face{font-family:'Smiley Sans'…;font-weight:400 900}` —— `400 900` 是**可变字体**声明写法，而得意黑 woff2 是**静态字体**。iOS Safari / Android Chrome 遇到「静态字体+区间字重」会把它当可变字体处理并跳过，导致整站得意黑（Oswald/Six Caps 角色的中文）在移动端回退到系统字体——桌面 Chrome 宽容所以桌面正常。
+- **处理**：`apply_zh_css.py` 的 LOCAL 块修正——Smiley Sans 拆成两条单字重面（400 / 700，同一文件）去掉区间；全部 7 条本地 @font-face 补 `font-display:swap`（移动弱网下避免不可见文本）。
+- **验证**：`grep` 确认 `font-weight:400 900` 归零、@font-face 全部带 font-display:swap；Playwright 390px 视口 load→check 7 字面全 true；首页 h2 computed 含 Smiley Sans；HTTP css?v=20260830zh4 200。
+- **Token 消耗**：未记录
+- **用时**：未单独记录
+- **经验**：静态字体永远写单字重；`font-display` 必须显式给；`document.fonts.check` 在未先 `load` 时返回假阴性，不要用裸 check 当已加载证据。
+- **遗留/待办**：待用户移动端真机复核；全站 `?v=` 已升 zh4（327 页）；未 commit/push。
+
 ## 2026-08-30 — 中文字体再配对：正文基准 思源黑→霞鹜文楷，首页显示→得意黑，思源黑退居兜底（big-pickle）· 待复现验证
 
 - **模型**：big-pickle（DeepSeek 派生）

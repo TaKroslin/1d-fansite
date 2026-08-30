@@ -15,12 +15,13 @@ FONTS = os.path.join(ROOT, 'assets', 'fonts')
 BEGIN = '/*==CJK-FONTS-BEGIN==*/'
 END = '/*==CJK-FONTS-END==*/'
 
-LOCAL = """@font-face{font-family:'Smiley Sans';src:url(../assets/fonts/smiley-sans/SmileySans-Oblique.woff2) format('woff2');font-weight:400 900;}
-@font-face{font-family:'Fusion Pixel';src:url(../assets/fonts/fusion-pixel/fusion-pixel-12px-proportional-zh_hans.woff2) format('woff2');font-weight:400;}
-@font-face{font-family:'ZCOOL KuaiLe';src:url(../assets/fonts/zcool-kuaile/ZCOOLKuaiLe-Subset.woff2) format('woff2');font-weight:400;}
-@font-face{font-family:'LXGW WenKai Mono';src:url(../assets/fonts/lxgw-wenkai-mono/LXGWWenKaiMono-Subset.woff2) format('woff2');font-weight:400;}
-@font-face{font-family:'LXGW WenKai Mono';src:url(../assets/fonts/lxgw-wenkai-mono/LXGWWenKaiMono-Subset.woff2) format('woff2');font-weight:700;}
-@font-face{font-family:'LXGW WenKai';src:url(../assets/fonts/lxgw-wenkai/LXGWWenKaiSubset.woff2) format('woff2');font-weight:400;}
+LOCAL = """@font-face{font-family:'Smiley Sans';src:url(../assets/fonts/smiley-sans/SmileySans-Oblique.woff2) format('woff2');font-weight:400;font-display:swap;}
+@font-face{font-family:'Smiley Sans';src:url(../assets/fonts/smiley-sans/SmileySans-Oblique.woff2) format('woff2');font-weight:700;font-display:swap;}
+@font-face{font-family:'Fusion Pixel';src:url(../assets/fonts/fusion-pixel/fusion-pixel-12px-proportional-zh_hans.woff2) format('woff2');font-weight:400;font-display:swap;}
+@font-face{font-family:'ZCOOL KuaiLe';src:url(../assets/fonts/zcool-kuaile/ZCOOLKuaiLe-Subset.woff2) format('woff2');font-weight:400;font-display:swap;}
+@font-face{font-family:'LXGW WenKai Mono';src:url(../assets/fonts/lxgw-wenkai-mono/LXGWWenKaiMono-Subset.woff2) format('woff2');font-weight:400;font-display:swap;}
+@font-face{font-family:'LXGW WenKai Mono';src:url(../assets/fonts/lxgw-wenkai-mono/LXGWWenKaiMono-Subset.woff2) format('woff2');font-weight:700;font-display:swap;}
+@font-face{font-family:'LXGW WenKai';src:url(../assets/fonts/lxgw-wenkai/LXGWWenKaiSubset.woff2) format('woff2');font-weight:400;font-display:swap;}
 """
 
 
