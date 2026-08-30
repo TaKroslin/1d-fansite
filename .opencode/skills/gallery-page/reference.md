@@ -156,6 +156,8 @@ CSS 模式（参考 `.albums-cover` 已有的两尺寸切换）：
 
 HTML `.bg` 默认引用 `-rect-lrg`，mobile media query 切换到 `-square-lrg`。
 
+> **⚠️ 去灰度必须写在 CSS 里，不能只加 inline `filter:none`**：`js/main.js` 的 `retinafy_replace()`（HiDPI >1x 时触发，用 `-sml → -lrg/-med`）会用 `class="bg"` 重建一颗新 `.bg`（只带 background-image）并删除旧元素——**inline 样式会被一起丢掉**，页面随即"回退成灰度"。所以 `<scope>-cover` 这个 class 必须加进 styles.css 的 curated `filter:none!important` 规则组。验证要模拟 retinafy：Playwright `device_scale_factor=2` + `wait_until=networkidle`，断言 `.bg` 变 `retinafied` 后 computed `filter` 仍为 `none`。
+
 ## 7. 关键坑
 
 | 编号 | 坑 | 预防 |

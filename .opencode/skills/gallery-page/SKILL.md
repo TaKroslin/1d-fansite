@@ -83,6 +83,7 @@ git status --porcelain | grep "^??"  # 新图已跟踪
 8. **🆕 mixed-ratio fan photos**：fan 投稿照片不是 16:9 标准比例，slideshow 桌面端应改用 **`background-size: contain`**（整图可见、letterbox 黑边），不要沿用官方 3:2 `cover` 裁切。CSS 模板见 `examples/slideshow-gallery.css` 节选。
 9. **🆕 写 37 张 slide 前先闭合 `</div>`**：`<div id="slideshow">` 必须显式闭合（注释不算），否则浏览器 parser auto-close 会把后面 `.gallery-info` / `<footer>` 全部排到 body 外——body 只剩 4 个 children，gallery-info 白底"穿透"显示。验证：`python3 -c "import re; s=open(p).read(); print(len(re.findall(r'<div(?=[\s>])', s))-len(re.findall(r'</div>', s)))"` 必须=0。
 10. **🆕 两尺寸 cover 模式**（custom 封面替代官方 hash 封面时）：文件命名为 `<name>-cover-{rect,square}-lrg.png`，CSS additions 块加 `[max-width:767px]{ .<class> .bg{ background-image:url(./<name>-cover-square-lrg.png)!important; } }` + 桌面默认 `.bg` 引用 `-rect-lrg`；可参考 `.albums-cover` 已有的两尺寸切换实现。
+11. **🆕 curated 封面去灰度（`filter:none!important`）—— 不能用 inline**：`.panel.gallery-cover .bg` 默认 `filter:grayscale(100%)`。若封面本身已是单色/彩图主题（自己做的封面），必须去掉灰度，但**只在 HTML `.bg` 上加 inline `filter:none` 无效**——`js/main.js` 的 `retinafy_replace()` 在 HiDPI(>1x) 下会用 `class="bg"` 重建一颗新 `.bg`（只带 `background-image`）再删旧元素，inline 样式全丢 → 页面"回退成灰度"。**正确做法**：把该卡片的 class（如 `.togethertogether-cover`）追加进 `css/styles.css` FIVE GUYS 块里 curated covers 的 `filter:none!important` 选择器组（参考 `.albums-cover`/`.headband-cover`/`.checkedshirt-cover` 已列），并 **bump `?v=`**（改 CSS 必 bump）。验证必须模拟 retinafy 路径：Playwright `device_scale_factor=2` + `wait_until=networkidle`，确认 `.bg` 被标记 `retinafied` 后 computed `filter` 仍为 `none`（只看 dpr=1 的 `load` 是假通过，会漏掉 retinafy 重建丢 inline 的坑）。
 
 ## 参考资料索引
 

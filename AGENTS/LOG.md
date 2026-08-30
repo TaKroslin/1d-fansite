@@ -1,5 +1,30 @@
 # 1D Fansite — 开发日志（LOG）
 
+## 2026-08-30 — gallery 新建 3 个相册 + 首页 fan art 换封面（deepseek-v4-flash-vision）
+
+- **模型**：deepseek-v4-flash-vision
+- **目的**：gallery 下 Harry 新增「Together Together」、Louis 新增「How Did We Get Here」、Fan Art 页新增「Happy Liam's 33rd Birthday」三个相册；并把 gallery 首页 Fan Art 分类卡换成新封面。资源（相册照片 + 封面 PNG/PSD）全在 `~/Downloads`。
+- **处理**：
+  1. **照片入库**：三个相册照片分别复制到 `images/media/gallery-images/rect-lrg/{together-together,how-did-i-get-here,happy-liams-33rd-birthday}/`，并按 `<folder>-<n>.<ext>` 顺序重命名（29 / 47 / 24 张）。保留原扩展名（前两个 `.jpg`，liam `.jpeg`）。
+  2. **封面入库**：`Downloads` 的 `-rect.png`（2400×1200）→ `images/gfx/<scope>-cover-rect-lrg.png`，`sips` 派生 `-rect-med`(1200×600) 与 `-rect-sml`(600×300)。命名按现有惯例（`gallery-members-harry-*-cover-*` / `gallery-fan-art-liam-33rd-birthday-cover-*` / `fan-art-cover-*`）。
+  3. **PSD 移库**：全部 `.psd` 移到 `images/psd/`（`*.psd` 已在 `.gitignore`，不追踪）。
+  4. **slideshow 页**：生成 3 个 gallery slideshow（`{%}{depth}images/media/gallery-images/rect-lrg/<folder>/<folder>-N.<ext>`），body class `duo gallery-section`、无 music-submenu、`data-cycle-auto-height="false"`、`js/slideshow-nav.js` 只引一次。harry/louis 为 4 层 `../../../../`，fan-art 为 3 层 `../../../`。Back 链接一律 `index.html`（同层回上一层）。
+  5. **索引卡**：三个 index 页各插一张 `gallery-cover` 卡片（封面 `-rect-sml`，`more` 指向新 slideshow）；`pages/gallery.html` 的 Fan Art 卡 `.bg` 由 `filmstrip-liam-smlc4ca.jpg` 换成 `fan-art-cover-rect-sml.png`。
+- **验证**：`python -m http.server 8000` 下 7 个改动页 HTTP 均 200；`_audit_site_images.py` → 720 refs `Broken: 0`；3 个 slideshow 内部 `<div>` open/close 差值 = 0、slide 数 = 29/47/24、`data-cycle-auto-height="false"` 与 `slideshow-nav.js`（仅 1 次）均命中；磁盘封面/照片存在性与张数已核对；`images/psd/` 未出现在 untracked。
+- **Token 消耗**：未记录
+- **用时**：未记录
+- **经验**：
+  1. 照片源命名乱（微信、Instagram、reelsvideo），按 `<folder>-<n>.<ext>` 顺序改名最省事；按 ls 字母序即时间序。
+  2. 封面只需 `-rect-sml`(卡 bg) + `-rect-med`(og:image)，`-rect-lrg` 作源存档；**square 变体本次未用**（现有 harry/louis 卡也不做两尺寸切换，保持与兄弟卡一致，避免为加 CSS 而全站 bump `?v=`）。
+  3. mix-ratio 竖幅粉丝照沿用既有 `.gallery-section .panel.gallery` contain 模式，无需新 CSS。
+  4. 服务器应预先在后台/或写脚本再起，当前用 `&`，QA 完无需停；新图均为部署资产需 `git add`（PSD 除外）。
+- **遗留/待办**：新增 PNG/JPG/HTML 尚未 `git add`（部署前必须 add）；未 commit/push。未启动浏览器（机器 QA 已覆盖，视觉未验）。
+- **发布后修正（机器复检发现）**：
+  1. **slideshow 计数不显示**：Python `.format()` 把模板里的 `{{slideNum}}` 塌成 `{slideNum}`，cycle2 无法插值 → `.count span` 永远空白。修正：三处 `data-cycle-caption-template` 改回 `{{slideNum}}/N`（perl `s/\{slideNum\}/\{\{slideNum\}\}/g`），Playwright 复检计数显示 `1/29`、`1/47`、`1/24`。
+  2. **fan-art 页 Liam 卡片难发现**：卡片被插到 `.panel.moment`（Send us yours）之后、列表最末，首页首屏只见占位符。修正：整卡移到 `journal-article` 介绍之后、第一篇 Submission 之前，成为第一个相册卡。Playwright 复检顺序 `["Happy Liam's 33rd Birthday…", "Submission 01…", …]`。
+  3. 复检：图片审计 720 refs `Broken: 0`；4 个页面 div 闭合 diff=0；三 slideshow 无 pageerror。
+  4. **发布后修正 2（封面去灰度）**：用户提示我做的封面已是单色，不要再套灰度。原以为 HTML `.bg` 加 inline `filter:none` 即可，但复检发现 **HiDPI(>1x) 下 retinafy_replace() 会用 `class="bg"` 重建新 `.bg`（只带 background-image）删旧元素，inline 全丢 → 页面回退成灰度**（对比现有卡片才看出：它们走的是 styles.css 里 curated `filter:none!important` 规则组）。修正：把 4 个新卡片 class（`.togethertogether-cover`/`.howdidigethere-cover`/`.liam33-cover`/`.fanart-cover`）追加进 styles.css curated 规则组，去掉 inline `filter:none`，并 **bump `?v=20260830zh10 → zh11`**（330 个 .html）。验证：Playwright `device_scale_factor=2` + `networkidle`，`.bg` 被标记 `retinafied` 后 computed filter 仍为 `none`；图片审计 719 refs `Broken: 0`。规则已写入 gallery-page SKILL `铁律 #11` + reference.md §6。
+
 ## 2026-08-30 — larry 文章新 header + 首页四个板块入口配封面（big-pickle）
 
 - **模型**：big-pickle

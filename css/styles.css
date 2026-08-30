@@ -513,8 +513,9 @@ html.lang-zh .lyric-line .en{display:none!important}
 
 /* =================================================================
    FIVE GUYS: Members solo covers (Liam/Niall/Zayn) + Five Guys group
-   cover + Costume album cover + Harry Checked Shirt cover — two sizes
-   (rect 2:1 desktop, square 1:1 mobile) + remove grayscale, same
+   cover + Costume album cover + Harry Checked Shirt cover + new 2026
+   curated covers (Together Together, How Did We Get Here, Happy Liam's
+   33rd Birthday, gallery Fan Art) — two sizes + remove grayscale, same
    pattern as the existing curated gallery covers above.
    ================================================================= */
 .panel.gallery-cover.liam-cover .bg,
@@ -522,7 +523,11 @@ html.lang-zh .lyric-line .en{display:none!important}
 .panel.gallery-cover.zayn-cover .bg,
 .panel.gallery-cover.fiveguys-cover .bg,
 .panel.gallery-cover.costume-cover .bg,
-.panel.gallery-cover.checkedshirt-cover .bg{
+.panel.gallery-cover.checkedshirt-cover .bg,
+.panel.gallery-cover.togethertogether-cover .bg,
+.panel.gallery-cover.howdidigethere-cover .bg,
+.panel.gallery-cover.liam33-cover .bg,
+.panel.gallery-cover.fanart-cover .bg{
   -webkit-filter:none!important;
   filter:none!important;
 }
