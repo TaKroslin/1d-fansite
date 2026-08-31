@@ -83,7 +83,7 @@
 
 	<link href="//fonts.googleapis.com/css?family=Playfair+Display:700|Codystar|Cousine:400,700|Source+Code+Pro:300,400,500,600,700|Source+Sans+Pro:400|Oswald:400,700|Vampiro+One|Six+Caps&display=swap" rel="stylesheet" type="text/css" />
 
-	<link href="css/styles.css?v=20260830zh11" rel="stylesheet" type="text/css" />
+	<link href="css/styles.css?v=20260830zh12" rel="stylesheet" type="text/css" />
 
 </head>
 
@@ -154,37 +154,9 @@
 </header>
 
 
+	<div class="panel journal-article liam-bday-panel">
 
-	<div class="panel journal-article liam-countdown-panel" style="display:none;">
-
-
-	<div class="liam-countdown-stage">
-
-		<div class="countdown-inner">
-
-
-			<div class="countdown-timer" id="countdownDisplay">
-
-				<span class="countdown-unit"><span class="countdown-number" id="cdHours">00</span><span class="countdown-label-unit">H</span></span>
-
-				<span class="countdown-sep">:</span>
-
-				<span class="countdown-unit"><span class="countdown-number" id="cdMinutes">00</span><span class="countdown-label-unit">M</span></span>
-
-				<span class="countdown-sep">:</span>
-
-				<span class="countdown-unit"><span class="countdown-number" id="cdSeconds">00</span><span class="countdown-label-unit">S</span></span>
-
-			</div>
-
-
-		</div>
-
-	</div>
-
-	</div>
-
-	<div class="panel journal-article liam-bday-panel" style="display:none;">
+	<a class="liam-bday-link" href="pages/gallery/fan-art/happy-liams-33rd-birthday.html" style="display:block;color:inherit;text-decoration:none;position:relative">
 
 	<div class="panel-header">
 
@@ -209,6 +181,8 @@
 		<div class="liam-years">1993 &mdash; 2024</div>
 
 	</div>
+
+	</a>
 
 	</div>
 
@@ -606,73 +580,7 @@
 	
 
 	
-
-<script>
-(function() {
-  var bdayPanel = document.querySelector('.liam-bday-panel');
-  var countPanel = document.querySelector('.liam-countdown-panel');
-  if (!bdayPanel || !countPanel) return;
-
-  // PREVIEW MODE: force countdown to show regardless of date
-  var PREVIEW = false;  // set to false before deploy
-
-  var now = new Date();
-  var target = new Date(now.getFullYear(), 7, 29, 0, 0, 0); // Aug 29 00:00
-  var countStart = new Date(target.getTime() - (8 * 60 + 29) * 60 * 1000); // 8h29m before
-
-  if (PREVIEW) {
-    // For preview: set target to 8h29m from now
-    target = new Date(now.getTime() + (8 * 60 + 29) * 60 * 1000);
-    countStart = now;
-  }
-
-  function pad(n) { return String(n).padStart(2, '0'); }
-
-  function updateCountdown() {
-    var now = new Date();
-    var diff = target.getTime() - now.getTime();
-    if (diff <= 0) {
-      countPanel.style.display = 'none';
-      bdayPanel.style.display = 'block';
-      return;
-    }
-    var hours = Math.floor(diff / (1000 * 60 * 60));
-    var minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    var seconds = Math.floor((diff % (1000 * 60)) / 1000);
-    document.getElementById('cdHours').textContent = pad(hours);
-    document.getElementById('cdMinutes').textContent = pad(minutes);
-    document.getElementById('cdSeconds').textContent = pad(seconds);
-  }
-
-  function decide() {
-    var now = new Date();
-    if (PREVIEW) {
-      countPanel.style.display = 'block';
-      bdayPanel.style.display = 'none';
-      updateCountdown();
-      setInterval(updateCountdown, 1000);
-      return;
-    }
-    if (now < countStart) {
-      countPanel.style.display = 'none';
-      bdayPanel.style.display = 'none';
-      return;
-    }
-    if (now < target) {
-      countPanel.style.display = 'block';
-      bdayPanel.style.display = 'none';
-      updateCountdown();
-      setInterval(updateCountdown, 1000);
-      return;
-    }
-    countPanel.style.display = 'none';
-    bdayPanel.style.display = 'block';
-  }
-
-  decide();
-})();
-</script>
-
+	
 <script>
 (function ($) {
   "use strict";

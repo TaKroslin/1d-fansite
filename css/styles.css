@@ -553,6 +553,7 @@ html.lang-zh .lyric-line .en{display:none!important}
 }
 /* Liam Payne birthday panel (2026-08-23) */
 .panel.journal-article.liam-bday-panel{background:#fff;color:#000;padding:0}
+.panel.journal-article .liam-stage{height:min(78vh,660px);overflow:hidden}
 .panel.journal-article .liam-countdown-stage{position:relative;width:100%;height:min(78vh,640px);background:#fff;display:flex;align-items:center;justify-content:center;padding:2em 1em}
 .countdown-inner{text-align:center}
 .countdown-label{font-family:'Cousine';font-size:150%;color:#000;opacity:.7;margin-bottom:1.2em}
