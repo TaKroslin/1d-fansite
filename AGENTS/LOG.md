@@ -1,5 +1,24 @@
 # 1D Fansite — 开发日志（LOG）
 
+## 2026-08-31 — 首页 Liam 生日板块：删倒计时、常驻顶部横幅、整卡可点击跳转 Fan Art + 双语 CTA 提示（big-pickle 接手）
+
+- **模型**：big-pickle（接手前一模型未完成的首页 Liam 生日板块改造）
+- **目的**：① 删除原倒计时模块；② 该板块改为在首页内容区顶端（hero+nav 之后第一个 panel）**永久显示**（不再按日期门控）；③ 整卡可点击，跳转 Fan Art「Happy Liam's 33rd Birthday」相册；④ 在卡内加一行小字双语 CTA 提示点击跳转。
+- **结果**：
+  1. **index.html**：删除 `.liam-countdown-panel`（倒计时 DOM）与其内联 JS（`cdHours/cdMinutes/cdSeconds` 的 `decide()/updateCountdown()` 块）；`.liam-bday-panel` 去掉 `style="display:none"`；整卡内容包进 `<a class="liam-bday-link" href="pages/gallery/fan-art/happy-liams-33rd-birthday.html" style="display:block;color:inherit;text-decoration:none;position:relative">`。因整卡是块级链接、无内层 `<a>`，无嵌套锚点问题。
+  2. **桌面高度 bug**：接手发现 `.liam-stage` 桌面上**无高度规则**（只有 `@media max-width:767px` 里才有 `height:min(100vw,600px)`）→ 桌面 collapse 成 0 高。既然要常驻显示，必须修：给 styles.css 加桌面规则 `.panel.journal-article .liam-stage{height:min(78vh,660px);overflow:hidden}`，并被移动端媒体查询正确覆盖。
+  3. **bump `?v=`**：`.liam-stage` 改了 CSS → 按 M12，`20260830zh11 → zh12`，全站 330 个 .html 批量替换（grep -rl + sed）。
+  4. **CTA 提示行**：在 `.liam-copy-bottom` 里 `1993 — 2024` 之后加 `<p class="liam-cta" style="...">`（Source Code Pro 小字 uppercase，en「Click to view fan creations」/ zh「点击查看 粉丝创作」），内联样式、包在链接内，点击同样跳转相册。此步只改 index.html 内联 → 无需再 bump `?v=`。
+  5. **提交并推送**：`0f9be28`（删倒计时+常驻顶部横幅+桌面高度修复+v=zh12）、`e075108`（双语 CTA 行），均 push 到 origin/main。
+- **验证**：Playwright 检查 — 桌面 `.liam-stage`/`.liam-bday-panel` 高度 660px、移动端 stage 390px（100vw）、panel `display:block`、无 `.liam-countdown-panel` 残留；点击 `.liam-bday-link` 跳转 `.../happy-liams-33rd-birthday.html`（title 命中「Happy Liam's 33rd Birthday」）；CTA 行桌面/移动均可见（h=21px、无溢出、en/zh 命中）；`_audit_site_images.py` → 719 refs `Broken: 0`；标签 div/a/span/p 闭合差值全部 0。
+- **Token 消耗**：未记录
+- **用时**：未记录（接手无起点时间戳）
+- **经验总结**：
+  1. 整卡做整块链接时，用 `<a style="display:block;position:relative">` 包裹即可，内部绝对定位子元素（`panel-header`/`liam-headline`/`liam-copy-bottom`）自动以其为包含块，无需额外 CSS。
+  2. 常驻顶部 panel 暴露了 `.liam-stage` 桌面无高度、仅在移动媒体查询里设高度的既有 bug——之前 `display:none` 时无人发现。**媒体查询里单独设高度、桌面不设**，一启用必塌成 0 高。
+  3. 单行文案（无布局改动）用内联样式即可，避免为一行小字再次触发 330 个 .html 的 `?v=` bump。
+- **遗留/待办**：无（已完成并推送）。旧 `.liam-countdown-*` 相关 CSS 规则仍留在 styles.css（未删除，未使用，无副作用）。
+
 ## 2026-08-30 — gallery 新建 3 个相册 + 首页 fan art 换封面（deepseek-v4-flash-vision）
 
 - **模型**：deepseek-v4-flash-vision
