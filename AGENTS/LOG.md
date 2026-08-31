@@ -1,8 +1,8 @@
 # 1D Fansite — 开发日志（LOG）
 
-## 2026-08-31 — 首页 Liam 生日板块：删倒计时、常驻顶部横幅、整卡可点击跳转 Fan Art + 双语 CTA 提示（big-pickle 接手）
+## 2026-08-31 — 首页 Liam 生日板块：删倒计时、常驻顶部横幅、整卡可点击跳转 Fan Art + 双语 CTA 提示（deepseek-v4-flash-visual-exp 完成 + big-pickle 补 LOG）
 
-- **模型**：big-pickle（接手前一模型未完成的首页 Liam 生日板块改造）
+- **模型**：deepseek-v4-flash-visual-exp（接手 big-pickle 完成首页 Liam 生日板块改造）+ big-pickle（补充 LOG）
 - **目的**：① 删除原倒计时模块；② 该板块改为在首页内容区顶端（hero+nav 之后第一个 panel）**永久显示**（不再按日期门控）；③ 整卡可点击，跳转 Fan Art「Happy Liam's 33rd Birthday」相册；④ 在卡内加一行小字双语 CTA 提示点击跳转。
 - **结果**：
   1. **index.html**：删除 `.liam-countdown-panel`（倒计时 DOM）与其内联 JS（`cdHours/cdMinutes/cdSeconds` 的 `decide()/updateCountdown()` 块）；`.liam-bday-panel` 去掉 `style="display:none"`；整卡内容包进 `<a class="liam-bday-link" href="pages/gallery/fan-art/happy-liams-33rd-birthday.html" style="display:block;color:inherit;text-decoration:none;position:relative">`。因整卡是块级链接、无内层 `<a>`，无嵌套锚点问题。
