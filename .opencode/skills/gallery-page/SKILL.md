@@ -1,97 +1,191 @@
 ---
 name: gallery-page
-description: 在 1d fansite 新增 gallery 分类页 / sub-category 多相册页 / photoset 照片集页面——四种页面层级（分类索引、分类内 cover 列表、sub-category 多相册、单照片 slideshow）+ 图片规范 + 验证。
+description: Use for any Gallery page work in 1d-fansite: create an album or sub-page, create or update a slideshow, replace a Gallery cover, or change Gallery text, structure, image behavior, or technical settings. The skill handles asset preparation, page hierarchy, bilingual content, cover panels, slideshow wiring, QA, and delivery screenshot.
 ---
 
-# Gallery / Photoset 页面工作流（gallery-page）
+# Gallery Page
 
-> 这是主流程文档。详细结构 → `reference.md`；真实页面 → `examples/`；可复制骨架 → `templates/`。
+这是项目的 Gallery 页面专用工作流。Skill 的人类名称是 **Gallery Page**；目录 slug 保持为 `gallery-page`。触发词包括：`gallery page`、Gallery、相册、photoset、slideshow、幻灯片、Gallery 封面、cover，或明确要求修改 Gallery 的技术/文字/图片。
 
-## 四种层级
+## 标准执行顺序
 
-| 层级 | 路径 | 结构 |
-|------|------|------|
-| A. 分类索引 | `pages/gallery.html` | N 个 `.gallery-cover` 入口卡片 |
-| B. 分类页 | `pages/gallery/<cat>/index.html`（3 层） | 顶部 `journal-article` 介绍 + N 个 `.gallery-cover`（成员/相册列表） |
-| **B2. sub-category 多相册页** | `pages/gallery/<cat>/<sub>/index.html`（4 层） | 当 `<cat>` 下有多种相册/成员（如 members→harry→headband），B2 用 B 的模板列出 sub-album 卡片 |
-| C. 照片 slideshow | `pages/gallery/<cat>/<sub>/<slug>.html`（4 层）或 `pages/music/albums/<a>/photos/<slug>.html`（5 层） | cycle2 slideshow + gallery-info |
+1. **读取**：读取项目入口、设计系统、元素命名文档和本 Skill；确认当前 Gallery 层级与最近似模板。
+2. **定位**：检查目标页面、父级 index、现有 class/id、资源路径和 Downloads 候选资料；此阶段只读，不修改文件。
+3. **整理方案**：明确要新增/修改的页面、目标层级、封面来源、六尺寸资源、文字和需要变更的 CSS/JS。
+4. **作者确认**：使用 question 工具一次性确认目标路径、是否新建、图片顺序、显示文字，以及封面是否已单色/是否加灰度。信息不全或存在覆盖风险时必须停在这里。
+5. **执行**：得到确认后，按最近似模板创建页面、处理资源、接入父级卡片并更新必要样式。
+6. **验证**：先做静态和资源审计，再按需做桌面/移动端浏览器检查。
+7. **交付**：发送一张最终截图，说明修改路径、验证结果，并写入 `AGENTS/LOG.md`。
 
-> **B2 与 B 的区别**：B 是"分类下面直接列封面卡片"；B2 是"分类下面先按成员/系列再分一层，每层再列相册"。两种结构都用 `.panel.journal-article` 顶部介绍 + `.gallery-cover` 卡片列表——模板完全一样，只是 URL 深度多一层。**B2 实际存在过**：`pages/gallery/members/harry/index.html`（Harry 分类下做多相册展示）。
+作者未确认前，不创建页面、不覆盖既有页面、不替换封面、不批量处理图片。
 
-## 操作步骤
+## 1. 先判断任务类型
 
-### 新增分类（A + B）
+把请求归为一个或多个操作，再决定需要修改哪些页面：
 
-1. `mkdir pages/gallery/<cat>/` + 复制现有分类页 `pages/gallery/<cat>/index.html` 作模板。
-2. 改 meta/title/og:url、body class（`duo gallery-section`）、3 层资源前缀、双语介绍。
-3. 填 `.gallery-cover` 卡片（模板见 `templates/gallery-cover.html`）——**封面 = photoset 第一张 slide hash**（M4）。
-4. `pages/gallery.html` 加对应分类入口卡片（og 封面、count、链接）。
+| 操作 | 典型结果 |
+|---|---|
+| 新增 Gallery 分类 | 修改 `pages/gallery.html`，新建 `pages/gallery/<category>/index.html` |
+| 新增分类内子集 | 新建或修改 `pages/gallery/<category>/<subset>/index.html` |
+| 新增相册/照片集 | 新建一个 slideshow `.html`，并在所属 index 中增加 `.gallery-cover` |
+| 修改 slideshow | 修改照片顺序、数量、标题、正文、路径、控件或技术参数 |
+| 修改封面 | 替换 panel 使用的资源，必要时同步六个封面尺寸和 CSS |
+| 修改文字 | 同步英文 `.en`、中文 `.zh`、`title`、description、Open Graph metadata |
+| 修改技术 | 先判断是内容、资源、结构、样式还是交互变更；只有确实需要才改 CSS/JS |
 
-### 新增 sub-category 多相册页（B2）
+不要把音乐专辑 photos 页面误当成 Gallery 分类页面。`pages/music/albums/.../photos/` 仍属于音乐区，必须保留 `.music-submenu`；`pages/gallery/...` 的 slideshow 使用 `duo gallery-section`，不要添加 `.music-submenu`。
 
-1. `mkdir pages/gallery/<cat>/<sub>/` + 复制 B 层模板（`pages/gallery/<cat>/index.html`）改写。
-2. 改 meta/title/og:url、body class（`duo gallery-section`）、**4 层**资源前缀、双语介绍。
-3. 填 `.gallery-cover` 卡片（标题改成 sub-category 名，比如 "Harry" 而非 "Members"）。
-4. card 链接 target：`<slug>.html`（与 index 同层）。
-5. 底部 `.journal-archive-link` 回到上一层：`../index.html`（B2→B 的"Back to <cat>"）。
+## 2. 开始前必须收集资料
 
-### 新增 photoset slideshow（C）
+用户资料通常在 `/Users/takionkroslin/Downloads/`。只读目录并选择本次任务的明确文件，不要修改、移动或删除 Downloads 中的原文件。
 
-复制现有 slideshow 页（优先用同 gallery-section 的，避免 music-section 样式冲突）改：
-- 每张照片一个 `.slide`（背景 `rect-lrg/<hash>.jpg` 或 fan 自定义路径）。
-- `data-cycle-caption-template` 里 N 改成真实张数。
-- 同步 og:image / twitter:image:src（`rect-med`）+ gallery-info 说明。
-- **保留**：`data-cycle-auto-height="false"`（M45）、`.bg` + slide `position:relative`（M46）、`slideshow-nav.js` 只引一次（M14）。
-- **gallery slideshow vs music slideshow 关键区别**：music slideshow 顶部有 `.music-submenu`（Videos/Photos/Singles/Fans tabs）；gallery slideshow **不要**复制 submenu，直接 `panel.gallery` 起手，否则就是"分专辑页面克隆"。
+执行前必须确认以下资料：
 
-### slideshow 两种 body class 区分
+1. 封面图，或 slideshow 的全部内容图。若未提供独立封面，默认使用第一张 slideshow 图片作为封面。
+2. slideshow 要放在哪个页面、哪个层级，例如 `Gallery / Members / Harry / new-album`。
+3. 是否要新建页面；若已有同名页面，必须先确认是更新还是另建页面。
+4. 封面上显示的名称，以及英文名、中文名、简介、年份/日期、照片数量和返回链接文字。
+5. 图片是否已经按 slideshow 顺序排列；如果文件名不能确定顺序，先询问，不得猜测。
 
-| body class | 场景 | 顶部 |
-|------|------|------|
-| `duo four-campaign music-section`（或同系列） | 专辑 photos 页（night-changes 等） | 含 `.music-submenu` |
-| `duo gallery-section` | gallery 分类下的 photoset | 无 submenu，干净 |
+以下情况不能自动猜测，必须先向用户确认：目标层级缺失、多个候选图片集、封面与第一张 slide 的关系不清、覆盖既有页面、需要删除或替换既有内容。
 
-**误用会污染全站**——album photos 页如果换成 `gallery-section` 就丢了 Videos/Fans tabs。
+## 3. 必须询问的单色确认
 
-### 图片来源
+拿到封面后，在处理封面之前必须使用宿主提供的 `question` 工具确认：
 
-官方：`www.onedirectionmusic.com/onedirectionmusiccom-ukprod/media/gallery-images/rect-lrg/<hash>.jpg`；本地：`images/media/gallery-images/rect-lrg/`。
-**fan 投稿**：放 `images/media/gallery-images/rect-lrg/`（保持 skill 目录约定），文件名保留原命名（`hlsd-hb1.jpeg` 等可读名）。**新照片先 `git add`**（未跟踪 = 线上 404）。
+> 这张 Gallery 封面本身已经是单色/黑白了吗？需要保留它的原始单色效果，还是需要添加网站的单色遮罩/灰度效果？
 
-## 验证
+问题至少要能区分：
 
-```bash
-python3 -m http.server 8000 &
-python3 tools/audit/_audit_site_images.py   # Broken: 0
-git status --porcelain | grep "^??"  # 新图已跟踪
+- 已经是单色，保留原图，不再叠加灰度；
+- 是彩色，使用网站默认灰度效果；
+- 是彩色，但需要保持彩色，不加灰度；
+- 不确定，先生成预览后再决定。
+
+如果当前环境没有可调用的 question 工具，不能默选；应暂停并向用户提出同一个确认问题。
+
+## 4. Gallery 页面层级
+
+项目当前实际使用以下四种层级：
+
+| 层级 | 真实路径 | 页面职责 | 必须的主要结构 |
+|---|---|---|---|
+| A | `pages/gallery.html` | 全站 Gallery 分类入口 | `.panel.gallery-cover` |
+| B | `pages/gallery/<category>/index.html` | 分类介绍和相册/成员卡片 | `.panel.journal-article` + `.panel.gallery-cover` |
+| B2 | `pages/gallery/<category>/<subset>/index.html` | 分类下的子集/成员/系列 | `.panel.journal-article` + `.panel.gallery-cover` |
+| C | `pages/gallery/<category>/<subset>/<slug>.html` | 单一照片集 slideshow | `.panel.gallery` + `#slideshow` + `.panel.gallery-info` |
+
+现有 B2 示例包括 `members/harry/`、`members/louis/`；现有 C 示例包括 `members/five-guys/costume.html` 和 `members/harry/together-together.html`。新增页面必须复制最近似的现有页面作为模板，不能从空白文件手写整套 header/footer。
+
+层级决定相对路径深度：
+
+- A：资源通常 `../...`；
+- B：资源通常 `../../../...`；
+- B2/C：资源通常 `../../../../...`；
+- 音乐区 5 层 photos 页面：资源通常 `../../../../../...`。
+
+复制模板后逐项检查 `styles.css`、图片、JS、返回链接、`og:url` 和 `twitter:image:src`，不要只做字符串替换。
+
+## 5. AI 自动完成的工作
+
+资料和必要选项确认后，以下机械工作由 AI 直接完成：
+
+1. 从 Downloads 复制并规范化本次资源；不改动原始资料。
+2. 创建或更新正确层级的 Gallery index、cover panel 和 slideshow。
+3. 生成封面所需的 `rect/square × sml/med/lrg` 六个资源。
+4. 把 slideshow 卡片接入正确的父级页面，并更新数量、标题、链接、双语文字和 metadata。
+5. 计算各层级相对路径，保留模板已有 header、navigation、footer 和脚本顺序。
+6. 检查 `retinafy`、灰度规则、计数器、翻页控件和 slideshow 的图片顺序。
+7. 运行静态检查、图片审计和必要的浏览器检查。
+8. 生成一张与本次变更最相关的最终页面截图，作为交付物。
+
+用户未要求时，不自动删除旧图片、旧页面或 Downloads 原文件；覆盖已有页面属于需要确认的操作。
+
+## 6. 封面资源规范
+
+### 6.1 六个输出文件
+
+自制 Gallery 封面统一放在 `images/gfx/`，命名：
+
+```text
+<gallery-scope>-cover-rect-sml.png
+<gallery-scope>-cover-rect-med.png
+<gallery-scope>-cover-rect-lrg.png
+<gallery-scope>-cover-square-sml.png
+<gallery-scope>-cover-square-med.png
+<gallery-scope>-cover-square-lrg.png
 ```
 
-`AGENTS/LOG.md` 写日志。
+新资源的固定像素尺寸：
 
-## 铁律（防坑）
+| 方向 | sml | med | lrg | 用途 |
+|---|---:|---:|---:|---|
+| `rect` 桌面横图 | 600×300 | 1200×600 | 2400×1200 | desktop Gallery cover / metadata |
+| `square` 移动方图 | 300×300 | 600×600 | 1200×1200 | mobile Gallery cover |
 
-1. **M4**：gallery-cover 封面用该 photoset 第一张 slide 的 hash。
-2. **M5**：slide 用 `rect-lrg`（1500×1000）；og:image 用 `rect-med`（1200×800）。
-3. **M45**：slideshow 必须 `data-cycle-auto-height="false"`（否则插 sentinel 克隆首图）。
-4. **M46**：`.bg` 保留、slide 保持 `position:relative`（retinafy 克隆 bg 会整页盖住）。
-5. **M14**：`slideshow-nav.js` 只引一次（键盘翻两页）。
-6. **M12**：改 CSS 记得 bump `?v=`。
-7. **🆕 gallery-cover panel 比例**（这个最容易搞错）：
-   - **桌面端 `duo` body** → panel 是 **2:1 landscape**（1280×640），`padding-top:50% width=full`。
-   - **移动端 `mono` body（≤767px）** → panel 是 **1:1 square**。
-   - 比例不对的 cover（2:1 图塞 2:1 panel）天然贴合 0 裁切；1:1 图塞 2:1 panel `cover` 会裁左右。
-8. **🆕 mixed-ratio fan photos**：fan 投稿照片不是 16:9 标准比例，slideshow 桌面端应改用 **`background-size: contain`**（整图可见、letterbox 黑边），不要沿用官方 3:2 `cover` 裁切。CSS 模板见 `examples/slideshow-gallery.css` 节选。
-9. **🆕 写 37 张 slide 前先闭合 `</div>`**：`<div id="slideshow">` 必须显式闭合（注释不算），否则浏览器 parser auto-close 会把后面 `.gallery-info` / `<footer>` 全部排到 body 外——body 只剩 4 个 children，gallery-info 白底"穿透"显示。验证：`python3 -c "import re; s=open(p).read(); print(len(re.findall(r'<div(?=[\s>])', s))-len(re.findall(r'</div>', s)))"` 必须=0。
-10. **🆕 两尺寸 cover 模式**（custom 封面替代官方 hash 封面时）：文件命名为 `<name>-cover-{rect,square}-lrg.png`，CSS additions 块加 `[max-width:767px]{ .<class> .bg{ background-image:url(./<name>-cover-square-lrg.png)!important; } }` + 桌面默认 `.bg` 引用 `-rect-lrg`；可参考 `.albums-cover` 已有的两尺寸切换实现。
-11. **🆕 curated 封面去灰度（`filter:none!important`）—— 不能用 inline**：`.panel.gallery-cover .bg` 默认 `filter:grayscale(100%)`。若封面本身已是单色/彩图主题（自己做的封面），必须去掉灰度，但**只在 HTML `.bg` 上加 inline `filter:none` 无效**——`js/main.js` 的 `retinafy_replace()` 在 HiDPI(>1x) 下会用 `class="bg"` 重建一颗新 `.bg`（只带 `background-image`）再删旧元素，inline 样式全丢 → 页面"回退成灰度"。**正确做法**：把该卡片的 class（如 `.togethertogether-cover`）追加进 `css/styles.css` FIVE GUYS 块里 curated covers 的 `filter:none!important` 选择器组（参考 `.albums-cover`/`.headband-cover`/`.checkedshirt-cover` 已列），并 **bump `?v=`**（改 CSS 必 bump）。验证必须模拟 retinafy 路径：Playwright `device_scale_factor=2` + `wait_until=networkidle`，确认 `.bg` 被标记 `retinafied` 后 computed `filter` 仍为 `none`（只看 dpr=1 的 `load` 是假通过，会漏掉 retinafy 重建丢 inline 的坑）。
+这里的 `small / middle / large` 对应文件名中的 `sml / med / lrg`。不能仅凭文件名判断尺寸；生成后必须读取实际像素并报告六张图均通过。历史资源中有尺寸异常文件，新任务不得复制异常尺寸；除非用户明确要求修复旧资源，否则不批量重做旧封面。
 
-## 参考资料索引
+桌面 panel 是 2:1，移动端 panel 是 1:1。桌面默认使用 `rect`，移动端通过对应 cover class 的媒体规则切换到 `square`。如果沿用第一张官方照片作为封面，遵守官方资源的 `rect-sml/med/lrg` 规则，并在文档中注明它不是自制六尺寸封面。
 
-| 文件 | 内容 |
-|------|------|
-| `reference.md` | 三/四层结构详细说明、图片规范、photos.html 列表页链接、gallery slideshow CSS 模板 |
-| `examples/gallery-cover.html` | 分类页真实 gallery-cover 卡片 |
-| `examples/slideshow.html` | 真实 music 幻灯片页（night-changes）节选 |
-| `examples/slideshow-gallery.css` | 🆕 gallery slideshow 桌面端 contain 模式 CSS 模板 |
-| `templates/gallery-cover.html` | 可复制 gallery-cover 骨架 |
-| `templates/slideshow.html` | 可复制 slideshow 骨架 |
+### 6.2 单色与 retinafy
+
+`.panel.gallery-cover .bg` 默认可能有 `grayscale(100%)`。单色/彩色选择必须落实到 CSS 规则，而不能只写在 `.bg` 的 inline style：`retinafy_replace()` 在高 DPI 下会重建 `.bg`，inline 样式会丢失。
+
+若该封面需要保留原色或原始单色：
+
+1. 使用卡片专属 class，例如 `.newalbum-cover`；
+2. 在 `css/styles.css` 的 additions 区追加 `filter:none!important` 规则；
+3. 更新所有引用该 CSS 的页面 `styles.css?v=`；
+4. 用 DPR=2 的浏览器检查重建后的 `.bg`。
+
+若用户选择网站默认灰度，不增加例外 CSS。
+
+## 7. Slideshow 结构硬规则
+
+新增或修改 Gallery slideshow 时：
+
+- `body` 使用 `class="duo gallery-section"`；
+- 每张图一个 `.slide`，照片使用 `rect-lrg` 或本地等价资源；
+- `#slideshow` 必须显式闭合，不能依赖注释或浏览器自动修复；
+- 保留 `data-cycle-auto-height="false"`；
+- `.bg` 和 `.slide` 的定位结构必须保留；
+- `slideshow-nav.js` 全页只引用一次；
+- `data-cycle-caption-template`、`.count`、标题、简介和 metadata 使用真实照片数量；
+- Gallery slideshow 不放 `.music-submenu`；
+- fan 投稿的混合比例照片使用 `background-size: contain`，避免裁掉内容；
+- 自建 Gallery slideshow 默认不添加 `.share`，除非用户明确要求。
+
+封面卡片应使用真实目标 slideshow 的第一张照片或用户指定的独立封面；不能用无关占位图。`og:image`/Twitter 图片使用 `rect-med`，slideshow 内容图使用 `rect-lrg`。
+
+## 8. 文字、命名和模板边界
+
+- HTML class/id 必须沿用项目真实名称；新增标志性元素时同步登记 `AGENTS/ELEMENT-NAMING.md` 和单元素预览文档。
+- 双语页面保留同一 DOM 结构，用 `.en` 与 `.zh` 配对；不可只翻译可见文字而遗漏 metadata。
+- 修改现有模板生成的页面时，先判断它是否由脚本产生。生成页面应修改源数据并运行对应 builder；手写 Gallery 页面才直接修改 HTML。
+- 不修改官方克隆结构，不随意重命名 class/id，不把一次性视觉决定抽成通用 CSS。
+- 修改 CSS 必须 bump 所有受影响页面的 `styles.css?v=`。
+
+## 9. 验证与交付
+
+按便宜到昂贵的顺序验证：
+
+1. 静态：HTML div 配对、路径深度、唯一脚本引用、真实照片数量、`.en/.zh` 配对、六张封面像素尺寸。
+2. 资源：`python tools/audit/_audit_site_images.py`，目标 `Broken: 0`；检查新图片不是未跟踪文件。
+3. 元素：`python tools/audit/_audit_element_inventory.py`，新增 class/id 有登记。
+4. 视觉/交互：涉及布局、灰度、移动端切换或 slideshow 时，用 Playwright 检查桌面和移动端；灰度例外必须用 DPR=2 检查。
+5. 交付：只需发用户一张截图。默认截取本次新增或修改后的 Gallery 主要页面桌面视图；如果变更只影响移动端，则截取移动视图。截图应来自最终通过验证的页面，不用草稿图代替。
+
+完成后在 `AGENTS/LOG.md` 顶部记录目的、改动、验证、实测用时和遗留事项。
+
+## 10. 参考文件
+
+需要具体 HTML 骨架时读取：
+
+- `reference.md`：真实层级、路径深度和历史坑位；
+- `examples/gallery-cover.html`：Gallery cover 实例；
+- `examples/slideshow.html`：slideshow 实例；
+- `examples/slideshow-gallery.css`：混合比例照片的 contain 规则；
+- `templates/gallery-cover.html`：cover 骨架；
+- `templates/slideshow.html`：slideshow 骨架；
+- `AGENTS/DESIGN-SYSTEM.md`：设计 token、Panel、响应式和状态规范；
+- `AGENTS/ELEMENT-NAMING.md`：真实 class/id 精确名称。

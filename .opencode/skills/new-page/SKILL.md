@@ -1,9 +1,25 @@
 ---
 name: new-page
-description: 在 1d fansite 新建 HTML 页面的完整流程——复制模板、相对路径深度表、body class、header/footer 骨架、资源引用与验证。
+description: Use when creating a new 1d-fansite HTML page, landing page, content page, Gallery index, or other static page. Handles template selection, path depth, body class, shared header/footer, assets, bilingual structure, and validation.
 ---
 
 # 新建页面（new-page）
+
+## 触发与执行边界
+
+提到新建页面、新增页面、落地页、内容页或静态 HTML 页面时触发。对于 Blog、Gallery、Translation 等已有专用 Skill，专用 Skill 优先，本 Skill 只负责通用页面骨架。开始前确认：页面用途、目标路径、英文/中文标题与正文、页面是否需要加入导航或父级列表、封面/资源资料。AI 可自动选择最近似模板、复制骨架、计算路径、接入导航并验证；如果目标路径已存在、页面类型同时适合多个模板、或会改变公共导航，必须使用 question 工具确认。元素 class/id 必须先从 `AGENTS/ELEMENT-NAMING.md` 选择，不能自行发明同义名称。
+
+## 标准执行顺序
+
+1. **读取**：读取项目入口、设计系统、元素命名文档和最接近的现有页面模板。
+2. **定位**：确认目标目录、资源相对路径深度、body class、导航位置和是否存在同名页面；此阶段只读。
+3. **整理方案**：列出页面类型、模板文件、英文/中文内容、资源、父级链接和需要登记的新元素。
+4. **作者确认**：使用 question 工具确认目标路径、是否覆盖、是否加入导航、页面标题/语言和资源选择。
+5. **执行**：得到确认后复制模板、替换内容、接入父级页面并登记新增 class/id。
+6. **验证**：检查 HTML 闭合、相对路径、脚本唯一性、图片审计和导航链接。
+7. **交付**：报告新页面路径和验证结果；涉及视觉变化时发送一张截图，并写日志。
+
+作者未确认前，不创建目标 HTML、不覆盖同名页面、不改公共导航。
 
 > 这是主流程文档。深度表 → `reference.md`；真实页面 → `examples/`；可复制骨架 → `templates/`。
 
@@ -21,7 +37,8 @@ description: 在 1d fansite 新建 HTML 页面的完整流程——复制模板�
 | 内容页（pages/ 一级） | `pages/about.html` 或任意 `pages/*.html` |
 | 列表/图库分类 | `pages/gallery/<cat>/index.html` |
 | 文章页 | 跑 `tools/build/build_blog.py`（见 blog-post skill），不手写 |
-| 相册 slideshow | `pages/music/albums/<a>/photos/<slug>.html`（见 gallery-page skill） |
+| Gallery 相册 slideshow | 交给 `gallery-page` Skill；不要使用音乐区模板 |
+| 音乐专辑 photos slideshow | `pages/music/albums/<a>/photos/<slug>.html`（见 gallery-page skill 的音乐区边界） |
 
 ### 2. 定深度 + body class
 

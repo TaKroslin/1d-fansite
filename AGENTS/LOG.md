@@ -1,5 +1,93 @@
 # 1D Fansite — 开发日志（LOG）
 
+## 2026-09-05 — 小说 Chapters 全量重写同步（111 章）
+
+- **模型**：big-pickle
+- **目的**：根目录 `Chapters/*.md` 为最新小说内容，与 blog 渲染目录 `pages/blog/the-only-direction-home/chapters/NN/chapter.md` 存在差异（52 章不同）。作者选择「全部重写」，将 111 章全部同步。
+- **结果**：幂等脚本将 `Chapters/*.md` 全部覆盖到对应 `chapter.md`（文件名 `01_林森浩.md` → `chapters/01/chapter.md`）；运行 `.venv/bin/python tools/build/build_novel.py` 重新生成 111 个章节 `index.html` + hub 页。
+- **验证**：`diff -q` 确认 111 章全部一致（Same: 111, Diff: 0）；生成的 `chapters/01/index.html` 已含新句「他亲生妈妈塞进行李箱底的那一把」、旧句「从一家二手乐器店里买的」已移除。
+- **Token 消耗**：未记录
+- **用时**：未单独计时
+- **经验总结**：系统 `python3` 缺 `markdown` 模块，必须用 `.venv/bin/python` 运行构建脚本；Chapters 根目录与渲染目录双维护，改小说内容须同步两份再 build。
+- **遗留/待办**：无
+
+## 2026-09-05 — 为六个 Skills 统一增加阶段式执行流程
+
+- **模型**：Codex
+- **目的**：把 Skills 从规则集合优化为“先读取定位、再整理方案、询问作者、确认后执行、最后验证交付”的顺序，减少 AI 提前修改和流程歧义。
+- **结果**：为 `gallery-page`、`blog-post`、`design-system`、`new-page`、`qa-workflow`、`translation` 增加统一的七阶段流程；每个 Skill 都明确确认前的禁止动作、专用 Skill 优先级、验证时机和截图/日志交付边界。
+- **验证**：6 个 Skill 均包含七个阶段关键词；front matter、500 行限制和 `git diff --check` 通过。
+- **Token 消耗**：未记录
+- **用时**：实测未单独计时
+- **经验总结**：高质量工作流的核心不是堆更多规则，而是锁定动作顺序和确认闸门；作者确认应发生在执行前，而不是执行中途。
+- **遗留/待办**：后续用真实任务试运行，观察 question 工具调用和专用 Skill 优先级是否符合预期。
+
+## 2026-09-05 — 修正 Blog 首页卡片数量为动态规则
+
+- **模型**：Codex
+- **目的**：移除 Blog Skill 中对首页卡片数量为 3 的错误固定假设。
+- **结果**：`blog-post/SKILL.md` 改为先读取修改前首页实际 Blog 卡片数量，默认新增文章后保持该数量；只有用户明确要求时才调整数量，并同步修改验证命令和触发确认边界。
+- **验证**：已确认 Skill 中不再出现“当前 3”或固定数量规则；front matter 与 Markdown 语法检查通过，`git diff --check` 通过。
+- **Token 消耗**：未记录
+- **用时**：实测未单独计时
+- **经验总结**：页面内容数量属于运行时项目事实，Skill 只能规定读取和保持规则，不能把某次页面状态写死。
+- **遗留/待办**：无。
+
+## 2026-09-05 — 统一轻量修订其余五个 Skills
+
+- **模型**：Codex
+- **目的**：在一次会话内完成剩余 Skills 的基础规范化，减少后续触发歧义和重复确认。
+- **结果**：更新 `blog-post`、`design-system`、`new-page`、`qa-workflow`、`translation` 五个 `SKILL.md` 的触发描述；补充资料输入、AI 自动执行范围、必须确认的歧义、元素命名入口、视觉截图和 QA 边界；修正 `design-system` 的旧文档路径引用。未新增 Skill，未修改页面、CSS 或构建流程。
+- **验证**：6 个现有 Skill（含已完成的 `gallery-page`）front matter、触发/确认内容和 500 行限制检查通过；`git diff --check` 通过；未发现目标 Skill 中残留旧设计系统入口。
+- **Token 消耗**：未记录
+- **用时**：实测 6 秒（批量修订与验证阶段；前置阅读未计入）
+- **经验总结**：轻量 Skill 不需要重复项目知识，重点是触发条件、输入边界、自动化边界和验收出口；统一入口能减少 AI 在旧日志和旧路径中寻找规则。
+- **遗留/待办**：暂不制作新的流程 Skill；后续可用真实 Blog、翻译、QA 或新页面请求做一次实际触发测试。
+
+## 2026-09-05 — 打磨 Gallery Page Skill：明确触发、输入、自动化与交付流程
+
+- **模型**：Codex
+- **目的**：根据维护者确认的 Gallery 工作方式，把现有 `gallery-page` Skill 细化为可直接执行的工作流。
+- **结果**：重写 `.opencode/skills/gallery-page/SKILL.md`；加入 Gallery/相册/slideshow/封面触发条件、四种真实页面层级、Downloads 资料清单、必须确认的单色/灰度问题、AI 自动执行范围、六个封面资源及固定像素尺寸、slideshow 结构硬规则、生成页/手写页边界、QA 顺序和“一张截图”交付标准。
+- **验证**：Skill Creator 官方 `quick_validate.py` 因环境缺少 `PyYAML` 无法运行；已用无依赖替代检查验证 front matter、必需规则关键词、179 行长度及 `git diff --check`，全部通过；同时核对现有 Gallery 页面层级和封面资源尺寸，发现历史资源存在尺寸异常，已在 Skill 中明确新资源不得复制异常文件。
+- **Token 消耗**：未记录
+- **用时**：实测 6 秒（写入与验证阶段；前置阅读与分析未计入）
+- **经验总结**：Gallery 自动化必须把“可自动执行”和“必须向用户确认”分开；封面尺寸必须验像素，不能只验文件名；单色例外必须走 CSS 规则以兼容 retinafy 重建。
+- **遗留/待办**：按用户要求暂不制作新的 Gallery 构建脚本或同步到其他 Skill 目录；下一步可用真实的新相册请求试运行并继续微调。
+
+## 2026-09-05 — 重构元素可视化预览：一元素一 HTML、一框一预览（Codex）
+
+- **模型**：Codex
+- **目的**：修正此前多个 iframe 指向同一长预览页、内容重复且需要框内滚动的问题；补齐 Header、Footer、按钮、卡片和字体的独立视觉对照。
+- **结果**：新增 `tools/build/build_element_previews.py`，生成 `AGENTS/element-previews/` 下 50 个独立 HTML；新增 `AGENTS/ELEMENT-PREVIEWS.md`，每条名称只嵌入一个对应 HTML；覆盖 Header、导航、Footer、菜单/CTA/播放按钮、首页、Journal、Gallery、Music、Band、Tour、Shop、Novel、翻译、计数与 17 套字体样张。删除旧的合并式 `element-previews/index.html`；`ELEMENT-NAMING.md` 改为精准名称注册表，并链接至新的可视化对照文档。
+- **验证**：iframe 条目 50 个、独立预览 HTML 50 个；预览引用的全部本地图片存在；元素审计仍扫描 327 个 HTML、263 个 class token、270 个 class 组合、50 个 id、21 个图标 class；构建脚本语法检查和 `git diff --check` 通过。
+- **Token 消耗**：未记录
+- **用时**：未记录
+- **经验总结**：视觉元素词典必须遵守“一名称、一独立预览文件、一渲染框”；锚点跳转到同一长页面会造成重复和滚动，不能作为元素级参考。
+- **遗留/待办**：后续若新增经典组件，在 `build_element_previews.py` 增加一条记录后重建预览；建议在 Typora 打开 `ELEMENT-PREVIEWS.md` 做最终人工确认。
+
+## 2026-09-05 — 修正元素命名文档：加入可渲染 HTML 板块预览（Codex）
+
+- **模型**：Codex
+- **目的**：根据反馈，把命名文档中的 HTML 示例从代码框改为 Typora 可直接渲染的板块预览。
+- **结果**：新增 `AGENTS/element-previews/index.html`，加载项目现有 CSS、字体和真实图片，提供公共 Header、首页 Blog 卡、Gallery 封面、Novel 章节卡、文章、歌词、成员、Tour、Newsletter 预览；`AGENTS/ELEMENT-NAMING.md` 改为通过 raw HTML `<iframe>` 直接显示这些板块，并保留真实 class/id 和精确定位信息。未修改页面、CSS 或现有 `.opencode/skills`。
+- **验证**：元素审计识别 327 个 HTML、263 个 class token、270 个 class 组合、50 个 id、21 个图标 class；Python 语法检查和 `git diff --check` 通过。当前沙箱禁止绑定本地 HTTP 端口（`PermissionError: Operation not permitted`），因此未能用 HTTP curl 验证 iframe 加载，预览文件路径和相对资源路径已静态核对。
+- **Token 消耗**：未记录
+- **用时**：未记录
+- **经验总结**：作者需要的是“名称下面直接看到板块”，代码框只能说明结构，不能完成视觉对应；用独立预览页承载真实 class 结构，Markdown 用 iframe 嵌入，可避免在文档中复制大量易过期 HTML。
+- **遗留/待办**：建议在 Typora 中打开 `AGENTS/ELEMENT-NAMING.md` 人工确认 iframe 是否被启用；若 Typora 安全策略阻止 iframe，再改用 Typora 支持的 raw HTML 容器或本地预览链接。
+
+## 2026-09-05 — 拆分设计规范、建立全站元素命名注册表并登记候选 Skills（Codex）
+
+- **模型**：Codex
+- **目的**：提高 AI 精准定位页面元素和重复工作流的效率；本阶段不修改页面视觉和行为。
+- **结果**：新增 `AGENTS/DESIGN-SYSTEM.md`，集中定义颜色、字体配对、Panel、公共壳层、响应式、交互、资源、缓存和验收规则；新增 `AGENTS/ELEMENT-NAMING.md`，以真实完整 class/id 记录首页 Blog 卡、全站经典 Panel、页面专属组件、图标和字体；新增 `AGENTS/SKILLS-ROADMAP.md`，登记 7 个候选 Skill 名称并标注仓库原有的 6 个 `.opencode/skills`，暂不创建或修改 `SKILL.md`；`AGENTS/AGENTS.md` 精简为入口和项目事实；新增只读 `tools/audit/_audit_element_inventory.py`，并在 `.gitignore` 中为该常驻审计工具添加例外。
+- **验证**：元素审计扫描 327 个 HTML + 1 个 CSS，识别 263 个 class token、270 个 class 组合、50 个 id、21 个图标 class；字体扫描包含 Google、本地中文、系统 fallback 和 Icomoon；`python3 -m py_compile tools/audit/_audit_element_inventory.py` 通过；`git diff --check -- AGENTS tools/audit` 通过。
+- **Token 消耗**：未记录
+- **用时**：实测 9 秒（文档写入与验证阶段；前置分析时间未计入）
+- **经验总结**：元素命名必须以真实 class/id 链为主、中文别名为辅；审计脚本必须同时扫描 HTML、模板和 CSS；以下划线开头的常驻审计脚本需显式加入 `.gitignore` 例外。
+- **遗留/待办**：候选 Skills 仅登记名称，后续逐个协商触发条件、输入输出、脚本和验证流程；工作区原有页面、图片和 CSS 改动未处理。
+
 ## 2026-08-31 — 首页 Liam 生日板块：删倒计时、常驻顶部横幅、整卡可点击跳转 Fan Art + 双语 CTA 提示（deepseek-v4-flash-visual-exp 完成 + big-pickle 补 LOG）
 
 - **模型**：deepseek-v4-flash-visual-exp（接手 big-pickle 完成首页 Liam 生日板块改造）+ big-pickle（补充 LOG）

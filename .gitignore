@@ -1,6 +1,7 @@
 # Local dev / housekeeping scripts (one-off QA, extraction, debug)
 _*.py
 !_build_albums_page.py
+!tools/audit/_audit_element_inventory.py
 _*.json
 _*.txt
 _*.md
@@ -14,6 +15,10 @@ onedirectionmusiccom-ukprod/
 
 # PSD design sources (never commit, working files only)
 images/psd/
+images/gfx/psd/
+
+# opencode scratch/tmp (never commit)
+.opencode/tmp/
 
 # tools/ one-off task files (QA probes, scrapers, downloads, review artifacts)
 tools/_*.ps1

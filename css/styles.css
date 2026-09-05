@@ -293,13 +293,25 @@ html.lang-zh .lyric-passage{display:block}
 .panel.gallery-cover.louis-cover .bg,
 .panel.gallery-cover.teenage-cover .bg,
 .panel.gallery-cover.baby-louis-cover .bg,
-.panel.gallery-cover.x-factor-cover .bg{
+.panel.gallery-cover.x-factor-cover .bg,
+.panel.gallery-cover.on-stage-cover .bg,
+.panel.gallery-cover.behind-the-scenes-cover .bg,
+.panel.gallery-cover.press-awards-cover .bg{
   -webkit-filter:none!important;
   filter:none!important;
 }
 @media (max-width: 767px){
   .panel.gallery-cover.members-cover .bg{
     background-image:url(../images/gfx/music-members-mono-cover-square-sml.png)!important;
+  }
+  .panel.gallery-cover.on-stage-cover .bg{
+    background-image:url(../images/gfx/gallery-on-stage-cover-square-sml.png)!important;
+  }
+  .panel.gallery-cover.behind-the-scenes-cover .bg{
+    background-image:url(../images/gfx/gallery-behind-the-scenes-cover-square-sml.png)!important;
+  }
+  .panel.gallery-cover.press-awards-cover .bg{
+    background-image:url(../images/gfx/gallery-press-awards-cover-square-sml.png)!important;
   }
   .panel.gallery-cover.harry-cover .bg{
     background-image:url(../images/gfx/music-members-harry-cover-square-square-sml.png)!important;

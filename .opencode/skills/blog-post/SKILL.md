@@ -1,9 +1,25 @@
 ---
 name: blog-post
-description: 在 1d fansite 新增/编辑/删除 blog 文章的完整流程——article.md front-matter、图片规范、build_blog.py 构建、首页卡片手动同步、视频卡片、双语。
+description: Use for any 1d-fansite Blog work: create, edit, delete, translate, add a cover, add a video card, or synchronize a Blog card on the homepage. Handles article.md front matter, images, build_blog.py, bilingual content, and QA.
 ---
 
 # Blog 文章工作流（blog-post）
+
+## 触发与执行边界
+
+提到 Blog、文章、blog card、首页最新文章、封面、视频卡片或双语 Blog 时触发。它优先于通用 `new-page` 和 `translation`；完成后再交给 `qa-workflow` 收尾。开始前确认：文章标题/日期/slug、英文正文、中文正文是否需要、封面或视频资料、是否要出现在首页。AI 可自动创建源文件、运行构建，并以修改前首页实际存在的 Blog 卡片数量作为默认保留数量；只有用户明确要求时才调整这个数量。若 slug 冲突、用户要求覆盖/删除既有文章、是否上首页不明确，或中文含义不明确，必须使用 question 工具确认。完成交付时给出构建结果和关键页面截图（若本次只改源文本且不涉及视觉，可不截图）。
+
+## 标准执行顺序
+
+1. **读取**：读取 Blog Skill、front matter 参考、模板和最近文章；确认构建脚本与首页卡片现状。
+2. **定位**：检查目标 slug、日期目录、源文件是否已存在，统计修改前首页 Blog 卡片数量；此阶段只读。
+3. **整理方案**：列出要创建/修改的源文件、图片、中文版本、首页卡片位置和构建命令。
+4. **作者确认**：使用 question 工具确认 slug/日期、是否发布到首页、中文内容范围、图片选择，以及覆盖或删除事项。
+5. **执行**：得到确认后只修改源文件和允许手改的首页卡片，运行 `build_blog.py`，不直接手改生成文章 HTML。
+6. **验证**：检查构建输出、首页卡片数量、图片断链和双语结构。
+7. **交付**：报告源文件与构建结果；涉及视觉时发送一张最终截图，并写入日志。
+
+作者未确认前，不写入文章源文件、不覆盖同 slug 文章、不删除首页卡片。
 
 > 这是主流程文档。字段表 → `reference.md`；真实文章 → `examples/`；可复制模板 → `templates/`。
 
@@ -52,7 +68,7 @@ pages/blog/YYYY-MM-DD/<slug>/
 
 首页 blog 卡片在 `index.html` 的 `.blog-section` 区域（约行 224–335），结构为多个 `panel-group`（每行两张卡），是**手写死代码**，build 不碰。
 
-**规则：只保留最新 N 篇（当前 N=3），新文章插最前，最旧的一篇从首页删除。** 文章本身仍在 `pages/blog/`，删的只是首页展示卡。
+**规则：默认保留修改前首页实际存在的 Blog 卡片数量。** 新文章插最前，超出保留数量时从首页删除最旧的一张；文章本身仍在 `pages/blog/`，删的只是首页展示卡。若用户明确要求新的保留数量，按用户指定数量执行。
 
 具体操作（以新增 slug=foo 为例）：
 
@@ -61,7 +77,7 @@ pages/blog/YYYY-MM-DD/<slug>/
 3. **卡片内容**：复制 `templates/home-card.html`，替换 `{date_display}`/`{中文日期}`/`{date}`/`{slug}`/`{title}`/`{title_zh}`/`{scaler}`/封面图。
    - 封面背景图：方形图用 `center/cover`（如 `images/blog/foo-cover.png`）；品牌 logo 用 `center/40%`（如 `images/gfx/5guys/logo-white.png`）。
    - `scaler`：与 blog 列表页生成值保持一致（`grep "foo-slug" pages/blog.html` 看 `font-size: XX%`）。
-4. **验证**：`grep -c "pages/blog/YYYY-MM-DD" index.html` 确认卡片数量 = N（含新增、不含已删）。
+4. **验证**：修改前先记录 `grep -c "pages/blog/YYYY-MM-DD" index.html` 的结果作为保留数量；修改后再次执行，确认卡片数量保持不变（除非用户明确要求调整）。
 
 ## 编辑文章
 
@@ -102,7 +118,7 @@ pages/blog/YYYY-MM-DD/<slug>/
 ```bash
 python tools/audit/_audit_site_images.py   # Broken: 0（header_img/og_image/视频封面路径错误会暴露）
 grep "your-slug" index.html          # 确认首页卡片同步
-grep -c "pages/blog/YYYY-MM-DD" index.html  # 卡片数量 = N（当前 3）
+grep -c "pages/blog/YYYY-MM-DD" index.html  # 修改前后数量应保持一致，除非用户指定新数量
 ```
 
 `AGENTS/LOG.md` 追加日志。
@@ -112,7 +128,7 @@ grep -c "pages/blog/YYYY-MM-DD" index.html  # 卡片数量 = N（当前 3）
 1. 黑底列表卡片用 `logo-white.png`，白底用 `logo-black.png`（M1）。
 2. 模板 marker `__POSTS_CARDS__` 是裸文本，**不要包在 HTML 注释里**（RULES §2.4）。
 3. `blog.html` 卡片链接**不加 `pages/` 前缀**（M7）。
-4. 首页卡片不会自动同步——新增/删除必改首页，且只保留最新 N 篇、最旧一篇从首页删掉。
+4. 首页卡片不会自动同步——新增/删除必改首页，且只保留已确认的最新 N 篇、最旧一篇从首页删掉。
 5. 视频卡片层级：遮罩 z-index 1 < glyph z-index 2 + `color:#fff!important`（M47/M48）。
 6. 本地 server 任务结束不杀（RULES §1）；Playwright 用 Node + `channel:'chrome'`（RULES §3）。
 

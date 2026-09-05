@@ -1,9 +1,25 @@
 ---
 name: translation
-description: 1d fansite 中英双语注入工作流——歌词页（translate_lyrics.py）、专辑页歌名（translate_albums.py）、页面文本双语结构、翻译按钮、歌词数据源。
+description: Use for any 1d-fansite translation or bilingual UI work: lyrics, album song titles, Blog/Gallery/Band/Tour text, language switching, missing Chinese copy, or font pairing. Handles the correct translation route, scripts, .en/.zh structure, and validation.
 ---
 
 # 翻译工作流（translation）
+
+## 触发与执行边界
+
+提到翻译、中文、英文、双语、语言切换、歌词翻译或字体配对时触发。它负责语言内容和双语结构；字体视觉选择交给 `design-system`，Blog/Gallery 页面结构交给对应专用 Skill。开始前确认目标页面/专辑/歌曲、源语言文本、目标语言、是否要求逐句对照，以及专有名词或人名偏好。AI 可自动判断歌词/专辑/普通页面路线，更新字典或 `.en`/`.zh`，运行对应脚本并验证；如果原文不完整、歌词顺序无法对应、译法存在明显歧义或需要改动字体加载，必须使用 question 工具确认。不得把生成页面当源文件手改。
+
+## 标准执行顺序
+
+1. **读取**：读取目标页面/字典、翻译参考和当前 `.en`/`.zh` 结构。
+2. **定位**：判断属于歌词、专辑标题还是普通页面路线；确认原文数量、顺序和已有翻译状态。
+3. **整理方案**：列出将修改的字典或源 HTML、翻译范围、专有名词处理和字体/语言切换影响。
+4. **作者确认**：使用 question 工具确认目标语言、逐句对照要求、歧义译法、专名偏好和是否允许补充占位翻译。
+5. **执行**：得到确认后更新字典或源结构，运行对应注入脚本；不直接改生成页面。
+6. **验证**：检查原文顺序、`.en/.zh` 配对、`data-translate`、脚本引用和页面语言切换。
+7. **交付**：报告翻译范围和验证结果；涉及字体/布局变化时发送一张截图，并写日志。
+
+作者未确认前，不写入翻译字典、不覆盖已有译文、不决定有歧义的译法。
 
 > 这是主流程文档。字典格式 → `reference.md`；真实结构 → `examples/`；可复制模板 → `templates/`。
 
