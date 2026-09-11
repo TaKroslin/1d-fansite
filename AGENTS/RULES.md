@@ -147,8 +147,8 @@
 
 1. **Cloudflare Workers git 集成拉取 GitHub main 分支部署**：本地 `git push` 到 main 后，Workers 构建（`npx wrangler deploy`，静态资源模式 `assets.directory: "."`）→ 线上 `https://www.5guys1direction.asia/`。
 2. **排除不部署的仓库内容：用 `.assetsignore`，不是 `assets.exclude`**：`assets.directory: "."` 意味着**整个仓库**默认都会被托管上线（开发手册 / Skills / 构建脚本 / 原始 Markdown 全部公开可访问，线上 `AGENTS/RULES.md` 一度可 200 直接下载）。排除表放在 assets 根目录的 `.assetsignore`（语法同 `.gitignore`）。⚠️ wrangler **没有** `assets.exclude` 字段，写了既不报错也不生效（详见 M37）。当前排除：`.git/`、`node_modules/`、`.venv/`、`AGENTS/`、`AGENTS.md`、`.agents/`、`.opencode/`、`tools/`、`Chapters/`、`docs/`、`README.md`、`wrangler.jsonc`、`.gitignore`。
-   - `.git/` 既已被 `.assetsignore` 排除，`wrangler.jsonc` 里的 `"build": { "command": "rm -rf .git" }`（M37 的旧补丁）已属冗余，可择机移除。
-   - **禁止在本地跑 `wrangler deploy` / `wrangler deploy --dry-run`**：wrangler 会执行 `build.command`，也就是真的 `rm -rf .git`，把本地版本库删掉（详见 M53）。要验证上传内容，先 `git clone` 到临时目录再在那边跑。
+   - `wrangler.jsonc` 里的 `"build": { "command": "rm -rf .git" }`（M37 的旧补丁）**已于 2026-09-11 移除**——`.git/` 由 `.assetsignore` 排除，那个命令唯一的效果就是在本地误跑时的破坏性。
+   - **不要在本地跑 `wrangler deploy`**（不加 `--dry-run`）：它会真的发布上线。`wrangler deploy --dry-run` 在 `build.command` 移除后**已无破坏性**，但仍建议先 `git clone` 到临时目录再跑——工作区里有 `.venv/`、`images/psd/` 等被忽略的大文件，就地扫描容易得出失真的资源清单（验证手法见 M53）。
 3. **推送前检查**：
    - `git status`：确认**所有引用的新图片/新文件都已 `git add`**。⚠️ 引用未跟踪目录 = 线上 404（血泪教训：`images/media/article-images/square-sml/`、`images/yt-thumbs/`、`images/media/gallery-images/`、`images/gfx/*-lrg.jpg` 都曾是未跟踪的）。
    - `.gitignore` 应包含 `onedirectionmusiccom-ukprod/`（3.9MB 死克隆，防止 `git add -A` 误纳入）。

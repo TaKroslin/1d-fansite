@@ -1,5 +1,20 @@
 # 1D Fansite — 开发日志（LOG）
 
+## 2026-09-11 — 移除 `wrangler.jsonc` 里冗余且有破坏性的 `build.command`
+
+- **模型**：deepseek-v4-flash
+- **目的**：作者批准移除 `"build": { "command": "rm -rf .git" }`。该补丁（M37）是 `.assetsignore` 之前的旧方案，唯一实际效果就是本地误跑 wrangler 时删掉开发者的版本库（事故见 M53）。
+- **结果**：
+  1. `wrangler.jsonc` 删除 `build` 段；`.assetsignore` 保持不变（继续排除 `.git/`）。
+  2. **推送前先做了对照验证**（在 `git clone` 出来的临时目录里，因为那里含真实 `.git`）：**有** `.assetsignore` → `Read 2016 files` 且 dry-run 干净通过；临时移走 `.assetsignore` → 立刻 `✘ Asset too large`。两者扫描数相同（2016 是"读取"数），差异发生在上传阶段 —— 证明**单靠 `.assetsignore` 就能把 `.git` 的 pack 挡在 25MiB 上限之外**。
+  3. 因为本次改动**不产生任何用户可见差异**，构建失败会静默保留旧版本，所以临时加了 `deploy-probe.txt` 作可观测探针：推送后探针 60 秒返 200 = Cloudflare 构建成功；随后删除探针（第二个提交）。
+  4. 文档同步：RULES §4.2（`build.command` 已移除；规则从"禁止本地跑 wrangler"修正为"禁止不带 `--dry-run` 的本地 deploy，`--dry-run` 现已安全"）、METHODS M37（补"后续更正"段）、M53（预防条目更新）。
+- **验证**：① 探针 200 → 构建成功。② **关键安全检查**：`/.git/HEAD`、`/.git/config`、`/.git/packed-refs`、`/.git/index`、`/.git/objects/info/packs`、`/.git/refs/heads/main`、`/.git/logs/HEAD` **全部 404** —— 移除 `rm -rf .git` 后 `.git` 并未泄露，`.assetsignore` 确实生效。③ `AGENTS/RULES.md`、`.agents/skills/*`、`tools/*`、`wrangler.jsonc` 仍为 404；首页 + `css/styles.css` + `js/main.js` + `images/logo.png` + `pages/about` 全部 200。
+- **Token 消耗**：约 8 万
+- **用时**：实测 49 分钟（21:12:10 → 22:01:33，起点取上一个提交时间；含作者审阅间隔与两次 Cloudflare 构建等待）
+- **经验总结**：① **删除部署配置时要先制造一个可观测信号**：本次改动不改变任何线上文件，若只检查"首页还 200"根本无法区分"构建成功"和"构建失败但保留旧版本"，一个临时探针文件就解决了（代价是两次部署）。② 用临时 clone 做 dry-run 是验证资源清单的正确姿势 —— 那里有真实 `.git`，删了也不心疼。③ 对照实验（有/无配置各跑一次）比单次通过更有说服力：单次"成功"可能只是没触发限制。④ 推送遇到 `Error in the HTTP2 framing layer` 是瞬时网络错误，重试即可 —— 但要**先看 push 输出再解读线上探测结果**，否则会把"没推上去"误判成"构建失败"（本次差点如此）。
+- **遗留/待办**：无。`.assetsignore` + 无 `build.command` 的部署链路已端到端验证。
+
 ## 2026-09-11 — 用 `.assetsignore` 停止公开托管开发手册/Skills；期间误删本地 `.git` 并完整恢复
 
 - **模型**：deepseek-v4-flash

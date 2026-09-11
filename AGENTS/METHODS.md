@@ -297,8 +297,9 @@
 ### M37. Workers 构建失败：`.git/` 被当静态资源上传（Asset too large）
 - **现象**：Workers git 集成构建报 `✘ [ERROR] Asset too large`，指向 `.git/objects/pack/*.pack`（147MiB > 25MiB 上限），`✨ Read 745 files` 里含 .git。
 - **根因**：main 上没有 wrangler.jsonc 时，wrangler 非交互模式自动生成 `assets.directory: "."`，把整个仓库（含 `.git/`）当静态资源；首次加 `assets.exclude` 修复无效——**wrangler 4.118 不认 `assets.exclude`**（日志 `▲ [WARNING] Unexpected fields found in assets field: "exclude"`，静默忽略）。
-- **处理**：`wrangler.jsonc` 加 `"build": { "command": "rm -rf .git" }`，让 wrangler deploy 在扫描 assets 前先删掉 `.git`（构建环境每次全新 clone，删 .git 不影响后续）。已验证：push `cfdfc4c` 后构建成功，线上 `www.5guys1direction.asia` 全站新版本上线、资源全部 200。若 `build.command` 也不生效，备选：把控制台 deploy command 改为 `rm -rf .git && npx wrangler deploy`。
-- **预防**：wrangler.jsonc 必须常驻 main 根目录；任何 `assets.*` 新字段先确认当前 wrangler 版本支持（4.118 仅支持 directory/binding/html_handling/not_found_handling/run_worker_first/experimental_serve_directly）。
+- **处理**：`wrangler.jsonc` 加 `"build": { "command": "rm -rf .git" }`，让 wrangler deploy 在扫描 assets 前先删掉 `.git`（构建环境每次全新 clone，删 .git 不影响后续）。已验证：push `cfdfc4c` 后构建成功，线上 `www.5guys1direction.asia` 全站新版本上线、资源全部 200。
+- **⚠️ 后续更正（2026-09-11）**：这个 `build.command` 补丁**已移除**，改用 `.assetsignore`（见 RULES §4.2）。原因：① 它在本地跑 wrangler 时会真的 `rm -rf .git`，把开发者的版本库删掉（事故见 M53）；② `.assetsignore` 同样能排除 `.git/` 且**不会删任何东西**。移除前已在临时 clone 里做过对照验证：有 `.assetsignore` → 构建收集正常，无 `.assetsignore` → `Asset too large`。
+- **预防**：wrangler.jsonc 必须常驻 main 根目录；任何 `assets.*` 新字段先确认当前 wrangler 版本支持（4.118 仅支持 directory/binding/html_handling/not_found_handling/run_worker_first/experimental_serve_directly）。**排除上传内容一律用 `.assetsignore`，不用 `assets.exclude`，也不用 `build.command`。**
 
 ### M38. 跨平台迁移（Windows→macOS）后 git 假 diff：CRLF + 复制的 .git index
 - **现象**：新机器上 `git status` 显示 6 个文件 modified，但 `git diff` 为空、`git diff --summary` 也为空；`git hash-object` 与 HEAD blob 完全一致，`git update-index --refresh` 反复报 "needs update"。
@@ -368,6 +369,6 @@
 - **为什么是"半损坏"而不是全删（重要，别再误判为沙箱）**：`.git/objects/` 下 **1724 个对象文件带着 macOS `uchg`（用户不可变）标志**，`rm` 对它们一律返回 `Operation not permitted`；没有该标志的 `HEAD` / `config` / `index` / `refs` / `packed-refs` 则被正常删除。**不可变标志连文件属主也删不掉，与沙箱/权限模式无关**——作者本人在自己终端里跑同样的 `rm -rf` 得到一模一样的报错，才定位到它。排查：`ls -lO <file>`（`-O` 显示 flags 列，出现 `uchg` 即中招）或 `stat -f '%Sf' <file>`。
 - **处理**：① 从远端重新 clone，用它的 `.git` 顶替损坏的：`git clone <url> /tmp/re` → `mv .git .git-damaged && cp -R /tmp/re/.git .git`。**必须补 `git config core.fileMode false`**——本工作树文件权限是 700，新 clone 默认 `fileMode=true`，否则 500+ 文件全部假报 modified（实测 502 个纯 mode change，零内容差异）。② 残留的旧对象库：`chflags -R nouchg <dir>` 清掉不可变标志后再 `rm -rf <dir>`。
 - **验证**：`git fsck` 无 error；`diff -r` 工作树 vs 远端检出**逐字节一致**；用 `GIT_ALTERNATE_OBJECT_DIRECTORIES` 枚举旧对象库，唯一不可达 commit 与历史中某 commit **主题和父提交完全相同** = 被 amend 掉的旧版本，确认无未推送工作丢失。
-- **预防**：① **永远不要在本地跑 `wrangler deploy` / `--dry-run`**，要验证上传内容就 `git clone` 到临时目录再跑；② `.assetsignore` 已排除 `.git/`，`build.command` 已成冗余，移除后本地 dry-run 不再有破坏性；③ 恢复 `.git` 这类操作先复制备份、再动手，且恢复后必须做 fsck + 逐字节比对，别只看 `git status` 干净就以为好了；④ 遇到 `Operation not permitted` 先 `ls -lO` 查 flags，别条件反射怪沙箱/权限模式——`uchg` 的表现和它一模一样。
+- **预防**：① **不要在本地跑 `wrangler deploy`**（不加 `--dry-run` 会真的发布上线），要验证上传内容就 `git clone` 到临时目录再跑；② `.assetsignore` 已排除 `.git/`，`build.command` 已于 2026-09-11 移除，本地 `--dry-run` 不再有破坏性；③ 恢复 `.git` 这类操作先复制备份、再动手，且恢复后必须做 fsck + 逐字节比对，别只看 `git status` 干净就以为好了；④ 遇到 `Operation not permitted` 先 `ls -lO` 查 flags，别条件反射怪沙箱/权限模式——`uchg` 的表现和它一模一样。
 
 
