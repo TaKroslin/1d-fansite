@@ -1,9 +1,11 @@
 ---
 name: translation
-description: Use for any 1d-fansite translation or bilingual UI work: lyrics, album song titles, Blog/Gallery/Band/Tour text, language switching, missing Chinese copy, or font pairing. Handles the correct translation route, scripts, .en/.zh structure, and validation.
+description: "Use for any 1d-fansite translation or bilingual UI work: lyrics, album song titles, Blog/Gallery/Band/Tour text, language switching, missing Chinese copy, or font pairing. Handles the correct translation route, scripts, .en/.zh structure, and validation."
 ---
 
 # 翻译工作流（translation）
+
+> **跨运行环境工具名**：确认提问 = opencode `question` / DSH `ask_user_question`；看图 = opencode MCP `visionpower` / DSH `read_image`。其余流程术语两者通用。
 
 ## 触发与执行边界
 

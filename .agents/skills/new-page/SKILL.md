@@ -1,9 +1,11 @@
 ---
 name: new-page
-description: Use when creating a new 1d-fansite HTML page, landing page, content page, Gallery index, or other static page. Handles template selection, path depth, body class, shared header/footer, assets, bilingual structure, and validation.
+description: "Use when creating a new 1d-fansite HTML page, landing page, content page, Gallery index, or other static page. Handles template selection, path depth, body class, shared header/footer, assets, bilingual structure, and validation."
 ---
 
 # 新建页面（new-page）
+
+> **跨运行环境工具名**：确认提问 = opencode `question` / DSH `ask_user_question`；看图 = opencode MCP `visionpower` / DSH `read_image`。其余流程术语两者通用。
 
 ## 触发与执行边界
 

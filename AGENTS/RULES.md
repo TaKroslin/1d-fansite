@@ -11,7 +11,7 @@
 1. **先查证，后动手**：改任何东西之前，先读相关文件确认现状；不确定就 grep / 查文档，不猜。
 2. **小步改，快验证**：每次改动保持最小范围，改完立即跑对应验证，不要攒一堆改动再验证。
 3. **非必要不用视觉模型/截图**：能用脚本、HTTP 请求、文本 grep 验证的，绝不启动浏览器截图。**只有需要确认"视觉呈现"（布局、颜色、动画、响应式）时才用 Playwright 截图 + 视觉确认。** 普通的功能正确性（链接 200、图片存在、JS 无错误）一律用低成本检查。
-4. **视觉确认默认走 MCP `visionpower` 服务器**：DeepSeek 无原生多模态/看图能力，凡是"看图"（截图、图片分析、识别视觉元素）一律通过 `visionpower` MCP 服务器提供的视觉工具完成，不要假设模型自带看图能力。此规则对 opencode 下运行的所有 DeepSeek 会话生效。
+4. **视觉确认按运行环境选看图工具**：DeepSeek 无原生多模态，不要假设模型自带看图能力。**opencode** 下走 MCP `visionpower` 视觉工具；**DSH** 下用内置 `read_image` 直接读图（DSH 不挂载 visionpower）。
 5. **批量操作先写脚本**：涉及 10+ 文件的同类修改，写一次性 Python 脚本（放 `tools/`），脚本要幂等、可重跑，改完验证输出。不要手工逐个文件改。
 6. **改完必写日志**：`AGENTS/LOG.md` 追加一条（规范见 §6）。经验教训沉淀到 `METHODS.md` / 本文件。
 
@@ -26,6 +26,7 @@
    - **图片/资源相关**：`AGENTS/METHODS.md` 图片类坑 + `COMMANDS.md` 审计命令
    - **blog 相关**：`AGENTS/AGENTS.md` 的 Blog Markdown Workflow
    - **歌词/翻译相关**：`AGENTS/AGENTS.md` 翻译说明 + `METHODS.md` 翻译类坑
+   - **先加载 Skill**：项目 Skill 源在 `.agents/skills/<name>/SKILL.md`（opencode 与 DSH 共用同一目录）。任务命中某个 Skill 的 description 时，**先用 `skill` 工具加载它**再动手。Skill 定义"这条流水线怎么走"，本文件定义"什么不能做"，两者叠加执行。
 3. 确认本地 server 状态（QA 需要）：`python -m http.server 8000` 后台跑起来（127.0.0.1:8000）
 4. 读 `AGENTS/LOG.md` 最近 1-3 条，了解"上次做到哪、遗留什么"
 
@@ -42,6 +43,7 @@
 - **不引入框架**；纯 HTML/CSS/JS + jQuery。
 - **新增页面**：复制现有同类型页面作模板（保留 header/footer/nav/资源引用），再改内容。不手写骨架。
 - **改 HTML 时**：注意 body class、`data-translate`、资源相对路径深度（见 AGENTS/AGENTS.md 路径表）。
+- **站点 origin 必须带 `www`**：正式域名是 `https://www.5guys1direction.asia`，**`www` 不可省略**。凡写绝对 URL（`canonical`、`og:url`、`twitter:image`、分享链接、sitemap、复制给用户的地址）一律用带 `www` 的完整 origin；裸域 `5guys1direction.asia` 与线上 origin 不一致，会导致 canonical 认错、社交分享/预览图解析失败。相对路径与 `mailto:contact@5guys1direction.asia` 邮箱不受此限（邮箱本就无 `www`）。
 - **不要删除官方克隆的结构/资源**：除非确认是死代码（如失效 CDN 引用，替换为本地文件）。
 
 ### 2.2 CSS

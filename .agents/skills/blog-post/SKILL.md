@@ -1,9 +1,11 @@
 ---
 name: blog-post
-description: Use for any 1d-fansite Blog work: create, edit, delete, translate, add a cover, add a video card, or synchronize a Blog card on the homepage. Handles article.md front matter, images, build_blog.py, bilingual content, and QA.
+description: "Use for any 1d-fansite Blog work: create, edit, delete, translate, add a cover, add a video card, or synchronize a Blog card on the homepage. Handles article.md front matter, images, build_blog.py, bilingual content, and QA."
 ---
 
 # Blog 文章工作流（blog-post）
+
+> **跨运行环境工具名**：确认提问 = opencode `question` / DSH `ask_user_question`；看图 = opencode MCP `visionpower` / DSH `read_image`。其余流程术语两者通用。
 
 ## 触发与执行边界
 

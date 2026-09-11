@@ -1,9 +1,11 @@
 ---
 name: qa-workflow
-description: Use after any 1d-fansite change or when asked to audit, verify, release-check, inspect broken images, check paths, check CSS versions, or visually test a page. Runs layered static, HTTP, and conditional Playwright QA and produces a concise result.
+description: "Use after any 1d-fansite change or when asked to audit, verify, release-check, inspect broken images, check paths, check CSS versions, or visually test a page. Runs layered static, HTTP, and conditional Playwright QA and produces a concise result."
 ---
 
 # QA 分层验证工作流（qa-workflow）
+
+> **跨运行环境工具名**：确认提问 = opencode `question` / DSH `ask_user_question`；看图 = opencode MCP `visionpower` / DSH `read_image`。其余流程术语两者通用。
 
 ## 触发与执行边界
 

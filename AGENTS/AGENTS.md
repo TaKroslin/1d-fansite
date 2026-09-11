@@ -13,7 +13,7 @@
    - 历史踩坑：`AGENTS/METHODS.md`
    - 命令速查：`AGENTS/COMMANDS.md`
    - 最近遗留：`AGENTS/LOG.md`
-   - 候选 Skills：`AGENTS/SKILLS-ROADMAP.md`
+   - 可用 Skills：`.agents/skills/<name>/SKILL.md`（opencode 与 DSH 共用；命中即先用 `skill` 工具加载）；候选登记：`AGENTS/SKILLS-ROADMAP.md`
 
 ## 项目事实
 

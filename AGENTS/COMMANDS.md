@@ -38,6 +38,15 @@ python tools/translate/translate_lyrics.py
 python tools/translate/translate_albums.py
 ```
 
+## Skill 校验
+
+```powershell
+# 校验 .agents/skills/*/SKILL.md 的 frontmatter（opencode + DSH 都能注册）
+python3 tools/audit/check_skills.py
+# 目标输出：全部通过：6/6。exit 0
+# 抓的是 METHODS.md M52：description 未加引号且含 ": " → Skill 被静默丢弃
+```
+
 ## 常用检查（PowerShell）
 
 ```powershell

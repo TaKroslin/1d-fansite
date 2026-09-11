@@ -1,9 +1,11 @@
 ---
 name: design-system
-description: Use for any 1d-fansite UI work: create or modify a page, panel, card, header, footer, navigation, typography, icon, animation, responsive rule, color, or CSS. Defines the design tokens, real element names, and safe CSS workflow.
+description: "Use for any 1d-fansite UI work: create or modify a page, panel, card, header, footer, navigation, typography, icon, animation, responsive rule, color, or CSS. Defines the design tokens, real element names, and safe CSS workflow."
 ---
 
 # 设计系统（FIVE GUYS ONE DIRECTION）
+
+> **跨运行环境工具名**：确认提问 = opencode `question` / DSH `ask_user_question`；看图 = opencode MCP `visionpower` / DSH `read_image`。其余流程术语两者通用。
 
 ## 触发与执行边界
 

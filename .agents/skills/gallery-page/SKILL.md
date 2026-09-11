@@ -1,9 +1,11 @@
 ---
 name: gallery-page
-description: Use for any Gallery page work in 1d-fansite: create an album or sub-page, create or update a slideshow, replace a Gallery cover, or change Gallery text, structure, image behavior, or technical settings. The skill handles asset preparation, page hierarchy, bilingual content, cover panels, slideshow wiring, QA, and delivery screenshot.
+description: "Use for any Gallery page work in 1d-fansite: create an album or sub-page, create or update a slideshow, replace a Gallery cover, or change Gallery text, structure, image behavior, or technical settings. The skill handles asset preparation, page hierarchy, bilingual content, cover panels, slideshow wiring, QA, and delivery screenshot."
 ---
 
 # Gallery Page
+
+> **跨运行环境工具名**：确认提问 = opencode `question` / DSH `ask_user_question`；看图 = opencode MCP `visionpower` / DSH `read_image`。其余流程术语两者通用。
 
 这是项目的 Gallery 页面专用工作流。Skill 的人类名称是 **Gallery Page**；目录 slug 保持为 `gallery-page`。触发词包括：`gallery page`、Gallery、相册、photoset、slideshow、幻灯片、Gallery 封面、cover，或明确要求修改 Gallery 的技术/文字/图片。
 

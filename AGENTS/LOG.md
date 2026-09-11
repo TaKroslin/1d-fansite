@@ -1,5 +1,46 @@
 # 1D Fansite — 开发日志（LOG）
 
+## 2026-09-11 — 站点 origin 的 `www` 规则成文（此前只靠示例隐含）
+
+- **模型**：deepseek-v4-flash
+- **目的**：作者指出正式域名是 `www.5guys1direction.asia`、**`www` 不可省略**。起因是我在会话汇报里把域名写成裸域。核查后确认代码库本身全部合规，但**文档中没有任何一条成文规则**说明必须带 `www`——只靠 `AGENTS/AGENTS.md` 和若干示例里出现过的带 `www` 写法隐含约束，未来 agent 写 `canonical` / `og:url` 时极易写成裸域。
+- **结果**：
+  1. 全库核查：所有 `https?://*5guys1direction.asia` 绝对 URL 均为 `https://www.` 前缀（含全部 `canonical` / `og:url`、journal、music、gallery 各页），无一裸域；非 `www` 命中全部是 `contact@5guys1direction.asia` 邮箱，邮箱本就无 `www`，不属违例。
+  2. `wrangler.jsonc` 无 routes/自定义域配置（域名在 Cloudflare 控制台绑定），无需改动。
+  3. `AGENTS/RULES.md` §2.1 新增成文规则：绝对 URL 一律用带 `www` 的完整 origin，并说明裸域会导致 canonical 认错、社交分享解析失败；明确邮箱不受限。
+- **验证**：`grep -rEoh "https?://5guys1direction\.asia..."` 在 `pages/ index.html 404.html tools css js` 全量输出为空（= 无裸域）；`canonical` / `og:url` 抽样为 `https://www.5guys1direction.asia/...`。
+- **Token 消耗**：约 3 万
+- **用时**：约 1 分钟
+- **经验总结**：这类"约定俗成但没写下来"的规范最容易在换人/换模型时丢失——核查发现代码全对，不代表规则已存在。凡作者口头纠正过的规范，都应落到 `RULES.md`，而不是只存在于示例里。
+- **遗留/待办**：无（注：上一条日志的用途描述里未涉及域名，无需回改）。
+
+## 2026-09-11 — Skills 迁到 `.agents/skills` 共用，并修好被静默丢弃的 4 个 Skill
+
+- **模型**：deepseek-v4-flash
+- **目的**：把项目已有 6 个 AI 工作流 Skill 从 opencode 私有目录开放为 opencode + DSH 共用；排查 DSH 会话目录里只出现 2 个 Skill 的原因。
+- **结果**：
+  1. `git mv .opencode/skills .agents/skills`（6 个 bundle 全部按 R 重命名，内容零改动）。`.agents/skills` 既是 opencode 的 agent-compatible 目录（PR anomalyco/opencode#11842，2026-02-03 已并入；本机 opencode 1.18.15 含此特性），又是 DSH 的 `project-agents` 发现根（rank 200）→ 两边单源共享，不再需要副本。
+  2. **根因修复**：`blog-post` / `design-system` / `gallery-page` / `translation` 的 `description` 是未加引号的 YAML plain scalar 且含 `: `（如 `Use for any Blog work: create ...`），严格解析器判非法 → 整个 Skill 被静默丢弃；`new-page` / `qa-workflow` 恰好不含 `: ` 所以正常。6 个 description 统一加双引号，DSH 目录由 2 条恢复为 6 条。
+  3. 每个 `SKILL.md` 的 H1 下加一行跨运行环境工具名映射（提问 `question` / `ask_user_question`；看图 `visionpower` / `read_image`）。
+  4. 新增 `tools/audit/check_skills.py`：纯标准库 frontmatter 校验（name==目录名、命名正则、description 长度、plain scalar 破坏字符）。本机 python3 与 `.venv` 均无 PyYAML，禁止 `import yaml`。
+  5. 文档同步：`AGENTS/SKILLS-ROADMAP.md`（新路径 + 禁止双份副本 + frontmatter 规则）、`AGENTS/RULES.md` §1（先加载 Skill；§0.4 看图工具按运行环境区分）、`AGENTS/AGENTS.md` 开工必读、`AGENTS/COMMANDS.md`、`AGENTS/METHODS.md` M52。
+- **验证**：`python3 tools/audit/check_skills.py` → `全部通过：6/6`，exit 0；该脚本对 M52 坏样本能报错、对加引号版本 0 错误（检测器回归自测）；DSH 会话目录实际恢复为 6 条；`skill` 工具实调 `translation` 成功返回 `<skill_content>` + base directory 资源指引。
+- **Token 消耗**：约 12 万（含一次 npm registry 全量响应拉取失误，约 2 万 token 浪费）
+- **用时**：约 3 分钟（改动阶段实测 92 秒，起点取 `.agents/` 创建时间；不含前置只读勘察）
+- **经验总结**：① Skill frontmatter 必须按严格 YAML 写，`description` 含 `: ` 一律加引号——宽松解析器会掩盖该错误，换运行环境才暴露；② DSH 与 opencode 的 Skill 发现根有交集（`.agents/skills`），迁到交集目录即可单源共享，但**不能留双份**否则 opencode 判重名；③ 拉 npm registry 全量文档会灌爆上下文，查版本时间用单版本端点 `registry.npmjs.org/<pkg>/<version>`。
+- **遗留/待办**：`.opencode/` 仍保留 `package.json`（plugin 依赖）与 `tmp/`；Codex 侧 Skill 接入未验证（ROADMAP 称需同步方式）。日后 opencode 升级若改变 `.agents/skills` 行为，用 `check_skills.py` + 会话目录条目数复验。
+
+## 2026-09-05 — 部署：小说全量同步 + 累积改动推送上线
+
+- **模型**：big-pickle
+- **目的**：将小说 111 章全量同步、skills 阶段式流程、gallery 相册等累积改动提交并推送 GitHub（Cloudflare 自动部署）。
+- **结果**：commit `0efa062`（423 文件，+34099/−2593），`git push origin main` 成功（a77ee47..0efa062）。`.gitignore` 补充 `images/gfx/psd/`、`.opencode/tmp/`，PSD 母本与临时文件未入库。
+- **验证**：提交前确认暂存区无 psd/tmp；工作树当前干净。
+- **Token 消耗**：未记录
+- **用时**：未单独计时
+- **经验总结**：`.gitignore` 原有 `images/psd/` 未覆盖 `images/gfx/psd/`，`git add -A` 会误纳 PSD 母本；部署前必须筛查未跟踪文件清单（AGENTS 铁律）。
+- **遗留/待办**：无
+
 ## 2026-09-05 — 小说 Chapters 全量重写同步（111 章）
 
 - **模型**：big-pickle

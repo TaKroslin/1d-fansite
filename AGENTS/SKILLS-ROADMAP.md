@@ -16,16 +16,16 @@
 
 ## Existing project skills detected
 
-以下 Skill 在本次任务前已存在于 `.opencode/skills/`，本次未修改。后续设计新流程时先评估是否扩展或重命名，避免重复实现：
+以下 Skill 已从 `.opencode/skills/` 迁移到 `.agents/skills/`（仓库内单一源）。该目录同时被 opencode（`agent-compatible`，1.18.15 已支持）和 DSH（`project-agents` 根）扫描，因此**不要再往 `.opencode/skills/` 放同名副本**，否则 opencode 会视为重名冲突。
 
 | Existing directory | Related candidate |
 |---|---|
-| `.opencode/skills/gallery-page/` | `gallery-build-slideshow` / `gallery-update-cover` |
-| `.opencode/skills/blog-post/` | `blog-create-page` |
-| `.opencode/skills/new-page/` | `panel-create-component` |
-| `.opencode/skills/qa-workflow/` | `site-qa-release-check` |
-| `.opencode/skills/design-system/` | `panel-create-component` / `translation-font-pairing` |
-| `.opencode/skills/translation/` | `translation-font-pairing` |
+| `.agents/skills/gallery-page/` | `gallery-build-slideshow` / `gallery-update-cover` |
+| `.agents/skills/blog-post/` | `blog-create-page` |
+| `.agents/skills/new-page/` | `panel-create-component` |
+| `.agents/skills/qa-workflow/` | `site-qa-release-check` |
+| `.agents/skills/design-system/` | `panel-create-component` / `translation-font-pairing` |
+| `.agents/skills/translation/` | `translation-font-pairing` |
 
 后续任务应先读取对应现有 Skill，再决定是补充能力、拆分职责，还是保留原名并更新注册表。
 
@@ -34,4 +34,5 @@
 - 名称只使用小写字母、数字和连字符。
 - 每个 Skill 只负责一个稳定、重复、可验证的工作流。
 - 不把一次性创意判断、普通小改动或整份项目手册复制进 Skill。
-- 后续创建时优先以仓库 `.agents/skills/<name>/SKILL.md` 为源；OpenCode 支持该项目级兼容目录，Codex 再通过同步方式接入。
+- 源目录固定为仓库 `.agents/skills/<name>/SKILL.md`；opencode 与 DSH 都直接读取，Codex 再通过同步方式接入。
+- frontmatter 按**严格 YAML** 写：`description` 含 `: `、`#`、`{}`、`[]`、`&`、`*` 等字符必须加双引号（见 `METHODS.md` M52）。

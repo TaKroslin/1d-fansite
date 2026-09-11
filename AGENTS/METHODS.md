@@ -356,4 +356,10 @@
 - **处理**：遮罩改用伪元素 `.bilibili-play::before{...background:rgba(0,0,0,.5);z-index:1}`，glyph `i` 提升 `z-index:2`，保证白色在最上层。
 - **预防**：hover 变暗 + 白色前景的组合，遮罩必须低于前景 z-index，否则一律发灰。
 
+### M52. SKILL.md 的 `description` 里带 `: ` 会被严格 YAML 解析器丢弃
+- **现象**：`.agents/skills/` 下 6 个 Skill 只有 2 个出现在 DSH 会话目录里，`new-page` / `qa-workflow` 正常，`blog-post` / `design-system` / `gallery-page` / `translation` 完全消失且无报错。opencode 下 6 个全部正常。
+- **根因**：YAML 的 plain scalar（未加引号）**不允许包含 `: `**（冒号+空格），它会被当成映射分隔符。这 4 个 description 都是 `Use for any ... work: create ...` 形式，严格解析器直接判非法 → 整个 Skill 被丢掉。opencode 的 frontmatter 解析较宽松，所以掩盖了问题。
+- **处理**：把 description 用双引号包起来（`description: "Use for ... work: create ..."`），6 个统一处理；description 内本身不能含 `"`。
+- **预防**：Skill frontmatter 一律按严格 YAML 写；description 含 `: `、`#`、`{`、`[`、`&`、`*` 等字符时必须加引号。校验直接跑 `python3 tools/audit/check_skills.py`（纯标准库，本机与 `.venv` 都没有 PyYAML，别用 `import yaml`）。改完 Skill 后确认会话目录里的条目数 = 目录数。
+
 
