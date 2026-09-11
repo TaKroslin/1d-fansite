@@ -204,6 +204,21 @@
 - **处理**：文件内容修改用 Python 脚本（`encoding='utf-8'`）或 Edit 工具；PowerShell 只读不写。
 - **预防**：涉及文件内容的操作不走 PowerShell 管线。
 
+### M54. `Path.rglob('*.html')` 会命中「名字以 `.html` 结尾的目录」，批量改版本号时中途崩掉
+- **现象**：批量脚本把全站 `styles.css?v=` 从旧版本改成新版本，跑到一半 `IsADirectoryError: [Errno 21] Is a directory: 'journal/2015-05-06/extra-tickets-released-for-otra-cardiff-shows.html'`，前面若干文件已改、后面没改，全站 `?v=` 处于**半新半旧**状态。
+- **根因**：`journal/` 克隆区同时存在**两种**目录布局 —— `.../extra-tickets-released-for-otra-cardiff-shows/index.html` 和 `.../extra-tickets-released-for-otra-cardiff-shows.html/index.html`（后者目录名本身以 `.html` 结尾）。`rglob` 的 `*.html` 按**名字**匹配，不区分文件与目录，于是把这些目录也返回了，`read_text()` 直接抛 `IsADirectoryError`。
+- **处理**：循环里加 `if not p.is_file(): continue`。脚本写成幂等的（`str.replace` 对已替换过的内容是无操作），所以**修好重跑一次**即收敛，不必回滚。
+- **预防**：① 任何遍历 HTML 的批量脚本，读文件前一律 `p.is_file()` 过滤，不要假定 `rglob` 的 pattern 只匹配文件；② 批量改全站文件时脚本要幂等，这样中途异常只需重跑而不是手工回滚；③ 改完先数一数：`grep -rl "styles\.css?v=<新版本>" --include="*.html" . | wc -l`，并确认旧版本命中数为 **0**，用计数证明没有半途而废的文件。
+
+### M55. 复用已被占用的封面 class：后面的 `!important` 静默赢掉，全套审计仍是绿的
+- **现象**：给新相册封面写了 `.panel.gallery-cover.liam-cover .bg{...}`，`members/index.html` 的 **Liam 成员卡移动端封面变成了相册封面**。而图片审计 `Broken: 0`、7 个页面 div 全配对、24 个资源全 HTTP 200 —— **所有廉价检查都是绿的**。
+- **根因**：成员卡早就占用了 `liam-cover`（`members/index.html` + `styles.css` 第 533/547 行），新规则落在文件末尾（第 910/919 行）。两条选择器 **特异性完全相同**（`.panel.gallery-cover.liam-cover .bg`），媒体查询条件也相同，又都带 `!important` → **后出现的那条胜出**。这不是"新增样式"，是"静默覆盖既有样式"。
+- **处理**：相册封面改用未被占用的 class（`liamandlouis-cover`），成员卡保持 `liam-cover` 不动。新建 class 前先查占用：
+  ```bash
+  grep -c "<候选class>" css/styles.css   # 0=可新建；≥1 说明已被占用，换名
+  ```
+- **预防**：① **新封面 class 一律先 `grep` 查占用**，`liam-cover` / `niall-cover` / `zayn-cover` / `harry-cover` / `louis-cover` / `fiveguys-cover` 都已被 `members/index.html` 的成员卡占用，新相册不能复用；② 同类名冲突**静态审计和图片审计都发现不了**，唯一可靠的验证是**按 class 逐个查 `getComputedStyle(bg).backgroundImage`**，确认每张卡都指向自己的 asset（本次做法：移动端 9 个 class 逐个断言，含对照组）；③ 改 CSS 后不要只看"页面 200 / 图片不断"，要回答"**这条规则有没有覆盖到别的东西**"。
+
 ---
 
 ## 六、数据源

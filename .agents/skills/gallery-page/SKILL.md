@@ -127,7 +127,39 @@ description: "Use for any Gallery page work in 1d-fansite: create an album or su
 
 这里的 `small / middle / large` 对应文件名中的 `sml / med / lrg`。不能仅凭文件名判断尺寸；生成后必须读取实际像素并报告六张图均通过。历史资源中有尺寸异常文件，新任务不得复制异常尺寸；除非用户明确要求修复旧资源，否则不批量重做旧封面。
 
+**`-cover-` 标记不可省，`<gallery-scope>` 要展开成真实层级路径**（2026-09-11 踩过）：
+
+`<gallery-scope>` 是**资源路径去掉 `pages/gallery/` 前缀后、把斜杠换成连字符**，而不是"随手起的整个前缀"。成员相册必须写成：
+
+```text
+gallery-members-<subset>-<album>-cover-<rect|square>-<sml|med|lrg>.png
+例：pages/gallery/members/niall/dinner-table.html
+ -> images/gfx/gallery-members-niall-dinner-table-cover-rect-sml.png
+```
+
+两个必须遵守的点：
+
+1. **`-cover-` 一定要有**。members 层级里成员卡封面叫 `gallery-members-<subset>-cover-*`（如 `gallery-members-liam-cover-rect-sml.png`）。省掉 `-cover-` 写成 `gallery-members-liam-liam-rect-sml.png`，就和成员卡封面同形，光看文件名分不清是卡片封面还是相册封面。
+2. **一个页面上不能有两个卡片共用同一个 cover class**。成员卡已经占用了 `liam-cover` / `niall-cover` / `zayn-cover`（见 `pages/gallery/members/index.html` 与 `css/styles.css` 的既有规则）。新建**相册**封面要么用独立 class（如 `liamandlouis-cover`），要么先确认该类没被占用：
+
+   ```bash
+   grep -c "<候选class>" css/styles.css   # 必须是 0（新建）或 2（已有的桌面+移动规则）
+   ```
+
+   同类名会让两条 `.panel.gallery-cover.X .bg` 规则**特异性完全相同**，写在文件后面的那条 `!important` 胜出——成员卡在移动端会显示成相册封面。这个冲突静态审计和图片审计都发现不了，只有按 class 逐个查 `getComputedStyle(bg).backgroundImage` 才能暴露。
+
 桌面 panel 是 2:1，移动端 panel 是 1:1。桌面默认使用 `rect`，移动端通过对应 cover class 的媒体规则切换到 `square`。如果沿用第一张官方照片作为封面，遵守官方资源的 `rect-sml/med/lrg` 规则，并在文档中注明它不是自制六尺寸封面。
+
+### 6.1b 照片集目录与文件命名
+
+slideshow 的照片放在 `images/media/gallery-images/rect-lrg/<set-dir>/`，**文件夹名 = 文件 stem**，序号从 1 开始且无前导零：
+
+```text
+rect-lrg/checked-shirt/checked-shirt-1.jpg ... checked-shirt-54.jpg
+rect-lrg/liam/liam-1.jpg ... liam-10.jpg
+```
+
+`<set-dir>` 由作者指定时**必须照用**，不要自行改写成更"通顺"的名字（把作者说的 `liam` 改成 `louis-with-liam` 属于擅自改动需求）。slideshow 页里 `data-cycle-slides=">div.slide"`、`data-cycle-caption-template="{{slideNum}}/<真实数量>"` 必须与该目录实际文件数一致。
 
 ### 6.2 单色与 retinafy
 

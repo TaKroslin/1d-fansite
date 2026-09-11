@@ -1,5 +1,54 @@
 # 1D Fansite — 开发日志（LOG）
 
+## 2026-09-11 — 新建三个成员 Gallery 相册（Niall / Louis with Liam / Teen Zayn）+ 补 niall・liam・zayn 成员页
+
+- **模型**：deepseek-v4-flash
+- **目的**：作者要求新建三个 gallery 页面，都挂在成员个人页面下 —— ① Niall 的 **Dinner Table**（6 张）；② 文件夹名 `liam` 的相册，相册名 **Louis with Liam**（10 张），louis 与 liam **两个页面都引用**；③ Zayn 的 **Teen Zayn**（25 张）。勘察发现 `members/` 下只有 `harry/` `louis/` `five-guys/`，**niall/、liam/、zayn/ 三个目录根本不存在**（虽然 `members/index.html` 里五张成员封面卡早已写好，liam/niall/zayn 的链接还是 `#`），所以补成员页是这三本相册能落地的先决条件。
+- **结果**：
+  1. **成员页（B2，3 个）**：`niall/index.html`、`liam/index.html`、`zayn/index.html`，骨架逐字复制 `louis/index.html`（header/nav/footer/script 顺序不动），每页一张 `gallery-cover` 相册卡。**没有改 `members/index.html`**——它的三张卡片已存在，零风险。
+  2. **相册页（C，4 个）**：`niall/dinner-table.html`（6 slide）、`liam/louis-with-liam.html` 与 `louis/louis-with-liam.html`（**各一份、共用同一套图**，作者确认此方案，两份各有正确面包屑与「返回」目标）、`zayn/teen-zayn.html`（25 slide）。骨架复制 `louis/teenage.html`：`body.duo.gallery-section`、`#slideshow` 显式闭合、`data-cycle-auto-height="false"`、`slideshow-nav.js` 全页仅 1 次、**无 `.share`**（RULES §7）。
+  3. **资源**：PSD 导出的三张封面（2400×1200 / 1200×1200）用 Pillow LANCZOS 生成 **6 尺寸 ×3 相册 = 18 文件** 到 `images/gfx/`；41 张照片按站点 `-N.jpg` 约定复制到 `images/media/gallery-images/rect-lrg/{dinner-table,louis-with-liam,teen-zayn}/`（Downloads 原件只读未动）。
+  4. **CSS**：`styles.css` 末尾追加三个 cover class 的 `filter:none!important` 例外（三张封面都是**双色调而非纯黑白**，作者选择保留原色）+ ≤767px 换 `-square-sml`。**例外必须写在 CSS 而非 inline style**——`retinafy_replace()` 在 DPR>1 会重建 `.bg`，inline 样式会丢（Skill §6.2）。
+  5. **`?v=` bump**：`20260830zh12`/`20260830zh10`/`20260831gallery` → **`20260911g`**，共 **320 个 HTML**；同时把 4 个 builder 里的版本常量（`build_blog.py` / `build_novel.py` / `_build_albums_page.py` / `build_element_previews.py`）一并更新，否则下次重建会把 bump 冲掉。`journal/` 里裸 `?v=` 与 `404.html` 按 RULES §2.2 保持不动。
+  6. 两个一次性脚本跑完移入 `tools/archive/`。
+- **验证**：① 静态：7 个新页 div 全配对（20/20、26/26、34/34、64/64）、`.en/.zh` 配对、`data-cycle-caption-template` 与真实 slide 数逐一相符（6/6、10/10、10/10、25/25）。② 资源：`_audit_site_images.py` **773 refs / Broken: 0**；18 张封面**实际像素**六个 tier 全对；51 条 slideshow 引用 0 缺失；24 个关键 HTTP 资源全 200。③ 元素：`_audit_element_inventory.py` 已收录 `dinnertable-cover` / `louiswithliam-cover` / `teenzayn-cover`。④ 视觉（Playwright + Chrome，**31/31 通过**）：DPR=2 下三张封面 `.bg` 重建后 `filter=none`（**证明例外在 retinafy 之后仍生效**）、移动端确实换成 `-square-sml`、四本相册 slide 数正确、点 next 后 caption 走字（`2/6`、`2/10`、`2/25`）、全部 slide 图 onload 成功、无 JS 报错。
+- **Token 消耗**：约 22 万（主会话）
+- **用时**：实测 187 秒（22:14:31 → 22:17:38 的脚本计时窗口；不含中途等作者确认封面单色与页面结构的问答时间）
+- **经验总结**：① **先查目录再动手**：作者以为「成员个人页面下」已存在，实际 niall/liam/zayn 三个目录缺失，而 `members/index.html` 的卡片链接还是 `#` —— 只做相册页会得到三个孤儿页；勘察阶段就发现并一次性确认了结构方案，省掉一轮返工。② **改 CSS 的 `?v=` 必须连 builder 常量一起改**：`build_blog.py`/`build_novel.py` 等 4 处硬编码版本号，只改 HTML 的话下次重建 blog/novel 就会退回旧版本、用户看不到新样式。③ **DPR=2 是灰度例外的唯一可信验证点**：1x 下 inline style 与 CSS 规则看不出差别，只有让 `retinafy_replace()` 真的重建 `.bg` 才能证明规则没被丢掉。④ `rglob('*.html')` 在 `journal/` 下会命中**名为 `*.html` 的目录**（`extra-tickets-...-shows.html/index.html`），批量脚本必须 `p.is_file()` 过滤。
+- **遗留/待办**：① `louis/index.html` 未加「Louis with Liam」卡片（作者原话只说 louis 与 liam 页面都「引用」该相册，未提是否要把它列入 louis 的成组相册列表）—— 若需要，在 `louis/index.html` 插一张 `louiswithliam-cover` 卡片指向 `louis-with-liam.html` 即可。② 三个成员页的 `index.html` 封面卡沿用既有的 `gallery-members-{niall,liam,zayn}-cover-*`（`.count` 现为 1，与相册数一致）。③ **本次未 `git add`**：18 张封面 + 41 张照片 + 7 个页面仍为未跟踪状态，推送前必须 `git add`，否则线上 404（RULES §4.3）。④ **作者随后反馈：`members/index.html` 上 liam/niall/zayn 三张卡点不进去 —— 已在下一条修复。**
+
+## 2026-09-11 — 按规范重命名三套 Gallery 资源，并修掉一个自己引入的封面 class 冲突
+
+- **模型**：deepseek-v4-flash
+- **目的**：作者问「这些图片你都按规范命名了吗」。**当时没有按规范核对过** —— 我是照着最近的邻居文件的形状抄的，没回去读 Skill §6 的成文规则。回头逐条核对后确认**两处真实偏差**，并顺带发现一处会破坏既有页面的 class 冲突。
+- **结果**：
+  1. **封面缺 `-cover-` 标记（真偏差）**。Skill §6.1 写的是 `<gallery-scope>-cover-<tier>.png`，我把"gallery-scope"理解成了整个前缀，生成 `gallery-members-niall-dinner-table-rect-sml.png`。问题在于 members 层级所有封面都带 `-cover-`（`gallery-members-liam-cover-*`、`gallery-members-harry-checked-shirt-cover-*`），我这个名字与**成员卡封面同形**，光看文件名分不清是卡片封面还是相册封面。已全部改成 `gallery-members-<subset>-<album>-cover-<tier>.png`（18 个文件）。
+  2. **照片文件夹名是我擅自改的（真偏差）**。作者明确说「文件夹名 liam」，我写成了 `louis-with-liam`。站点惯例是**文件夹名 = 文件 stem**（`checked-shirt/checked-shirt-1.jpg`）。已改为 `rect-lrg/liam/liam-1.jpg … liam-10.jpg`。
+  3. **发现并修掉一个我自己引入的回归（重要）**：重命名时把相册封面 class 也写成了 `liam-cover`，但它**已经被 `members/index.html` 的 Liam 成员卡占用**。两条 `.panel.gallery-cover.liam-cover .bg` 规则**特异性完全相同**，我的块在文件末尾 → `!important` 胜出 → **移动端 Liam 成员卡会显示成相册封面**。改用 `liamandlouis-cover`。`dinnertable-cover` / `teenzayn-cover` 查过未被占用，保持不变。
+  4. 共享相册页文件名同步改为 `louis-liam.html`（原 `louis-with-liam.html`），两份（`liam/` 与 `louis/`）都在。
+  5. **过程失误（已修复并复验）**：重命名脚本用「整文件字符串替换」改引用，而 `gallery-members-liam-` 是 `gallery-members-liam-liam-cover-` 的前缀，于是把成员卡引用改成了 `gallery-members-gallery-members-liam-liam-cover-…`（另有两个同类双重前缀，以及 `cover-cover` 重复）。改用**定点修复 + 全量解析验证**：把 7 个页面里 165 条 `url()` / `href` 引用逐条 resolve 到磁盘，确认 0 缺失，而不是靠"没报错"判断。
+  6. Skill §6.1 补写：`<gallery-scope>` 的真实展开规则、`-cover-` 不可省的原因、**一个页面不能有两个卡片共用同一个 cover class**（附 `grep -c` 预检方法与"这个冲突静态审计和图片审计都发现不了"的说明）；新增 §6.1b 照片集目录/文件命名（文件夹名 = 文件 stem、作者指定的目录名必须照用）。
+- **验证**：① **165 条引用逐条 resolve 到磁盘，0 缺失**（脚本内建，不是目测）。② `_audit_site_images.py` **773 refs / Broken: 0**。③ 7 个页面 div 全配对（20/20、26/26、34/34、64/64），CSS 括号 1186/1186 平衡。④ **class 冲突专项**：移动端按 class 逐个查 `getComputedStyle(bg).backgroundImage`，**9/9 全部指向自己的 asset**（含 Harry/Louis/FiveGuys 对照组），确认成员卡与相册封面不再串味。⑤ 点击链路 **33/33**、封面与 slideshow 套件 **31/31** 全通过。⑥ `check_skills.py` 6/6。
+- **Token 消耗**：约 20 万（主会话）
+- **用时**：实测 18 分钟（22:31 → 22:49）
+- **经验总结**：① **有规范就去读，别照着邻居文件抄形状**：Skill §6.1 早就写明了 `-cover-` 规则，我抄了三个历史文件（它们恰好是缺 `-cover-` 的少数派），于是继承了同样的偏差。**"附近有人这么写"不等于"这是规范"**，尤其当规范文档明确存在时。② **新 class 名要先 `grep -c` 查占用**：同类名两条 `.panel.gallery-cover.X .bg` 规则特异性相同，后写的 `!important` 静默胜出——图片审计 0 断链、div 全配对、HTTP 全 200，**一整套审计都是绿的，但移动端 Liam 成员卡已经显示错了图**。这类"规则被静默覆盖"的 bug 只能靠按 class 查 `getComputedStyle` 暴露。③ **批量改引用不要用整文件字符串替换**：当一个旧名是新名的前缀时必然误伤（`gallery-members-liam-` ⊂ `gallery-members-liam-liam-cover-`）。正确姿势是改完**把每条引用 resolve 到磁盘**来证明，而不是"脚本没抛异常"。
+- **遗留/待办**：① 同前：`louis/index.html` 未加「Louis with Liam」卡片（作者未要求）。② **仍未 `git add`**：7 个页面 + 18 张封面 + 41 张照片未跟踪，推送前必须 add。
+
+## 2026-09-11 — 修复 `members/index.html` 三张成员卡死链（liam / niall / zayn 点不进去）
+
+- **模型**：deepseek-v4-flash
+- **目的**：作者反馈在 `http://localhost:8000/pages/gallery/members/index.html` 上**点不进 liam / zayn / niall 的成员主页**，要求「卡片都要加上」。
+- **结果**：
+  1. **勘察纠正了问题的性质**：六张成员卡**本来就都在**（harry / louis / liam / niall / zayn / five-guys），`.panel.gallery-cover` 结构、`.count`、双语标题全部齐备；真正的毛病是 liam / niall / zayn 三张卡的 `.info a.more` 还是占位 **`href="#"`**（上一轮建成员页时只补了页面，没回头接父级链接）。harry / louis / five-guys 三张本来就是通的。
+  2. 定点替换三处 `href="#"` → `liam/index.html`、`niall/index.html`、`zayn/index.html`；`#back-to-top`（第 201 行）按设计保留。
+  3. **未动年份**：卡片的 `.title` 沿用既有 2014 / 2013 / 2014 —— 成员卡上的年份代表该成员的时期，不是取材年份，不在本次范围内。
+  4. **未改 CSS**，因此不需要 bump `?v=`（上一轮的 `20260911g` 仍然生效）。
+- **验证**（本机 server + Playwright + Chrome，**33/33 通过**）：① 静态：`members/index.html` div 配对 65/65；全文仅剩 1 处 `href="#"`（就是 `#back-to-top`）；29 个 href 里**除带 `?v=` 的 css（HTTP 200，仅文件系统比对会被 query 干扰）外全部 fs+HTTP 双通**。② 几何实测确认六张卡都在且顺序正确：Harry(4)→Louis(3)→Liam(1)→Niall(1)→Zayn(1)→Five Guys(1)，每张 720px 高、top 依次 595/1315/2035/2755/3475/4195，页面总高 5436 CSS px。③ **真实点击链路**（不是查 href 字符串）：从 index 点卡 → 断言落到对应成员页 → 点该页相册卡 → 断言 slideshow 真的渲染出 slide：Harry 39、Louis 49、Liam 10、Niall 6、Zayn 25、Five Guys 16。④ 全程零 JS 报错；`_audit_site_images.py` **773 refs / Broken: 0**。
+- **Token 消耗**：约 15 万（主会话）
+- **用时**：实测 13 分钟（22:18 → 22:31）
+- **经验总结**：① **建了新页面不等于接好了入口**：上一轮我把 niall/liam/zayn 三个成员页建好就收工，却没回头把父级 `members/index.html` 的占位 `href="#"` 换成真链接 —— 自测只验了「新页面能 200」，没验「从入口能不能走到新页面」，于是漏掉了唯一真正影响用户的一步。**新增页面后必须从父级入口做一次端到端点击验证**，这是新页面任务的一部分，不是可选项。② **"点不进去"要先区分是卡片没渲染还是链接是死的**：作者说「卡片都要加上」，但实测六张卡本来就在、只是三张 `href="#"`；先量几何、数卡片，再动手，否则会白加一遍重复卡片。③ `.panel` 是 `padding:50% 0 0 0; height:0` + 绝对定位子元素，Playwright `fullPage: true` 直接截图时**首屏以下的 panel 会整片黑**（没被绘制）；截图前逐张 `scrollIntoViewIfNeeded()` 逼出绘制才能拿到真实画面。
+- **遗留/待办**：① 同上一轮：`louis/index.html` 未加「Louis with Liam」卡片；② **仍未 `git add`**：7 个页面 + 18 张封面 + 41 张照片未跟踪，推送前必须 add。
+
 ## 2026-09-11 — 移除 `wrangler.jsonc` 里冗余且有破坏性的 `build.command`
 
 - **模型**：deepseek-v4-flash

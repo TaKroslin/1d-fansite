@@ -899,6 +899,31 @@ body.home-section .panel:not(.journal-article) > h2 .zh,body.home-section .panel
 .codystar .zh,.panel.journal-moments .panel-content h2 .zh,.panel.moment .panel-content h2 .zh{font-family:'Fusion Pixel',monospace;font-weight:400;letter-spacing:normal;}
 /*==CJK-FONTS-END==*/
 
+/* =================================================================
+   FIVE GUYS: Members solo galleries 2026-09-11 — Niall "Dinner Table",
+   "Louis with Liam" (shared by louis/ + liam/), Zayn "Teen Zayn".
+   Same pattern as the curated covers above: the .bg is rebuilt by
+   retinafy_replace() on high-DPI, so the exception MUST live in CSS,
+   not in an inline style.
+   ================================================================= */
+.panel.gallery-cover.dinnertable-cover .bg,
+.panel.gallery-cover.liamandlouis-cover .bg,
+.panel.gallery-cover.teenzayn-cover .bg{
+  -webkit-filter:none!important;
+  filter:none!important;
+}
+@media (max-width: 767px){
+  .panel.gallery-cover.dinnertable-cover .bg{
+    background-image:url(../images/gfx/gallery-members-niall-dinner-table-cover-square-sml.png)!important;
+  }
+  .panel.gallery-cover.liamandlouis-cover .bg{
+    background-image:url(../images/gfx/gallery-members-liam-liam-cover-square-sml.png)!important;
+  }
+  .panel.gallery-cover.teenzayn-cover .bg{
+    background-image:url(../images/gfx/gallery-members-zayn-teen-zayn-cover-square-sml.png)!important;
+  }
+}
+
 /* HOMEPAGE BLOG CARDS — Gallery-style hover (dark cards: white frame + white-fill CTA, no copy movement) */
 .panel.journal-news.homepage-news.homepage-blog-card .inline{position:absolute;inset:clamp(8px,1.25vw,20px);width:auto;height:auto;box-sizing:border-box;border:.12em solid #fff;display:none;pointer-events:none;z-index:2;}
 .panel.journal-news.homepage-news.homepage-blog-card.hover .inline,.panel.journal-news.homepage-news.homepage-blog-card:focus-within .inline{display:block;}
