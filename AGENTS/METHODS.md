@@ -364,9 +364,10 @@
 
 ### M53. 本地跑 `wrangler deploy --dry-run` 会执行 `rm -rf .git`，删掉本地版本库
 - **现象**：本地执行 `wrangler deploy --dry-run` 想验证上传清单，命令报 `Running custom build 'rm -rf .git' failed`；随后 `git` 报"不是 Git 仓库"。`.git/` 只剩 `objects/`（186MB），`HEAD` / `config` / `index` / `refs` / `packed-refs` 全部消失。**工作树文件完好无损**。
-- **根因**：`wrangler.jsonc` 有 `"build": { "command": "rm -rf .git" }`（M37 为绕过 `.git` pack 超 25MiB 上传上限而加的补丁）。wrangler 在**本地**跑 `--dry-run` 时**同样执行 build 命令**，于是真的删了 `.git`。沙箱只拦住了部分对象文件（`Operation not permitted`），其余照删，造成半损坏。
-- **处理**：从远端重新 clone 一份，用它的 `.git` 顶替损坏的：`git clone <url> /tmp/re` → `mv .git .git-damaged && cp -R /tmp/re/.git .git`。**必须补 `git config core.fileMode false`**——本工作树文件权限是 700，新 clone 默认 `fileMode=true`，否则 500+ 文件全部假报 modified（实测 502 个纯 mode change，零内容差异）。
+- **根因**：`wrangler.jsonc` 有 `"build": { "command": "rm -rf .git" }`（M37 为绕过 `.git` pack 超 25MiB 上传上限而加的补丁）。wrangler 在**本地**跑 `--dry-run` 时**同样执行 build 命令**，于是真的删了 `.git`。
+- **为什么是"半损坏"而不是全删（重要，别再误判为沙箱）**：`.git/objects/` 下 **1724 个对象文件带着 macOS `uchg`（用户不可变）标志**，`rm` 对它们一律返回 `Operation not permitted`；没有该标志的 `HEAD` / `config` / `index` / `refs` / `packed-refs` 则被正常删除。**不可变标志连文件属主也删不掉，与沙箱/权限模式无关**——作者本人在自己终端里跑同样的 `rm -rf` 得到一模一样的报错，才定位到它。排查：`ls -lO <file>`（`-O` 显示 flags 列，出现 `uchg` 即中招）或 `stat -f '%Sf' <file>`。
+- **处理**：① 从远端重新 clone，用它的 `.git` 顶替损坏的：`git clone <url> /tmp/re` → `mv .git .git-damaged && cp -R /tmp/re/.git .git`。**必须补 `git config core.fileMode false`**——本工作树文件权限是 700，新 clone 默认 `fileMode=true`，否则 500+ 文件全部假报 modified（实测 502 个纯 mode change，零内容差异）。② 残留的旧对象库：`chflags -R nouchg <dir>` 清掉不可变标志后再 `rm -rf <dir>`。
 - **验证**：`git fsck` 无 error；`diff -r` 工作树 vs 远端检出**逐字节一致**；用 `GIT_ALTERNATE_OBJECT_DIRECTORIES` 枚举旧对象库，唯一不可达 commit 与历史中某 commit **主题和父提交完全相同** = 被 amend 掉的旧版本，确认无未推送工作丢失。
-- **预防**：① **永远不要在本地跑 `wrangler deploy` / `--dry-run`**，要验证上传内容就 `git clone` 到临时目录再跑；② `.assetsignore` 已排除 `.git/`，`build.command` 已成冗余，移除后本地 dry-run 不再有破坏性；③ 恢复 `.git` 这类操作先复制备份、再动手，且恢复后必须做 fsck + 逐字节比对，别只看 `git status` 干净就以为好了。
+- **预防**：① **永远不要在本地跑 `wrangler deploy` / `--dry-run`**，要验证上传内容就 `git clone` 到临时目录再跑；② `.assetsignore` 已排除 `.git/`，`build.command` 已成冗余，移除后本地 dry-run 不再有破坏性；③ 恢复 `.git` 这类操作先复制备份、再动手，且恢复后必须做 fsck + 逐字节比对，别只看 `git status` 干净就以为好了；④ 遇到 `Operation not permitted` 先 `ls -lO` 查 flags，别条件反射怪沙箱/权限模式——`uchg` 的表现和它一模一样。
 
 

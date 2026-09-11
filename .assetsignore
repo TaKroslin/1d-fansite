@@ -33,8 +33,3 @@ wrangler.jsonc
 # 系统垃圾文件
 .DS_Store
 **/.DS_Store
-
-# 一次性残留：2026-09-11 恢复被误删的 .git 时留下的损坏对象库备份。
-# 沙箱禁止删除 VCS 元数据目录，需人工执行：rm -rf damaged-old-objects
-# 确认删除后可一并删掉这三行。
-damaged-old-objects/
