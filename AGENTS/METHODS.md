@@ -362,4 +362,11 @@
 - **处理**：把 description 用双引号包起来（`description: "Use for ... work: create ..."`），6 个统一处理；description 内本身不能含 `"`。
 - **预防**：Skill frontmatter 一律按严格 YAML 写；description 含 `: `、`#`、`{`、`[`、`&`、`*` 等字符时必须加引号。校验直接跑 `python3 tools/audit/check_skills.py`（纯标准库，本机与 `.venv` 都没有 PyYAML，别用 `import yaml`）。改完 Skill 后确认会话目录里的条目数 = 目录数。
 
+### M53. 本地跑 `wrangler deploy --dry-run` 会执行 `rm -rf .git`，删掉本地版本库
+- **现象**：本地执行 `wrangler deploy --dry-run` 想验证上传清单，命令报 `Running custom build 'rm -rf .git' failed`；随后 `git` 报"不是 Git 仓库"。`.git/` 只剩 `objects/`（186MB），`HEAD` / `config` / `index` / `refs` / `packed-refs` 全部消失。**工作树文件完好无损**。
+- **根因**：`wrangler.jsonc` 有 `"build": { "command": "rm -rf .git" }`（M37 为绕过 `.git` pack 超 25MiB 上传上限而加的补丁）。wrangler 在**本地**跑 `--dry-run` 时**同样执行 build 命令**，于是真的删了 `.git`。沙箱只拦住了部分对象文件（`Operation not permitted`），其余照删，造成半损坏。
+- **处理**：从远端重新 clone 一份，用它的 `.git` 顶替损坏的：`git clone <url> /tmp/re` → `mv .git .git-damaged && cp -R /tmp/re/.git .git`。**必须补 `git config core.fileMode false`**——本工作树文件权限是 700，新 clone 默认 `fileMode=true`，否则 500+ 文件全部假报 modified（实测 502 个纯 mode change，零内容差异）。
+- **验证**：`git fsck` 无 error；`diff -r` 工作树 vs 远端检出**逐字节一致**；用 `GIT_ALTERNATE_OBJECT_DIRECTORIES` 枚举旧对象库，唯一不可达 commit 与历史中某 commit **主题和父提交完全相同** = 被 amend 掉的旧版本，确认无未推送工作丢失。
+- **预防**：① **永远不要在本地跑 `wrangler deploy` / `--dry-run`**，要验证上传内容就 `git clone` 到临时目录再跑；② `.assetsignore` 已排除 `.git/`，`build.command` 已成冗余，移除后本地 dry-run 不再有破坏性；③ 恢复 `.git` 这类操作先复制备份、再动手，且恢复后必须做 fsck + 逐字节比对，别只看 `git status` 干净就以为好了。
+
 

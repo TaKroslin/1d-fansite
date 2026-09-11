@@ -1,5 +1,20 @@
 # 1D Fansite — 开发日志（LOG）
 
+## 2026-09-11 — 用 `.assetsignore` 停止公开托管开发手册/Skills；期间误删本地 `.git` 并完整恢复
+
+- **模型**：deepseek-v4-flash
+- **目的**：作者指出开发手册（`AGENTS/`）与 Skills（`.agents/`）不该对外可见。根因是 `wrangler.jsonc` 的 `assets.directory: "."` 把**整个仓库**当静态资源上传——线上 `https://www.5guys1direction.asia/AGENTS/RULES.md` 实测 200，任何人都能下载。
+- **结果**：
+  1. 新增 `.assetsignore`（放 assets 根目录，gitignore 语法）：排除 `.git/`、`node_modules/`、`.venv/`、`AGENTS/`、`AGENTS.md`、`.agents/`、`.opencode/`、`tools/`、`Chapters/`、`docs/`、`README.md`、`wrangler.jsonc`、`.gitignore`。**`wrangler.jsonc` 的 `assets.exclude` 参数不存在**（写了不报错也不生效），已写入 RULES §4.2 警示。
+  2. 排除前做了全库引用核对：上述路径**无任何站点 HTML/CSS/JS 引用**（唯一 `tools/` 命中是 `css/styles.css` 里的一句注释），站点实际资源 `index.html`/`pages/`/`journal/`/`css/`/`js/`/`images/`/`assets/` 全部保留。
+  3. `AGENTS/RULES.md` §4.2 重写为 `.assetsignore` 方案，并加两条硬规则：禁止本地跑 `wrangler deploy`（见下）、`.git/` 已排除故 M37 的 `build.command` 已冗余。
+  4. **事故与恢复**：为验证排除清单，本地跑了 `wrangler deploy --dry-run`，它**执行了 `wrangler.jsonc` 的 `build.command: "rm -rf .git"`**，把本地 `.git` 删成半损坏（只剩 `objects/` 186MB，`HEAD`/`config`/`index`/`refs` 全丢）。工作树文件完好。恢复方式：重新 clone 远端 → `cp -R` 其 `.git` 顶替 → 补 `git config core.fileMode false`（否则 502 个文件因权限 700 假报 modified）。已完整恢复，写入 `METHODS.md` M53。
+- **验证**：① `.git` 恢复后 `git fsck` 无 error；`diff -r` 工作树 vs 远端 e0ff56b 检出**逐字节一致**（仅"仅存在于工作区"的 gitignore 项）；枚举旧对象库发现唯一不可达 commit `9eddc8c` 与历史里 `d851b98` **主题 + 父提交完全相同** = 被 amend 掉的旧版本，**确认零未推送工作丢失**。② 推送后线上验证：`/.agents/skills/*/SKILL.md` 与旧 `/.opencode/...` 由 200 变 404、首页 + `css/styles.css` + `js/main.js` + `images/logo.png` 全部 200。
+- **Token 消耗**：约 25 万（其中 `.git` 目录扫描与 `rm` 报错日志占了约一半，属于可避免的浪费）
+- **用时**：实测 42 分钟（20:25:31 → 21:07，起点取 `.git` 备份创建时间戳；更早的 `wrangler` 勘察阶段未计时，实际略长）
+- **经验总结**：① **绝对不要在本地跑 `wrangler deploy` / `--dry-run`**——它会执行 `build.command`；本次是沙箱拦住了部分对象文件才只损坏一半。② 恢复 `.git` 后看到 500+ 文件 modified 先别慌，用 `git diff --summary` 看是不是纯 mode change；新 clone 的 `core.fileMode` 默认 true 而本工作树权限是 700。③ "恢复完成"要证明到位必须做三件事：`git fsck`、与远端**逐字节比对**、枚举旧对象库确认无孤立提交——只看 `git status` 干净是不够的。④ 删除 VCS 元数据目录被沙箱阻止时不要反复重试或升级权限硬闯，改用"排除 + 交付人工删除命令"。
+- **遗留/待办**：① `damaged-old-objects/`（186MB 损坏对象库备份）沙箱禁止删除，**需人工执行 `rm -rf damaged-old-objects`**；已临时加入 `.assetsignore` 防止被部署，删除后可一并移除该行与注释。② `wrangler.jsonc` 的 `"build": { "command": "rm -rf .git" }` 现已冗余，建议在下一轮验证后移除，彻底消除本地破坏性。
+
 ## 2026-09-11 — 站点 origin 的 `www` 规则成文（此前只靠示例隐含）
 
 - **模型**：deepseek-v4-flash

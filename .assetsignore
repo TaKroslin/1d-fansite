@@ -1,0 +1,40 @@
+# Cloudflare Workers 静态资源上传排除表。
+#
+# 背景：wrangler.jsonc 的 assets.directory 是 "."（整个仓库），若不排除，
+# AGENTS/ 工作手册、.agents/ Skills、tools/ 脚本、Chapters/ 原始 Markdown、
+# docs/ 项目 PDF 都会被公开托管在 https://www.5guys1direction.asia/ 上。
+#
+# 语法与 .gitignore 相同。注意：不要写 wrangler.jsonc 的 assets.exclude ——
+# 该参数不存在，写了也不报错、不生效。
+
+# 版本控制与依赖（本地 dry-run 时一并排除）
+.git/
+node_modules/
+.venv/
+
+# Agent 工作手册与 Skills
+AGENTS/
+AGENTS.md
+.agents/
+.opencode/
+
+# 构建 / 审计 / 翻译脚本与页面模板
+tools/
+
+# 小说原始 Markdown（对外渲染产物在 pages/blog/the-only-direction-home/）
+Chapters/
+
+# 对外文档与部署配置
+docs/
+README.md
+wrangler.jsonc
+.gitignore
+
+# 系统垃圾文件
+.DS_Store
+**/.DS_Store
+
+# 一次性残留：2026-09-11 恢复被误删的 .git 时留下的损坏对象库备份。
+# 沙箱禁止删除 VCS 元数据目录，需人工执行：rm -rf damaged-old-objects
+# 确认删除后可一并删掉这三行。
+damaged-old-objects/
