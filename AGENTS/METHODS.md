@@ -387,3 +387,63 @@
 - **预防**：① **不要在本地跑 `wrangler deploy`**（不加 `--dry-run` 会真的发布上线），要验证上传内容就 `git clone` 到临时目录再跑；② `.assetsignore` 已排除 `.git/`，`build.command` 已于 2026-09-11 移除，本地 `--dry-run` 不再有破坏性；③ 恢复 `.git` 这类操作先复制备份、再动手，且恢复后必须做 fsck + 逐字节比对，别只看 `git status` 干净就以为好了；④ 遇到 `Operation not permitted` 先 `ls -lO` 查 flags，别条件反射怪沙箱/权限模式——`uchg` 的表现和它一模一样。
 
 
+### M56. 覆盖 `.panel-group{overflow:auto}` 会让整个 group 高度塌成 0，后面所有 panel 上叠
+- **现象**：把两个正方形 panel 放进 `.panel-group` 后，Playwright 报 `element is not visible`，元素截图直接超时。量出来 group 的 `offsetHeight` 是 **0**，两个 720×720 的 panel 位置正常但完全脱流，紧随其后的 panel 整体上移了 720px 与之重叠。
+- **根因**：`.panel-group{overflow:auto}` 里 `overflow` 不只是滚动设置，它**建立了 BFC 来包含内部的 `float` 子元素**（`.panel-group .panel{width:50%;float:left}`）。我为"避免裁剪"把它改成 `overflow:visible`，BFC 随之消失，浮动子元素不再撑开父容器。
+- **处理**：删掉该覆盖，保留基础 `overflow:auto`。
+- **验证**：group `offsetHeight` 从 0 恢复到 720，后续 panel 的 `top` 恰好等于 group 的 `bottom`（1546 = 1546），无重叠。
+- **预防**：**不要为了"看起来更宽松"去覆盖容器上的 `overflow`**——先确认它是不是在承担 BFC/清浮动职责。判断法：子元素若有 `float`，父元素高度为 0 就是中招。另：这类 bug 让"元素不可见"的报错先于任何视觉断言出现，**Playwright 的不可见报错要当成真 bug 排查，不要急着改截图方式绕过**。
+
+### M57. 给正方形格子套 `.journal-article`，会在两个断点各打一场覆盖战（且必输一场）
+- **现象**：新 panel 在桌面是 720×720 正方形正确，**移动端却塌成 390×195（正好半高）**。加上 `padding:50% 0 0 0!important` 后仍然只有 195px，计算值却显示 `padding-top:195px`（=50%×390，说明 padding 其实生效了）。
+- **根因**：两层叠加。① `.panel.journal-article{padding-top:0;height:auto}` 是给**长文正文**的（要按内容高度撑开），特异性 (0,2,0) 高于基础的 `.panel{padding:50% 0 0 0;height:0}`，所以正方形被它废掉，得靠自己的规则去覆盖；② 767px 断点有 `.panel{padding-top:100%}`（移动端正方形），而 `.panel.journal-article.niall-panel` 特异性更高，**无 `!important` 时 `padding` 简写反而把移动端的 `padding-top` 重置成 0**，于是只剩基础的 50% 生效。
+- **处理**：**根本解法是别套那个类**——这两个格子是图形方块不是文章，改用纯 `.panel`（本身就是 `padding:50% 0 0 0;height:0` 的正方形），桌面/移动天然都成立，`!important` 与所有覆盖全部删掉（CSS 反而更短）。
+- **验证**：移动端 390×390 正方形、桌面 720×720，`?v=` 已 bump，27 项断言全绿。
+- **预防**：**复用组件类之前先读它为什么存在**。`.journal-article` 的 `height:auto` 是文章语义，用在固定比例方块上等于自己制造特异性冲突。判断法：如果你需要给某个既有类写 `!important` 才能得到想要的比例，先怀疑"这个类本就不该加"。
+
+### M58. jQuery 2.1.1 的 `.css()` 不支持 CSS 自定义属性，键值对被静默丢弃
+- **现象**：心形迸发动效只**笔直向上**飘，完全不向两侧散开。实测散开宽度 11px、纵向 75px（应两者相当）。
+- **根因**：通过 `$el.css({'--dx': '30px', '--dy': '-90px'})` 写自定义属性，jQuery 2.1.1 **不支持**，这两个键被**静默丢掉**（不报错、不抛异常）。元素上只有 `left/top/font-size/animation-delay`，`--dx`/`--dy` 取值为空，于是 `@keyframes` 里的 `var(--dy,110px)` / `var(--dx,0px)` 退回兜底值 —— 看起来"动画能跑"，实际参数全是默认值。
+- **处理**：改用原生 DOM + `el.style.setProperty('--dx', ...)`；元素也用 `document.createElement` 创建后 `appendChild`，避免混用。
+- **验证**：脚本内 `getComputedStyle(el).getPropertyValue('--dx')` 从空串变为实际值；散开宽度 11px → **68px**，纵向 75px。
+- **预防**：**CSS 自定义属性一律走 `style.setProperty()`**，不要经 jQuery `.css()`。这类 bug 的隐蔽性极高：无 JS 报错、无 JS 语法问题、静态检查全绿、图片审计全绿、HTTP 全 200——**必须断言动效的几何量（散开宽度）才能发现**，肉眼看"心在飘"会误判为正常。同类：凡"参数化动画"的效果，都要量参数是否真的落到了元素上。
+### M59. `.icon-heart` 自带 `:before` 字形，再写 `textContent` 会渲染出两颗连在一起的心
+- **现象**：作者反馈「为什么是两个爱心连在一起的」。每个心形元素位置上都并排出现两颗心。
+- **根因**：`css/styles.css` 里 `.icon-heart:before{content:"\e60e"}` 是这个图标字体的**标准用法** —— 字形由伪元素生成，元素本身不需要任何文本。我又用 `el.textContent = '\ue60e'` 塞了同一个码点，于是**伪元素一颗 + 文本节点一颗**，两颗紧挨着渲染。
+- **处理**：改用 emoji（`🧡` / `🇮🇪`）+ `textContent`，并**移除 `.icon-heart` 类**，从根上避开伪元素叠加。顺带把字体栈换成 emoji 栈（`Apple Color Emoji` / `Segoe UI Emoji` / `Noto Color Emoji`）。
+- **验证**：断言每个元素的 **grapheme cluster 数**为 1（用 `Intl.Segmenter`，不能用 `.length` —— 🇮🇪 由 2 个 regional indicator 码点组成，`.length===2` 会误报），并检查元素不含 `.icon-heart` 类、高度未翻倍（24px 而非 ~48px）。
+- **预防**：**给元素写文本前先确认它的图标是不是伪元素生成的**。用图标字体时二者只能选一：要么纯伪元素（元素留空），要么纯文本 + 正确的 `font-family`。判断法：`grep '\''\.类名:before'\'' css/styles.css` 有 `content` 就绝不能再写文本。
+
+### M60. 浮动元素的百分比 `padding` 按**包含块**宽度解析，不是自身宽度
+- **现象**：右格用 `.panel` 的 `padding-top:50%` 得到正确的 1:1 正方形（720×720）；为贴合图片比例改成 `padding:101.0824% 0 0 0` 后，格子高度变成 **1455.58px**（正好是 720 的两倍），比例算出来 0.4946 而不是 1.0108。同样的百分比在移动端 390px 宽下却是对的（394px）。
+- **根因**：**浮动元素的百分比 padding 相对包含块宽度解析**。`.niall-photo-panel` 是 `width:50%; float:left`，自身宽 720px，但它的包含块是 `body`（1440px），于是 `101.0824% × 1440 = 1455.58px`。桌面下正好是两倍，所以错得很整齐；移动端因为「包含块 = 自身 = 390px」而侥幸正确 —— **只在桌面暴露的 bug**。
+- **处理**：改用 `aspect-ratio:1200/1200` + `height:auto` + `padding:0`。注意 `.panel` 自带 `padding:50% 0 0 0` 与 `height:0`，**三者会互相顶掉**，必须一起清干净（此前只加 `aspect-ratio` 而没清 `padding`，实测 `paddingTop` 仍是 720px、`aspect-ratio` 形同虚设）。
+- **验证**：`panel.ratio=1.0000`、四个断点（1440/1024/768/390）下右格均为正方形且与左格等高，`getBoundingClientRect` 逐断点核对。
+- **预防**：**不要用 padding 百分比做浮动/绝对定位元素的宽高比**，优先 `aspect-ratio`；必须用 padding 技巧时先确认元素自身的包含块是谁。另：这类 bug 在移动端可能完全不复现，**断点验证必须包含桌面**，只测移动端会漏掉。
+### M62. 不规则形状的"只有点在图形上才算"——CSS `mask` 与 `clip-path` 在本环境都不可靠，用 JS 读 alpha
+- **现象**：四张贴纸按钮都是满格 1200×1200 叠放（这样图片位置才准确），需要"只有点在贴纸图形上才响应，点透明角落要穿透到 panel"。先后试了三种 CSS 方案，**全部失败**：
+  1. `clip-path: inset()` 矩形 —— 能裁命中，但只能给矩形；贴纸是不规则形状，透明角落仍吃点击（作者反馈"main 的点击范围太广"）。
+  2. `mask: url(sticker.png)` —— **只裁剪绘制，不裁剪命中测试**。满格按钮仍然吃掉整个面板的点击，连纯空白处都命中贴纸。
+  3. `clip-path: url(轮廓.svg#c)` —— 外部 SVG 引用**不生效**；改用 **data URI 内联**也不生效，按钮仍是整块矩形命中区。`elementFromPoint` 恒返回同一个元素即为特征。
+- **处理**：改为 **JS 逐像素命中判定** —— 把每张贴纸缩小画到 150×150 离屏 canvas，取 alpha 通道，点击/`pointermove` 时按坐标采样 alpha，`> 24` 才算命中贴纸，否则穿透去冒 emoji。`cursor` 与 hover 反馈也由该判定切换 `.is-on-sticker`。命中区域**精确等于贴纸轮廓**（实测贴纸实体占各自矩形面积：main 43%、小贴纸 2%），且不依赖任何裁剪特性。
+- **验证**：4 张贴纸实体上点击 → 对应贴纸动、不冒 emoji（4/4）；6 个实测 alpha 全为 0 的空白点 → 冒 emoji、贴纸不动（6/6）；hover 光标只在贴纸实体上变 `pointer`。
+- **预防**：① **别默认 CSS 裁剪会裁命中** —— `mask` 明确不裁，`clip-path` 在外部 SVG / data URI 场景下也可能静默失效；判断法是 `document.elementFromPoint()` 扫一圈，若恒返回同一元素就说明裁剪没生效。② 需要精确的不规则命中区域时，**读 alpha 做命中判定是最可控的方案**，不要和 CSS 特性死磕。③ 做轮廓追踪（marching squares / Moore 邻接）容易写出提前退出的 bug，我的两版实现都只走出 2 个点；**"矩形并集"（同行连续段 + 纵向合并）是更简单且可校验的表示法**，且可用覆盖计数证明无空洞。
+
+### M63. `outline` 是矩形盒，给非矩形贴纸加焦点环会露出方形框
+- **现象**：作者反馈"外面为什么会有一个方形的框框"。鼠标点击贴纸后出现一个橙色方框。
+- **根因**：`outline` 贴着**元素矩形盒**绘制。贴纸按钮满格 1200×1200 且图形不规则，焦点环自然呈方形；`border-radius` 也救不了不规则轮廓。另外 `:focus` 在鼠标点击后同样成立，所以"点了就出现"。
+- **处理**：去掉 `outline`，键盘焦点改用轻微放大（`:focus-visible{--hover-scale:1.06}`）作为提示 —— 形状天然跟着贴纸轮廓走。
+- **预防**：**任何非矩形的可聚焦元素都不要用 `outline` 做焦点提示**；用小位移/缩放/阴影等"跟随形状"的反馈。无障碍上仍保留 `<button>` 语义与 `aria-label`，Tab 可达。
+
+### M64. 重复触发动画时，未取消的 `setTimeout` 会把下一次的动画腰斩
+- **现象**：作者反馈"连续点击的时候，会出现重复的情况，没有办法完成动画"。
+- **根因**：`pop()` 每次点击都 `setTimeout(removeClass, 1200)` 却**从不取消前一个**。连点两次时，第一次的定时器会在 1200ms 把**第二次正在播的动画类**摘掉，动画中途消失；多个定时器互相打架，表现为"重复 + 完不成"。注意 `animationend` 那条清理路径本身是对的，问题只出在兜底定时器上。
+- **处理**：用 `WeakMap` 按元素保存定时器句柄，每次触发前 `clearTimeout` 上一个；`animationend` 清理时也一并清掉句柄。
+- **验证**：连点 3 次（间隔 190ms）后读 `img.getAnimations()[0].currentTime`，仍为小值（183ms）且动画数=1，说明每次都从头重放；随后能正常结束并摘类。
+- **预防**：**凡"重启动画 + 兜底定时器"的组合，定时器必须按元素保管并先清后设**。判定方法不要只看"类在不在"，要看真实动画进度（`getAnimations()`），否则"类还在但动画已被打断"的情况测不出来。
+
+### M65. 用正则从 `class` 里抠修饰名会被同前缀的类名抢先命中
+- **现象**：三张小贴纸的命中/动画全部失灵（点上去只冒 emoji，贴纸不动），但主人物正常。
+- **根因**：class 形如 `niall-figure niall-figure--sm niall-figure--top`，我用 `/niall-figure--(\w+)/` 取修饰名，**`niall-figure--` 先匹配上了 `--sm` 那一段**，三张小贴纸的名字全部解析成 `sm` —— `hitData` 互相覆盖（只剩最后一张的 alpha），`pop()` 也作用在错误元素上。
+- **处理**：改为精确匹配已知修饰名 `/niall-figure--(main|top|left|right)\b/`。
+- **预防**：**共享前缀的类名不要用 `--(\w+)` 这种宽松捕获**，要么精确枚举，要么用 `classList.contains()` 逐个判断。调试提示：`document.elementFromPoint` 看起来"命中了元素"但回调里拿到的名字不对，就是这类解析 bug 的典型特征。

@@ -1,5 +1,85 @@
 # 1D Fansite — 开发日志（LOG）
 
+## 2026-09-14 — 补齐 Liam 首页存档（HTML+CSS→带日期文件夹）并把图片/字体接回项目；整理 1D 重要日期
+
+- **模型**：deepseek-v4-flash
+- **目的**：① 当天早些时候把 Liam 版首页存进 `history/` 时**只存了 HTML、漏了 CSS**，页面在 `history/` 里裸奔（无样式）；要求补齐、放成带日期的小文件夹（日期定为 **2026-08-31 = git 实际提交日**，不要 zip）。② 进一步要求**图片和字体直接引用项目里已有的那份**（不复制），只改引用路径。③ 作者常忘成员生日，要求整理 One Direction 重要日期，便于提前做首页卡片。
+- **结果**：
+  1. **存档**：`history/2026-08-31-liam-33rd-birthday/`（`index.html` + `css/styles.css` + `README.md`，176K）。原散在 `history/` 根目录的 `index-2026-09-11-liam-33rd-birthday.html` 已移入并从 git index 移除。出处核对：HTML 与 `e075108` 提交逐字节相同，CSS 与该提交的 `css/styles.css` 逐字节相同。
+  2. **路径深度（本次核心坑）**：存档比仓库根目录**深两层**（`history/<folder>/`），所以 HTML 引用项目资源要 `../../`（HTML 与 `src`/`href`/inline `url()` 全部统一加前缀）；CSS 副本又在 `css/` 下**深三层**，已把 `css/styles.css` **文件内 101 处** `url(../assets|images|fonts/…)` 统一改成 `url(../../../…)`。项目自身的 `css/styles.css` 与 `index.html` **一个字节都没动**。
+  3. **图片/字体零复制**：`liam-bday-2026-rect.png`、`-square.png`、hero、板块封面、以及 84 条 CSS 内部 `url()`（含自托管 `assets/fonts/**`）全部指向项目原件；顺带修好了存档页里 3 个必然 404 的 JS 引用，**中英切换（translate.js）与 retinafy 高清背景现在都能正常工作**。
+  4. **历史发现**：`index.html` 里 Liam banner 的交互 JS（`liamCountdown` / `TODAY_OVERRIDE_CHANGED` / `Math.random()` 分支）证明第一版是**带倒计时日期门控**的，验证了 8/23 那条日志的记载，不是凭空推断。
+  5. **文档**：新增 `docs/1d-important-dates.md`（总表按"离今天多近"排序 + 生日/专辑/节点分类 + 卡片优先级 + 来源），并写了可跑的 `tools/important_dates.py`（`--card` / `--days N` / `--today`）。
+- **验证**：① **Playwright + Chrome，DPR=2**：修复前 21 个请求失败 → 修复后 **38 请求全 200 / 失败 0**（live 首页基线 41 请求全 200，无新增断链）。② 面板计算样式实测：`bg rgb(255,255,255)`、`Playfair Display`、年份 `letter-spacing` 比值 **0.40000**（= CSS 的 `.4em`），**Liam 图 naturalWidth 2400×1200 / 1200×1200 真实解码**，项目字体 `Cousine/Oswald/Playfair Display/Source Code Pro/Source Sans Pro/Vampiro One/icomoon` 全部 loaded，中文模式 `Noto Serif SC` 生效且 `.en` 隐藏、`.zh` 显示。③ 静态：存档页 div 94/94、en/zh 49/49 配对。④ 全站图片审计 **776 refs / Broken: 0**。⑤ 存档页关键链接 HTTP 全 200（含 Fan Art 相册与字体 woff2）。
+- **Token 消耗**：约 18 万（主会话）
+- **用时**：实测约 9 分钟（20:50 → 20:59；纯执行，不含与作者确认日期口径的问答）
+- **经验总结**：① **"把文件挪进子目录"等于给里面每条相对路径换了一次基准**：HTML 位于 depth 2 用 `../../`，CSS 位于 depth 3 用 `../../../`；同一份 `styles.css` 从 `css/` 搬到 `history/<folder>/css/` 后，它内部相对**自身**的 `../assets/fonts/**` 会静默指向 `history/`（不报错、只是字体悄悄丢失），必须连 CSS 内部一起改。② **不要用"读一次改一次"的叠加式 replace**：我先用 `url(../x)` → `url(../../x)` 又跑了一遍，结果叠加成 `../../../../`；正确做法是**幂等归一化**（`re.sub(r'^(?:\.\./)+', '', p)` 再统一加前缀），一次到位。③ 路径正确性**必须用真实文件系统/HTTP 逐条 resolve**，不能只看"脚本没报错"（RULES §8.1 第 3 条）。④ `docs/` 与 `tools/` 都在 `.assetsignore` 里，所以日期文档与脚本不会上线，可放心写内部信息。
+- **遗留/待办**：① **本次未 `git add`**：`history/`、`docs/1d-important-dates.md`、`tools/important_dates.py` 均未跟踪 —— 推送前必须 `git add`（RULES §4.3）。② `css/styles.css` 里另有 **12 条项目自带的失效引用**（`.woff`/`.eot` 兜底格式 + `images/gfx/filmstrip.html`），**项目原文件同样失效**、现代浏览器只取 `.woff2`，非本次引入，未处理。③ 存档不含 JS 副本（已改为引用项目 `js/`），若日后要"能独立拎出去"需再复制 js + 资源。④ 重要日期表里"X Factor 决赛日"标了未核实，做卡片前需再查。
+- **顺手发现（与本任务无关，仅提示）**：任务进行中 `AGENTS/LOG.md` 顶部新增了一条「Niall 生日 panel 第三版」日志，`tools/archive/` 也多出 `_qa_niall_bday_stickers_v4.js` —— 说明作者/另一会话正在并行推进 Niall 第三版，本条目未触碰那部分改动。
+- **追加（作者反馈"存档里的字体和我原本的不一样"）**：查证结论是**存档页字体正确、无可复现的差异**，四路证据：① 19 个 `@font-face` 与 9 个家族名、以及各家族的 `src` 与 weight，与项目当前 CSS **逐条相同**（只有我加的路径前缀不同），证明改写是无损的（把 `../../../` 还原成 `../` 后与 `e075108` 的 CSS **逐字节相同**）。② Playwright 实测两个页面加载的字体族**完全一致**（Playfair Display / Cousine / Source Code Pro / Oswald / Source Sans Pro / Vampiro One / icomoon），FontFace 请求同为 7 个同样的 Google Fonts URL。③ 拿**项目当前 CSS** 渲染同一份存档标记做像素对比，截图 **SHA-256 完全相同**（`5874ed16…`），标题计算样式同为 `Playfair Display / 57.6px / 700`。④ **`file://` 直接双击也不会坏字体**：`file://` 下 `document.styleSheets[].cssRules` 报 BLOCKED 只是 JS 跨源限制（样式依然生效），真正的差异是 `retinafy` 的 XHR 被跨源拦截 → 高清图退回普通清晰度，**字体与样式不变**。已据此改正 README 里"双击打开会 404"的旧说法。两张对比截图 `tools/_qa_screenshots/liam-archive/1-via-server.png`、`2-via-file-protocol.png`。**教训：字体"看起来不同"要先排除感知差异与查看方式（file:// / 缓存 / 缩放），再用 FontFace 清单 + 像素级 hash 下结论。**
+- **追加（作者要求精简日期文档）**：`docs/1d-important-dates.md` 按"只要一个表格 / 只收能确认到具体日期的 / 不要倒计时"重写为 **17 行单表**（5 个成员生日 + 成团日 7/23 + X 决赛 12/12 + 5 张专辑发行日 + This Is Us 首映 8/20 + Zayn 离团 3/25 + 休团公告 8/25 + 十周年 7/23 + Liam 逝世 10/16）。**Where We Are 演唱会电影**等内容因只能确认到月份或年份而未收录（作者规则：只列能确认详细日期的）。脚本 `tools/important_dates.py` 同步成同一批 17 条并新增 `--birthdays`，已用集合比对证明 MD 与脚本**无一条出入**。
+
+
+## 2026-09-14 — Niall 生日 panel 第三版：贴纸图层化 + 点击交互，并修掉 4 个交互 bug
+
+- **模型**：deepseek-v4-flash
+- **目的**：作者把生日图**按图层拆成 5 个同尺寸透明 PNG**（背景国旗 + 主人物 + 3 张小贴纸），要求① 直接叠回原位；② 每张贴纸的点击范围只在它自己身上；③ 点空白处冒 emoji、点贴纸只让贴纸动；④ emoji 图层要在所有图层之上。随后连续三轮反馈：小贴纸动画太夸张 / 大贴纸 hover 的方形阴影很诡异 / hover 时点击会在归位瞬间"缩小又突然放大" / 出现方形框框 / 连点动画重复且完不成 / main 的点击范围太广。
+- **结果**：
+  1. **图层落地**：5 个文件统一按**同一个裁切框**（1201×1214 上下各去 7px）规范化到 1200×1200 存入 `images/gfx/niall-bday-2026/`（`bg/main/sticker-top/sticker-left/sticker-right.png`），附带 `README.md` 说明"这是一个整体、六件套必须一起换"。`bg.png` 原导出画布 98.9% 半透明，已压白底不透明。
+  2. **交互结构**：`.niall-photo-panel` 内 5 层绝对定位（bg → main z3 → 小贴纸 z4 → emoji 层 **z6 最顶**），每层 `left:0;top:0` 满格叠放，保证位置 1:1 不缩放。
+  3. **命中判定（关键决策）**：改用 **JS 读 PNG alpha 通道**（离屏 canvas 150×150 采样，`alpha>24` 算命中）。见 M62 —— CSS 三条路线全部失败。命中区域精确等于贴纸轮廓。
+  4. **动画**：小贴纸 `niall-wiggle`（±6.5deg 轻摆两下，作者反馈原 ±14deg 太夸张）、主人物 `niall-pulse`（1.04 倍）。
+  5. **hover 与动画分层（修衔接跳变）**：外层 `button` 只做 hover 缩放（`--hover-scale` 变量驱动），内层 `img` 只做动画，两个 transform 相乘；keyframes 首尾统一为 `rotate(0) scale(1)`。修掉"动画结束缩回 1 再弹回 hover 值"的跳变（原两者争同一个 transform）。
+  6. **去掉方形阴影**：`drop-shadow` 按元素盒子计算，按钮满格 1200×1200 所以阴影是方的；作者明确不要阴影，主人物 hover 改为 `--hover-scale:1.03`。去掉 `outline` 焦点环（同样呈方形），键盘焦点改用轻微放大（M63）。
+  7. **emoji 规则**：一次点击**只用一种** emoji、两种**严格交替**（🧡 → 🇮🇪 → 🧡…，`emojiTurn` 计数器）、数量收敛到 3–5 颗；点贴纸不冒 emoji。
+  8. 4 个新坑写入 `METHODS.md`（M62–M65）。
+- **验证**：三套 Playwright 套件全绿 —— **命中/交互 11/11**、**完整回归 18/18**、**hover 衔接 6/6**。关键数字：4 张贴纸实体点击均只触发自身动画且 emoji 新增 0；6 个实测 alpha=0 的空白点全部穿透冒 emoji；hover 全程有效缩放最大跳变 0.005（小贴纸）/ 0.034（主人物）且结束回到 1.045/1.03（不缩回 1）；连点 3 次后动画进度 183ms 且动画数=1；贴纸实体占自身矩形面积 main 43% / 小贴纸 2%（说明命中区确实贴合轮廓）；`_audit_site_images.py` **776 refs / Broken: 0**。
+- **Token 消耗**：约 30 万（主会话，本轮明显偏高 —— 大量消耗在反复试错 CSS 裁剪方案与调试自写的轮廓追踪算法上）
+- **用时**：约 1 小时 40 分（20:24 → 约 22:05）
+- **经验总结**：① **不要把"作者的反馈"当成需求变更，先怀疑自己的实现**：三轮反馈里"位置全错"其实是我把 PNG 压进了小框、"方形框"是我自己加的 outline、"连点重复"是我没取消的 setTimeout —— 只有"动画太夸张""阴影诡异"是纯审美。② **CSS 裁剪不可依赖**：mask 不裁命中、clip-path 外部引用/data URI 都可能静默失效，**用 `elementFromPoint` 扫一圈就能识别"裁剪没生效"**（恒返回同一元素），别靠肉眼。③ **精确的不规则命中直接用 alpha 判定**，不要再和 CSS 特性死磕。④ **重复触发的动画，兜底定时器必须按元素保管并先清后设**（M64），验证要看 `getAnimations()` 的真实进度而不是"类在不在"。⑤ 共享前缀的类名别用 `--(\w+)` 宽松捕获（M65）。
+- **遗留/待办**：① **emoji 图层仍是烧在 `bg.png` 里的**，作者未单独导出，所以那 6 个 emoji 本身还不可点击；若要交互需按同规格补 6 张透明 PNG。② Niall 生日粉丝创作相册仍未建（作者选择 panel 纯展示）。③ `?v=` 仍只在 `index.html` bump 到 `20260914a`。④ **新增资源均未 `git add`**：`images/gfx/niall-bday-2026/`（6 文件）为未跟踪目录，推送前必须 `git add`，否则线上 404。
+
+
+## 2026-09-14 — Niall 生日 panel 第二版：换上作者的生日图、改文案、爱心改橙色 emoji 与国旗随机交替
+
+- **模型**：deepseek-v4-flash
+- **目的**：作者做出生日图并更新了 Niall 的 Gallery 封面，要求 ① 用新图；② 文案改成「Happy Birthday Captain Niall!」/「奶儿船长生日快乐！」；③ **修爱心动画**——反馈「为什么是两个爱心连在一起」「发射的动画太奇怪、不温馨」；④ 爱心改**橙色**、可爱一点；⑤ 橙色爱心 emoji 与爱尔兰国旗 emoji **随机交替**发送。
+- **结果**：
+  1. **生日图落地**：`images/gfx/niall-bday-2026-square.png`（1200×1200）。作者随后要求「还是裁剪一下改成 1200x1200」——源图 `niall-33-birthday-general.png` 实为 **1201×1214**（PSD 画布也是 1201×1214，不是导出设置问题，是文档画布本身被某个越界图层撑大了），裁掉上 7px / 下 7px / 右 1px 的画布留白。原 RGB 图不是抠像，**爱尔兰国旗与 emoji 都做在图里**，因此删除了原先的 `.niall-flag` 三色渐变（再叠会与图打架）。
+  2. **Gallery 封面**：核对确认作者**已经自己换好**（`gallery-members-niall-cover-{rect-lrg,square-lrg}.png` 都已是新版三色 green/黑-白/orange，`gallery-members-niall-cover-square-lrg.psd` 同步更新），类名未变、全部引用自动生效 —— **无需改动**。
+  3. **文案**：`Happy Birthday<br>Captain Niall!` / `奶儿船长生日快乐！`（作者原文即「奶儿船长」）。
+  4. **修双爱心（M59）**：`.icon-heart:before{content:"\e60e"}` 是图标字体的伪元素用法，我又写了 `textContent` 塞同一码点 → **伪元素一颗 + 文本节点一颗**并排。改为 emoji + `textContent` 并**移除 `.icon-heart` 类**，双心消失。
+  5. **动画重做**：从「从中心向外放射」（角度 -118°~-62°、距离 60~168px、0.035s 递增延迟）改为**温馨上浮**——横向仅 ±26px 落点抖动 + 上升 80~170px + 轻微左右漂移 ±34px + 旋转 ±16°，时长 1.7~2.4s、延迟 0.06s 递增，并加了 16% 处 1.12 倍的「弹一下」。`transform` 顺序修正为 `translate() rotate()`。
+  6. **橙色 + 随机交替**：`EMOJI = ['🧡','🇮🇪']`，`pick()` 等概率随机；字体栈换成 `"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji","Twemoji Mozilla"`；橙色光晕 `drop-shadow(0 1px 4px rgba(224,118,31,.3))`；左侧提示文字红 `#c0392b` → 橙 `#e0761f`。常驻飘心两格各 5 颗（原先只有右格 6 颗），不透明度 0.16~0.36 提到 0.45~0.8。
+  7. **右格比例（M60）**：改用 `aspect-ratio:1200/1200` + `height:auto` + `padding:0`；`object-fit` 由 `cover` 改 `contain`（作者明确要求不要裁图）。
+  8. 两个新坑写进 `METHODS.md`（M59 / M60），QA 脚本归档 `tools/archive/_qa_niall_bday_panel_v2.js`。
+- **验证**：① **Playwright + Chrome，26/26 通过**：文案、emoji 混合（🧡/🇮🇪 两值都出现）、**每元素 grapheme 数=1**（双心消失）、emoji 字体栈、右格 1:1、图 1200×1200 完整加载、点击迸发 8 颗、**轨迹净位移 平均上升 116px / 平均横漂 16px**、动画后节点清理为 0、标题 2 行且与底部文案间距 224px、中文模式、移动端堆叠、无 JS 报错。② **四个断点几何**：1440/1024/768 下左右格并排等高（720/512/384），390 下堆叠（390×390），**全部零横向溢出**。③ `_audit_site_images.py` **772 refs / Broken: 0**。
+- **追加（作者反馈）**：中文大标题偏小 —— `.niall-headline .zh` 字号 `52%` → **`68%`**（桌面实测 28px → 37px，手机 18px → 23px），并微调 `letter-spacing .06em→.05em`、`margin-top .55em→.5em`、`line-height 1.3→1.28`。验证：桌面/手机中文均单行不换行、标题与底部文案间距 247px / 121px（不重叠）、底部文案距格底 65px / 43px，英文模式无回归（仍 2 行、间距 224px），**11/11 通过**。
+- **Token 消耗**：约 12 万（主会话）
+- **用时**：实测约 45 分钟（19:50 → 20:26，含中途为「不要裁我的图片」还原原图、以及作者要求改回 1200×1200 的往返）
+- **经验总结**：① **不要擅自处理作者的素材**：我为了凑正方形裁了 6px 留白，虽未碰到人物，但被明确制止——正确做法是先说明差异并征询，而不是先动手。② **图标字体的伪元素与文本只能二选一**（M59）。③ **浮动元素的百分比 padding 按包含块宽度解析**，桌面下正好差两倍、移动端却不复现，是只在桌面暴露的 bug（M60）。④ **瞬时包络不能判定动画方向**：8 个 emoji 时长各异又有递增延迟，同一瞬间处在不同阶段；要跟踪**同批元素的净位移**才能证明「在上浮」。
+- **遗留/待办**：① 生日图是 RGB 非抠像，国旗/emoji 已做在图内；若之后想让人物"浮"在纯色底上需要重新导出透明抠像。② 作者已选「panel 先不做链接，纯展示」，**Niall 生日粉丝创作相册仍未建**。③ `?v=` 仍只在 `index.html` bump 到 `20260914a`。④ **本次未 `git add`**：`images/gfx/niall-bday-2026-square.png` 为新增未跟踪文件 —— **推送前必须 `git add`，否则线上 404**（RULES §4.3）；`history/`、`AGENTS/METHODS.md`、`AGENTS/LOG.md`、两版 QA 脚本亦未跟踪/已修改。
+
+
+## 2026-09-14 — 首页 Liam 生日 panel 换成 Niall 双方格生日 panel（船长主题 + 心形动效）
+
+- **模型**：deepseek-v4-flash
+- **目的**：Liam 生日（8/29）已过，Niall 生日（9/13，2026 年满 33 岁）接手。作者要求 ① 先给首页存档；② 把 Liam panel 换成 Niall 生日祝福，但**先一起设计再动手**。设计中作者提出把原来的横向长方 panel 改成**两个正方形 panel 并排**（一格文字 + Instagram 式心形效果，一格图片），图片背景用**爱尔兰国旗**（Niall 是唯一爱尔兰成员），文案用「船长」梗（他是 Harry Styles 和 Louis Tomlinson 的船长），**明确要彩色、不要沿用 Liam 的黑白**。
+- **结果**：
+  1. **存档**：`history/index-2026-09-11-liam-33rd-birthday.html`（原首页 602 行逐字副本，未改动）。
+  2. **结构**：Liam 的单个 `liam-bday-panel` 整块替换为 `.panel-group.niall-bday-group` + 两个正方形 `.panel`：左格 `niall-panel`（文字 + 心形层），右格 `niall-photo-panel`（CSS 三色渐变 + `<img>.niall-photo` + 心形层）。并排靠既有 `.panel-group .panel{width:50%;float:left}`，767px 以下自动堆叠 —— **新布局零发明**。
+  3. **文案**（双语）：头部 `13th September 1993 / BIRTHDAY 生日纪念`；大标题 `Happy Birthday, Captain!` / `船长，生日快乐！`；副标题 `It's the captain's birthday.` / `今天是船长的生日。`；提示 `TAP ANYWHERE FOR HEARTS`（红） / `点一下，冒颗心`；日期行 `13 · 09 · 1993`。**没有沿用 Liam 的 `1993 — 2024`**（那是悼念语义，不能套在在世成员身上）。
+  4. **心形效果**：两格都可点，点击处迸发 7–11 颗 `icon-heart`（向外散开 + 旋转 + 淡出，1.35s，`animationend` + 2.6s 双保险清理节点）；右格常驻 6 颗极缓上浮心（9–18s）。共约 40 行原生 JS + 2 组 keyframes，无第三方库。`prefers-reduced-motion` 下关闭常驻飘心。
+  5. **爱尔兰国旗**：`linear-gradient(to right, ...)` 三色竖带（降饱和处理 `#5e8f73` / `#fbfaf6` / `#d98f63`，避免与原旗饱和色和页面奶白调性打架）。**故意不加 `retinafy` 类** —— `retinafy_replace()` 只处理背景图片 URL，纯 CSS 渐变会被它清掉。
+  6. **CSS**：`styles.css` 末尾追加 `/* Niall Horan birthday panel (2026-09-14) */` 段，**Liam 的全部规则原样保留**（明年 8/29 换回只需改 HTML）。`index.html` 的 `?v=` bump 到 `20260914a`。
+  7. 三个新坑写进 `METHODS.md`（M56 / M57 / M58），QA 脚本归档到 `tools/archive/_qa_niall_bday_panel.js`。
+- **验证**：① 静态：div 97/97 配对、en/zh 5/5 配对、CSS 括号 1227/1227、`index.html` 内 Liam 残留 0 处、全部 niall-* 新 class 在 CSS/HTML 中占用数预检为 0。② 字体：**解码 styles.css 内嵌的 icomoon base64 TTF，确认 `U+E60E`（icon-heart）真实存在**（27 个字形），不靠猜。③ 资源：`_audit_site_images.py` **772 refs / Broken: 0**；index/styles.css/人物图/JS 全 200。④ 视觉+几何（Playwright + Chrome，DPR=2，**27/27 通过**）：桌面两格各 720×720 且间隙 0、移动端堆叠后各 390×390 正方形、国旗渐变未被 retinafy 清掉、人物图 z-index 在国旗之上、点击迸发 7–9 颗心、**心形散开 68×75px**（证明不是只上飘）、动画结束后节点清理为 0、中文模式标题与副标题正确、无 JS 报错。⑤ 后续 panel 未被挤压：紧跟其后的 panel `top` 恰等于 group 的 `bottom`。
+- **Token 消耗**：约 18 万（主会话；无后台 agent）
+- **用时**：实测 11 分 42 秒（19:34:13 存档 → 19:45:55；纯编码+验证，不含与作者往返确认设计方案的问答时间）
+- **经验总结**：① **"元素不可见"的报错要当真 bug 排查**：Playwright 报不可见时我先怀疑截图方式，实际是 `.panel-group` 的 BFC 被我覆盖掉、group 高度塌成 0（M56）。② **复用组件类前先读它为什么存在**：正方形格子套 `.journal-article`（长文正文，`height:auto`）导致桌面/移动各打一场覆盖战，移动端还打输了；去掉那个类反而 CSS 更短、两断点天然成立（M57）。③ **CSS 自定义属性不能用 jQuery `.css()` 写**：静默丢弃、`@keyframes` 退回兜底值，表现为"动画能跑但参数全是默认值"——无报错、静态检查与图片审计全绿，**只有断言几何量（散开宽度 11px → 68px）才能发现**（M58）。
+- **遗留/待办**：① **右格图片是临时占位**：现用 `gallery-members-niall-dinner-table-cover-square-lrg.png`（黑白），它不透明，把爱尔兰国旗**完全盖住**——要看到国旗必须换成**透明底抠像**（作者接下来自己做，规格：PNG 透明底、1600×1600、人物略偏下、头部在上 1/3 内、保留彩色）。换图只需替换文件或改 `<img src>`，HTML/CSS 不用动。② 国旗配色目前是**我按降饱和方案定的**（作者当时未明确选择），实物图出来后可能要按人物色调再调一次。③ 作者已选「panel 先不做链接，纯展示」，**没有新建 Niall 生日粉丝创作相册**；若之后要补，参考 Liam 的 `happy-liams-33rd-birthday.html` 结构 + `fan-art/index.html` 加卡片。④ **`?v=` 只在 `index.html` bump 到 `20260914a`**，其余页面仍是 `20260911g`——本次新增规则只作用于首页，其他页面无需重下 CSS；若后续要统一版本号，记得同步 4 个 builder 里的版本常量（见上一条日志）。⑤ 本次未 `git add`：`history/`、`index.html`、`css/styles.css`、`AGENTS/METHODS.md`、`AGENTS/LOG.md`、QA 脚本与截图均为未跟踪/已修改状态。
+
+
 ## 2026-09-11 — 新建三个成员 Gallery 相册（Niall / Louis with Liam / Teen Zayn）+ 补 niall・liam・zayn 成员页
 
 - **模型**：deepseek-v4-flash
