@@ -455,3 +455,16 @@
 - **处理**：**拆成两套互不干扰的 handler**：左格（`.niall-panel`）直接冒 emoji；右格（`.niall-photo-panel`）先 `hitTest()`（遍历所有贴纸、按坐标查 alpha 找出"该点不透明的那一张"）再决定。同时把误改的右格命中函数**从已推送的提交里原样取回**（`git show <commit>:index.html`），不凭记忆重写。
 - **验证**：右格 11/11（4 张贴纸实体各触发自身动画且 emoji=0、6 个 alpha=0 空白点全部穿透冒 emoji）、左格 6/6、完整回归 18/18、hover 衔接 6/6、中文排版 16/16。
 - **预防**：① **满格叠放 + 透明区域命中**的场景，命中判定必须查"哪一层在该点不透明"，不能信 `ev.target`；判断法：`document.elementFromPoint()` 在多个位置返回同一个元素，就说明该元素铺满了整个区域，`target` 不可用。② **两个区域需求不同就写两套 handler**，不要为了"统一"去改共用函数 —— 共用逻辑改动的爆炸半径会同时波及两边，导致修 A 坏 B 的反复。③ 把已推送的正常实现改坏时，**先用 `git show <commit>:<file>` 取回原版**再动手，比凭记忆重写安全得多。
+
+---
+
+## 附：本机 / 本环境的已知坑（原 HANDOFF.md 独有内容，2026-09-14 并入）
+
+> 这几条不属于"某次踩坑"，而是**每次开工都相关的环境事实**，顺手记在这里避免随交接文档一起丢失。
+
+- **`python` 不存在，只有 `python3`**。文档里的 `python xxx.py` 一律按 `python3` 跑。需要 Pillow / 图像处理时用仓库自带虚拟环境：`.venv/bin/python`（系统 python3 没有 Pillow）。
+- **bash 沙箱会虚拟化 `/tmp` 写入**：`curl -o /tmp/x` 可能"静默不落盘"（后续 `[ -f /tmp/x ]` 判定失败），但 `/dev/null` 与 `python3 - <<EOF` 正常。**要落文件就写进仓库内**，或改用管道。曾因此误判过两次验证结果。
+- **`web_fetch` 打不开的部分站点**：`wikipedia.org`（含 `en.m` / `simple`）、`britannica.com`、`abc.net.au`、`legacyrecordings.com`（403）。绕法：bash 走 **Wikimedia REST API** —— `curl -s "https://api.wikimedia.org/core/v1/wikipedia/en/page/<标题>"` 取 `source`（wikitext）再用正则提日期；`last.fm` 的 `/+wiki` 页可正常 fetch，适合查生日/出生地。
+- **Playwright 固定用法**：`NODE_PATH=$(npm root -g) node script.js`，且必须 `chromium.launch({ channel: 'chrome' })`（本机已装 Chrome，无需下载 headless shell）。脚本结尾要 `await browser.close(); process.exit(0)`，否则命令挂起。
+- **截图坐标铁律**：`page.screenshot({ fullPage: true, clip })` 在 **DPR=2 下会多出黑色填充带**，且 `boundingBox()` 是视口相对坐标 —— 必须补 `scrollX/scrollY`，且**用 DPR=1 截图**才能得到与 clip 一致的尺寸（M59 相关）。
+- **字体问题先要求复现**：存档/克隆页"字体不一样"的反馈已查证过一次，结论是**无差异**（字体文件逐条相同、两页 FontFace 请求一致、用同一份 CSS 渲染的截图 SHA-256 完全相同）。`file://` 下 `document.styleSheets[].cssRules` 报 BLOCKED 只是 JS 跨源限制，**样式依然生效**；真正的差异是 `retinafy` 走 XHR 被拦、高清图退回普通清晰度，**字体不受影响**。再遇到同类反馈：**先要截图 + 打开方式（双击 / localhost:8000 / 线上域名）+ 浏览器缩放，不要在没有复现的情况下"顺手修字体"。**
