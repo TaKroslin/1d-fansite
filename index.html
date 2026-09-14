@@ -782,21 +782,35 @@
       if (t) { window.clearTimeout(t); popTimers.delete(btn); }
     });
 
+    // 指针反馈只对图片格（左格没有贴纸，不需要指针态判定）
     $('.niall-photo-panel')
       .on('pointermove', function (ev) { refreshHover(ev); })
       .on('pointerleave', function () {
         if (hovered) hovered.classList.remove('is-on-sticker');
         hovered = null;
-      })
-      .on('click', function (ev) {
-        var btn = hitTest(ev);
-        if (btn) { pop(btn, popName(btn)); return; }
-        // 点在空白（含贴纸的透明角落）-> 冒 emoji
-        var $layer = $(this).find('.niall-hearts').first();
-        if (!$layer.length) return;
-        var o = $layer.offset();
-        burst($layer, ev.pageX - o.left, ev.pageY - o.top);
       });
+
+    // ---- 点击：两格各用一套独立逻辑 ----
+    // 左格（文字格）没有贴纸，点任何位置都冒 emoji —— 独立绑定，逻辑最简。
+    $('.niall-panel').on('click', function (ev) {
+      var $layer = $(this).find('.niall-hearts').first();
+      if (!$layer.length) return;
+      var o = $layer.offset();
+      burst($layer, ev.pageX - o.left, ev.pageY - o.top);
+    });
+
+    // 右格（图片格）：先做贴纸命中判定，踩在贴纸上只让贴纸动；否则冒 emoji。
+    // 提示：命中判定是在**所有**贴纸上按坐标找"哪张在该点不透明"（不是看 ev.target）。
+    // 四个按钮都是满格 1200x1200 叠放（图片才能按原位置 1:1 摆放），
+    // 指针永远会被最后一个满格按钮接住，用 ev.target 判定会让贴纸整体失效。
+    $('.niall-photo-panel').on('click', function (ev) {
+      var btn = hitTest(ev);
+      if (btn) { pop(btn, popName(btn)); return; }
+      var $layer = $(this).find('.niall-hearts').first();
+      if (!$layer.length) return;
+      var o = $layer.offset();
+      burst($layer, ev.pageX - o.left, ev.pageY - o.top);
+    });
 
     // 键盘可达：Tab 聚焦后回车/空格
     $(document).on('keydown', '.niall-figure', function (e) {
