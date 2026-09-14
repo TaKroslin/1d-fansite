@@ -468,3 +468,15 @@
 - **Playwright 固定用法**：`NODE_PATH=$(npm root -g) node script.js`，且必须 `chromium.launch({ channel: 'chrome' })`（本机已装 Chrome，无需下载 headless shell）。脚本结尾要 `await browser.close(); process.exit(0)`，否则命令挂起。
 - **截图坐标铁律**：`page.screenshot({ fullPage: true, clip })` 在 **DPR=2 下会多出黑色填充带**，且 `boundingBox()` 是视口相对坐标 —— 必须补 `scrollX/scrollY`，且**用 DPR=1 截图**才能得到与 clip 一致的尺寸（M59 相关）。
 - **字体问题先要求复现**：存档/克隆页"字体不一样"的反馈已查证过一次，结论是**无差异**（字体文件逐条相同、两页 FontFace 请求一致、用同一份 CSS 渲染的截图 SHA-256 完全相同）。`file://` 下 `document.styleSheets[].cssRules` 报 BLOCKED 只是 JS 跨源限制，**样式依然生效**；真正的差异是 `retinafy` 走 XHR 被拦、高清图退回普通清晰度，**字体不受影响**。再遇到同类反馈：**先要截图 + 打开方式（双击 / localhost:8000 / 线上域名）+ 浏览器缩放，不要在没有复现的情况下"顺手修字体"。**
+
+### M67. 满格按钮 + 移动端默认点击高亮 = 整张卡片闪一下
+- **现象**：桌面端一切正常，但在移动端用触屏点击贴纸/卡片时，**整张卡片会闪一下**。
+- **根因**：移动浏览器的默认点击高亮 `-webkit-tap-highlight-color`（Chrome 计算值为 `rgba(51,181,229,0.4)`，Safari 类似）。四张贴纸按钮都是 **满格 1200×1200 叠放**（图片才能按原位置 1:1 摆放），高亮层于是一次铺满整个按钮盒 —— 视觉上就是"整卡一闪"。
+- **为什么之前没发现**：此前所有验证都是"390px 视口 + **鼠标**事件"，从没用过真实触摸事件。**视口宽度对了不等于移动端验证过了** —— 触摸路径、点击高亮、`:active` 表现都不是鼠标路径能覆盖的。用 Playwright 复现要显式开 `isMobile: true, hasTouch: true` 并调 `page.touchscreen.tap()`。
+- **处理**：新增**触屏专用适配层**（全部包在 `@media (hover:none),(pointer:coarse)` 里，桌面零影响）：
+  - `-webkit-tap-highlight-color: transparent`（贴纸按钮与两格面板）
+  - `touch-action: manipulation`（去掉 300ms 点击延迟与双击缩放判定带来的抖动）
+  - `:active{--hover-scale:1}`（触屏没有 hover，"按下就缩小"只会多一次重绘）
+  另外加**触屏专用 JS 路径**：几何量（按钮矩形）在触摸序列内不变，故首次接触时量一次并缓存（`figGeom()` + `pointerdown` 失效），避免每次点击都做 `getBoundingClientRect()`；触屏下也**跳过强制 reflow**（`void el.offsetWidth`）。
+- **验证**：Playwright 触屏套件 **17/17**（tap-highlight 计算值 `rgba(0, 0, 0, 0)`、touch-action=manipulation、四张贴纸实体触摸各触发自身动画且 emoji=0、空白触摸冒 emoji、左格触摸冒 emoji、连点 3 次动画仍正常）+ 桌面回归 **5/5 未被影响**（桌面 tap-highlight 仍是默认 `rgba(0,0,0,0.18)`、touch-action=auto、`pointer:coarse` 不命中）。
+- **预防**：① **移动端适配必须用真实触摸事件验证**，改视口宽度不算。② 满格叠放的可点区域一定要关 `-webkit-tap-highlight-color`，否则高亮会铺满整块。③ 加媒体查询适配层时**把整段包在 `(hover:none),(pointer:coarse)` 里**，桌面行为一条都不动 —— 这也是作者明确要求的"用新的一套逻辑，不要改原有的东西"。

@@ -83,7 +83,7 @@
 
 	<link href="//fonts.googleapis.com/css?family=Playfair+Display:700|Codystar|Cousine:400,700|Source+Code+Pro:300,400,500,600,700|Source+Sans+Pro:400|Oswald:400,700|Vampiro+One|Six+Caps&display=swap" rel="stylesheet" type="text/css" />
 
-	<link href="css/styles.css?v=20260914a" rel="stylesheet" type="text/css" />
+	<link href="css/styles.css?v=20260914b" rel="stylesheet" type="text/css" />
 
 </head>
 
@@ -757,10 +757,50 @@
     // 从不取消，连点时**前一次的定时器会把后一次正在播的动画类摘掉**，动画被腰斩，
     // 表现就是"连点会重复、动画完不成"。
     var popTimers = new WeakMap();
-    function pop(el, cls) {
+    // ---- 触屏专用：几何缓存 ----
+    // 触摸期间按钮尺寸/位置不会变，没必要每次点击都做 getBoundingClientRect()
+    // （触摸中反复触发布局计算会让合成器掉帧，表现为画面闪一下）。
+    // 只在 pointerType=touch 时用到；桌面路径完全不走这里。
+    var geomCache = null;
+    function figGeom() {
+      if (geomCache) return geomCache;
+      var out = [];
+      $('.niall-figure').each(function () {
+        var name = (this.className.match(/niall-figure--(main|top|left|right)\b/) || [])[1];
+        if (!name) return;
+        var r = this.getBoundingClientRect();
+        out.push({ name: name, el: this, left: r.left, top: r.top, w: r.width, h: r.height });
+      });
+      geomCache = out;
+      return out;
+    }
+    function hitTestTouch(ev) {
+      var gs = figGeom();
+      for (var i = 0; i < gs.length; i++) {
+        var g = gs[i], hd = hitData[g.name];
+        if (ev.clientX < g.left || ev.clientX > g.left + g.w ||
+            ev.clientY < g.top || ev.clientY > g.top + g.h) continue;
+        if (!hd) return g.el;
+        var px = Math.floor((ev.clientX - g.left) / g.w * ALPHA_N);
+        var py = Math.floor((ev.clientY - g.top) / g.h * ALPHA_N);
+        px = Math.max(0, Math.min(ALPHA_N - 1, px));
+        py = Math.max(0, Math.min(ALPHA_N - 1, py));
+        if (hd.data[(py * ALPHA_N + px) * 4 + 3] > HIT_THRESHOLD) return g.el;
+      }
+      return null;
+    }
+    function invalidateGeom() { geomCache = null; }
+    $(document).on('pointerdown', function (ev) {
+      if (ev.pointerType === 'touch') invalidateGeom();
+    });
+    $(window).on('resize orientationchange', invalidateGeom);
+
+    function pop(el, cls, isTouch) {
       var other = cls === 'is-pulse' ? 'is-wiggle' : 'is-pulse';
       el.classList.remove(cls, other);
-      void el.offsetWidth;               // 强制 reflow，让动画能重新开始
+      // 强制 reflow 是为了让动画从头重放；但触屏下这步带来一次同步布局计算，
+      // 移动端表现为掉帧/闪一下。触屏路径去掉它，改为摘类后再挂回。
+      if (!isTouch) void el.offsetWidth;
       el.classList.add(cls);
       var prev = popTimers.get(el);
       if (prev) window.clearTimeout(prev);
@@ -804,8 +844,10 @@
     // 四个按钮都是满格 1200x1200 叠放（图片才能按原位置 1:1 摆放），
     // 指针永远会被最后一个满格按钮接住，用 ev.target 判定会让贴纸整体失效。
     $('.niall-photo-panel').on('click', function (ev) {
-      var btn = hitTest(ev);
-      if (btn) { pop(btn, popName(btn)); return; }
+      var oe = ev.originalEvent || {};
+      var isTouch = oe.pointerType === 'touch' || (oe.sourceCapabilities && oe.sourceCapabilities.firesTouchEvents === true);
+      var btn = isTouch ? hitTestTouch(ev) : hitTest(ev);
+      if (btn) { pop(btn, popName(btn), isTouch); return; }
       var $layer = $(this).find('.niall-hearts').first();
       if (!$layer.length) return;
       var o = $layer.offset();
@@ -814,7 +856,7 @@
 
     // 键盘可达：Tab 聚焦后回车/空格
     $(document).on('keydown', '.niall-figure', function (e) {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pop(this, popName(this)); }
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pop(this, popName(this), false); }
     });
 
     buildHitData();

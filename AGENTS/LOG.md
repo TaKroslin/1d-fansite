@@ -1,5 +1,21 @@
 # 1D Fansite — 开发日志（LOG）
 
+## 2026-09-14 — 移动端触屏适配：修掉点击时整张卡片闪一下
+
+- **模型**：deepseek-v4-flash
+- **目的**：作者发现「点击没有给移动端做适配，移动端触屏点击那些元素时整个卡片会闪一下」，并要求「不要改原有的东西，用新的一套逻辑，在移动端显示时做适配」。
+- **结果**：
+  1. **根因**：移动浏览器默认点击高亮 `-webkit-tap-highlight-color`（Chrome 计算值 `rgba(51,181,229,0.4)`）。四张贴纸按钮都是**满格 1200×1200 叠放**，高亮层于是铺满整个按钮盒 → 整卡一闪。
+  2. **为什么此前没发现**：以往验证全是「390px 视口 + 鼠标事件」，**从未用过真实触摸事件**。视口宽度对了不等于移动端验证过了。
+  3. **修法（按作者要求做独立适配层，桌面一行未动）**：新增 `@media (hover:none),(pointer:coarse)` 段 —— `-webkit-tap-highlight-color:transparent`（贴纸按钮 + 两格面板）、`touch-action:manipulation`、`:active{--hover-scale:1}`。另加**触屏专用 JS 路径**：几何量首次接触时量一次并缓存（`figGeom()`，`pointerdown` 时失效），触屏下跳过强制 reflow。
+  4. `?v=` bump `20260914a` → **`20260914b`**。
+  5. `images/gfx/niall-bday-2026/niall-33-birthday-general.png` 是作者放进来的**原始合成图**（与 Downloads 里那份 SHA256 一致），页面不引用它；已在同目录 README 表格里标明它是"参考基准、不是图层"，避免以后被误当第 6 层叠进页面。
+- **验证**：触屏套件 **17/17**（tap-highlight 计算值变 `rgba(0,0,0,0)`、touch-action=manipulation、四张贴纸实体触摸各触发自身动画且 emoji=0、空白触摸冒 emoji、左格触摸冒 emoji、连点 3 次动画仍正常、无 JS 报错）；**桌面回归 5/5 未被影响**（桌面 tap-highlight 仍 `rgba(0,0,0,0.18)`、touch-action=auto、`pointer:coarse` 不命中）；其余套件全绿：右格 11/11、左格 6/6、完整回归 18/18、中文 16/16；`_audit_site_images.py` **776 refs / Broken: 0**。
+- **Token 消耗**：约 10 万（主会话）
+- **用时**：约 35 分钟
+- **经验总结**：① **视口宽度 ≠ 移动端验证**：必须用 `isMobile:true, hasTouch:true` + `page.touchscreen.tap()` 走真实触摸事件，鼠标事件覆盖不到 tap-highlight 与 `:active`。② 满格叠放的可点区域一定关掉 `-webkit-tap-highlight-color`。③ 适配层整段包进 `(hover:none),(pointer:coarse)`，桌面行为一条不动。④ 我前几轮反复"修一边坏一边"的教训在这里用上了：这次的适配与桌面逻辑**完全分离**，一次通过。⑤ 调试时先确认"点击真的落在目标上"再怀疑逻辑 —— 本次三次失败全是我的测试坐标算错（把 720 基准的坐标又乘了一次 390/1200，等于多缩一遍）。
+- **遗留/待办**：① **`ce78641`（删 HANDOFF.md + 并入环境说明）与本次改动均未推送** —— 推送时 GitHub 正好连不上，稍后网络恢复需补推。② 6 个 emoji 仍烧在 `bg.png` 里、不可交互。③ Niall 生日粉丝创作相册仍未建。④ 作者已把原始合成图放进六件套文件夹，已在 README 标注用途。
+
 ## 2026-09-14 — 修复：左格点击不冒 emoji；并把两格交互拆成两套独立逻辑
 
 - **模型**：deepseek-v4-flash

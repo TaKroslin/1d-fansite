@@ -1051,6 +1051,21 @@ font-size:clamp(2.1rem,3.75vw,3.8rem);line-height:1.02;letter-spacing:.01em;colo
   .panel .niall-hint{font-size:70%;letter-spacing:.16em}
   .panel .niall-date{font-size:84%;letter-spacing:.3em}
 }
+/* === 移动端/触屏适配层（触屏专用，不影响桌面指针逻辑）===
+   此前只按桌面鼠标验证过，移动端触屏点击时整张卡片会闪一下。成因是移动浏览器的
+   **默认点击高亮** `-webkit-tap-highlight-color`（Chrome 计算值为 rgba(51,181,229,.4)）：
+   四张贴纸按钮都是满格 1200x1200 叠放，高亮层会铺满整个按钮盒 —— 视觉上就是整卡一闪。
+   另外触屏下 :active 与 hover 反馈都不可靠，故一并关掉，只用动画做反馈。
+   桌面端保持原样：本段全部包在触屏媒体查询里。 */
+@media (hover:none),(pointer:coarse){
+  .niall-figure,.niall-panel,.niall-photo-panel{
+    -webkit-tap-highlight-color:transparent;
+  }
+  /* 去掉 300ms 点击延迟与双指缩放判定带来的抖动 */
+  .niall-figure{touch-action:manipulation}
+  /* 触屏没有 hover，别让"按下就缩小"参与（它会被当成一次额外重绘） */
+  .niall-figure:active{--hover-scale:1}
+}
 @media (prefers-reduced-motion:reduce){
   .niall-float{display:none}
   .niall-heart{animation-duration:.01s}
