@@ -4,31 +4,47 @@
 # AGENTS/ 工作手册、.agents/ Skills、tools/ 脚本、Chapters/ 原始 Markdown、
 # docs/ 项目 PDF 都会被公开托管在 https://www.5guys1direction.asia/ 上。
 #
-# 语法与 .gitignore 相同。注意：不要写 wrangler.jsonc 的 assets.exclude ——
-# 该参数不存在，写了也不报错、不生效。
+# 语法与 .gitignore 相同。两条硬约束（都是 2026-09-17「小说全部 404」事故的教训，
+# 详见 AGENTS/METHODS.md M71 / M72）：
+#
+#   1. 不要写 wrangler.jsonc 的 assets.exclude —— 该参数不存在，写了也不报错、不生效。
+#   2. wrangler 内部用的 ignore 库默认 ignorecase:true，**规则匹配不分大小写**。
+#      仓库根目录的规则必须带前导斜杠写成 "/xxx/"，把规则锚定在 assets 根；
+#      否则 `Chapters/` 会连 `pages/blog/the-only-direction-home/chapters/`
+#      整棵成品目录一起排除，111 章正文全部线上 404（本地却一切正常）。
 
 # 版本控制与依赖（本地 dry-run 时一并排除）
-.git/
-node_modules/
-.venv/
+/.git/
+/node_modules/
+/.venv/
 
 # Agent 工作手册与 Skills
-AGENTS/
-AGENTS.md
-.agents/
-.opencode/
+/AGENTS/
+/AGENTS.md
+/.agents/
+/.opencode/
 
 # 构建 / 审计 / 翻译脚本与页面模板
-tools/
+/tools/
 
-# 小说原始 Markdown（对外渲染产物在 pages/blog/the-only-direction-home/）
-Chapters/
+# 小说原始 Markdown（对外渲染产物在 pages/blog/the-only-direction-home/chapters/，
+# 靠前导斜杠锚定，否则大小写不敏感会连成品一起误伤）
+/Chapters/
+
+# 设计母本 PSD：与 .gitignore 的 images/psd/ 对齐。共 739 MB，且单体超过
+# Cloudflare 每个资源 25 MiB 的上限（dinnertable-rect.psd 29.1 MiB /
+# hero-rect.psd 25.5 MiB），不排除会让 `wrangler deploy` 直接以
+# "Asset too large" 整包失败；何况设计源文件本来也不该公开托管。
+/images/psd/
+/images/gfx/psd/
 
 # 对外文档与部署配置
-docs/
-README.md
-wrangler.jsonc
-.gitignore
+/docs/
+/README.md
+# 子目录里的开发说明（如 images/gfx/niall-bday-2026/README.md）同样不对外
+**/README.md
+/wrangler.jsonc
+/.gitignore
 
 # 系统垃圾文件
 .DS_Store

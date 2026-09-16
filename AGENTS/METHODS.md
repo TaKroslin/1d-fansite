@@ -480,3 +480,38 @@
   另外加**触屏专用 JS 路径**：几何量（按钮矩形）在触摸序列内不变，故首次接触时量一次并缓存（`figGeom()` + `pointerdown` 失效），避免每次点击都做 `getBoundingClientRect()`；触屏下也**跳过强制 reflow**（`void el.offsetWidth`）。
 - **验证**：Playwright 触屏套件 **17/17**（tap-highlight 计算值 `rgba(0, 0, 0, 0)`、touch-action=manipulation、四张贴纸实体触摸各触发自身动画且 emoji=0、空白触摸冒 emoji、左格触摸冒 emoji、连点 3 次动画仍正常）+ 桌面回归 **5/5 未被影响**（桌面 tap-highlight 仍是默认 `rgba(0,0,0,0.18)`、touch-action=auto、`pointer:coarse` 不命中）。
 - **预防**：① **移动端适配必须用真实触摸事件验证**，改视口宽度不算。② 满格叠放的可点区域一定要关 `-webkit-tap-highlight-color`，否则高亮会铺满整块。③ 加媒体查询适配层时**把整段包在 `(hover:none),(pointer:coarse)` 里**，桌面行为一条都不动 —— 这也是作者明确要求的"用新的一套逻辑，不要改原有的东西"。
+
+### M68. 判重要落到内容：文件名两个方向都会骗人，PSD 的字节差也不等于内容差
+- **现象**：审查 `~/Downloads` 里「项目已经有同一份」的素材时，按文件名匹配会同时产生**漏判**和**误判**：
+  - **同名不同图**：`awards rect.png` 实际是 1200×1200（方图）、`awards square.png` 实际是 2400×1200（横图）—— 作者侧的 rect/square 命名是反的；项目 `images/gfx/gallery-press-awards-cover-{rect,square}-lrg.png` 的命名反而是对的，按名字对会正好对反。
+  - **同图不同名**：`liam-rect.png` 与项目 `images/gfx/gallery-members-liam-liam-cover-rect-lrg.png` 文件名毫无关系，却是逐像素同一张。
+  - **PSD 字节差 ≠ 内容差**：6 个 PSD 与项目副本差 1,100 字节（只在 Photoshop Image Resources 元数据段），画布、图层、合成图完全一致；反过来 `teen-zayn-square-恢复的.psd` 比原版大 3.1 MB 且**多一个图层**，但合成图仍然完全相同（多出的层被遮挡/隐藏）。
+- **根因**：① 文件名的命名权在作者手里，工作名与发布名从来不是一套；② PSD 是容器格式，Photoshop 每次存盘都会重写缩略图/版本标记等段，字节必然漂移；③ 「合成图相同」只能证明**可见结果**相同，不能证明图层结构相同（隐藏层、被完全遮挡的层都不影响合成图）。
+- **处理**：把判重写成一条逐级加严的流水线 —— **md5（先按文件大小预筛，避免全量哈希）→ 尺寸 → 逐像素（`ImageChops.difference` 的直方图，`sum(hist)-hist[0]` 就是不同像素数）→ PSD 四项齐平（画布 + 图层数 + 图层名 + 合成图）**。任何一级判为"等价"都要记下依据，**删除前再重新校验一次**。另注意 `figure-*.png` 这类"裁剪前原图"，要靠 `crop()` 后逐像素比对才能认定，不能因为尺寸不同就判为不同素材。
+- **验证**：64 项全部通过删除前复校验；`_audit_site_images.py` 776 refs / Broken: 0。
+- **预防**：① **永远不要用文件名判重**：同名的可能是两张图，异名的可能是同一张。② **PSD 比对不要用 md5**，用「画布 + 图层数 + 图层名 + 合成图」。③ 解析 PSD 图层记录时，`blend mode signature(4) + key(4)` 后面还有 **opacity/clipping/flags/filler 共 4 字节**；漏掉会整体错位，症状是**图层名解析成乱码、层数也数错**，而且因为两边用同一个错误解析器还会"一致地错"，看起来像"图层完全相同"（本次就先踩了一次，靠交叉验证才发现）。④ macOS 恢复出来的 `-恢复的` 副本可能是原件的**超集**，不能一律当重复删掉，必须先按内容比对再决定。
+
+### M70. Cloudflare `not_found_handling: "404-page"` 不会重写 URL —— 404 页必须用根绝对路径
+- **现象**：访问站内任意不存在的深层路径（如 `/pages/blog/.../chapters/999/`），返回的 404 页**完全没有 CSS**、退化成浏览器默认 HTML 样式（Times 字体、蓝链）；同一份 `404.html` 在根路径打开却是正常的。
+- **根因**：`wrangler.jsonc` 的 `assets.not_found_handling = "404-page"` 只是把 **`404.html` 的响应体**按原请求 URL 返回，**不重写 URL、也不改 `<base>`**。于是 404 页里所有**相对路径**（`css/styles.css`、`images/...`、`js/...`、`pages/xxx.html`）都以**用户请求的那个深层目录**为基准解析 → 全部 404。线上实测：`/pages/.../chapters/00/css/styles.css` → 404，而 `/css/styles.css` → 200。
+- **处理**：把 `404.html` 里所有资源/导航引用改成**根绝对路径**（`/css/styles.css?v=...`、`/images/...`、`/js/...`、`/pages/xxx.html`、`/index.html`），`og:image` 用带 `www` 的完整 origin。
+- **验证**：写一个模拟 Cloudflare 行为的本地 server（命中不到就按原 URL 返回 `404.html` 且状态码 404），用 Playwright 打开深层不存在路径：`status 404`、`document.styleSheets.length = 2`、`.four-zero-four` 计算样式生效、背景图与 logo 均 200、除被请求的 404 本身外无失败请求。
+- **预防**：① **404 页/错误页是唯一会被在任意路径下渲染的页面**，其中任何相对路径都视为 bug，一律写 `/` 开头。② 本地 `python -m http.server` 用的是自己的 404，**复现不了这个问题**，必须用模拟 server 或线上验证。③ 判断"路径该写相对还是绝对"的口诀：会被 rewrite/原地服务的页面（404、`_redirects` 目标、`_headers` 无关）用绝对；正常静态页仍按深度表用相对。
+
+### M71. `.assetsignore` 匹配**不分大小写**：`Chapters/` 把成品 `chapters/` 一起干掉，111 章线上全 404
+- **现象**：作者反馈「小说（blog 内页）全变 404」。线上 `pages/blog/the-only-direction-home/`（小说目录页）**200**，但它下面的 `chapters/00/` … `chapters/110/` **111 个章节页连同 `chapter.md` 全部 404**；同一时间普通 blog 内页（`/pages/blog/2026-08-04/more-than-a-ship/`）正常 200。本地文件完好、`git ls-files` 也都在版本控制里，本地 `python -m http.server` 全部 200 —— **只有线上坏，而且只坏这一棵子树**。
+- **根因**：`.assetsignore` 里为排除仓库根的**小说原始 Markdown** 写了裸规则 `Chapters/`。wrangler 内部用 `ignore` npm 包做匹配，而 wrangler 调 `ignore()` 时**不传 options**，走该包默认值 **`ignorecase: true`**（`makeRegex` 给正则加 `i` 标志）。而 gitignore 语义里不带前导斜杠的 `Chapters/` 本来就匹配**任意层级**的同名目录 —— 两个"宽松"叠加，成品目录 `pages/blog/the-only-direction-home/chapters/` 被一并排除，从未上传。该规则与小说成品同在 2026-09-11 那批提交里（`.assetsignore` 21:07 / 小说成品 22:31），所以章节页**从上线起就没成功出现过**。
+- **处理**：仓库根目录的规则一律加**前导斜杠锚定** → `/Chapters/`；顺带把其余根规则（`/AGENTS/`、`/docs/`、`/tools/`、`/README.md`、`/wrangler.jsonc` …）全部锚定，消除同类误伤面。子目录开发说明另用 `**/README.md` 显式排除，保持与原行为一致。
+- **验证**：**单变量 A/B，走 wrangler 自己的资源管线**。往 `pages/blog/the-only-direction-home/chapters/00/` 放一个 26 MiB 探针文件，只切换 `Chapters/` ↔ `/Chapters/`：
+  - 规则**未锚定**（= 线上现状）→ `wrangler deploy --dry-run` **完全不报错**，探针"消失" ⇒ 整棵树被排除，复现线上 404；
+  - 规则**锚定**后 → 同一命令报 `Asset too large ... chapters/00/_probe.bin`，探针可见 ⇒ 章节回到上传集。
+
+  另跑本地 `python -m http.server` 全量请求 **111 个章节目录 = 200/200**（目录页 200）。探针已删除、`.assetsignore` 已还原（`git status` 无残留）。
+- **预防**：① **`.assetsignore` 的规则匹配是大小写不敏感的，根目录规则必须写 `/xxx/`**，永远不要写裸 `Chapters/`。② 这类 bug **本地 100% 复现不了**（本地没有过滤层）：唯一可靠的验证手段是 `wrangler deploy --dry-run` + 往目标目录塞一个 **>25 MiB 的探针文件** —— 探针"被报错"说明该目录**在**上传集里，探针"消失"说明**整棵目录树**都不上传。③ `WRANGLER_LOG=debug` 打印的文件清单是**过滤前**的原始 walk 结果（连 `/.DS_Store`、`/.assetsignore` 都在里面），**不能用它判断"到底传了什么"**。④ 「本地好好的、线上 404」优先怀疑**部署过滤层**，而不是文件缺失或路径写错。
+
+### M72. `images/psd/` 只进了 `.gitignore` 没进 `.assetsignore` —— 单文件超 25 MiB 让**整个 deploy 失败**
+- **现象**：修好 M71 后跑 `wrangler deploy --dry-run`，整包直接失败：`Asset too large. Cloudflare Workers supports assets with sizes of up to 25 MiB. We found a file .../images/psd/dinnertable-rect.psd with a size of 29.1 MiB.`
+- **根因**：`images/psd/`（663 MB）与 `images/gfx/psd/`（76 MB）写在 `.gitignore` 里，但 `.assetsignore` 里没有。`wrangler.jsonc` 的 `assets.directory` 是 **`.`（整个仓库）**，所以 **git 忽略不等于不上传** —— 这两张排除表互相独立、要各自维护。其中 `dinnertable-rect.psd`（29.1 MiB）与 `hero-rect.psd`（25.5 MiB）都超过 Cloudflare **每个资源 25 MiB** 的上限，触发的是**整包失败**（不是跳过那一个文件）。`AGENTS/AGENTS.md` 早就写明「`images/psd/` 为不部署源文件」，只是这条约定没落到 `.assetsignore`。
+- **处理**：`.assetsignore` 补上 `/images/psd/` 与 `/images/gfx/psd/`，与 `.gitignore` 对齐。
+- **验证**：补规则前 `wrangler deploy --dry-run` 退出码 **1**（Asset too large）；补后退出码 **0**、`Total Upload: 0.34 KiB`。同时线上探测 `/images/psd/hero-rect.psd`、`/images/psd/dinnertable-rect.psd`、`/images/gfx/psd/liam-rect.psd` 均 **404**（尚未泄漏）。
+- **预防**：① **新增"不发布的目录"要同时改两张表**：`.gitignore`（不进版本库）+ `.assetsignore`（不上传）。② 定期跑 `find . -type f -not -path "./.git/*" -size +25M`，任何命中都必须是已被 `.assetsignore` 排除的路径。③ 部署失败先读**第一行错误**：`Asset too large` 是资源体积问题，跟代码/配置无关。④ `.venv/lib/.../playwright/driver/node`（115 MB）因为 `.venv/` 已被排除所以不触发 —— 这正好反证**体积检查跑在过滤之后**。

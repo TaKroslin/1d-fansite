@@ -1,5 +1,93 @@
 # 1D Fansite — 开发日志（LOG）
 
+## 2026-09-17 — 小说 111 章线上全 404：`.assetsignore` 的 `Chapters/` 大小写不敏感误伤成品目录
+
+- **模型**：deepseek-v4-flash
+- **目的**：作者反馈「网站小说（blog 内页）全变 404 了」。上一条日志遗留②点名本条另行排查。
+- **结果**：
+  1. **复现并划清边界**：线上 `pages/blog/the-only-direction-home/`（小说目录页）**200**，其下 111 个 `chapters/NN/` 章节页与 `chapter.md` **全部 404**；同时普通 blog 内页 `/pages/blog/2026-08-04/more-than-a-ship/` 正常 **200**。本地文件完好、`git ls-files` 全在版本控制内、本地 `python -m http.server` 全部 200 —— **只有线上坏，且只坏这一棵子树** ⇒ 问题不在页面本身，在**部署过滤层**。
+  2. **定位**：`.assetsignore` 里排除仓库根小说原稿的规则写成了裸 `Chapters/`。wrangler 内部用 `ignore` npm 包匹配，wrangler 调 `ignore()` **不传 options** → 走默认 **`ignorecase: true`**（`makeRegex` 给正则加 `i`）；而 gitignore 语义里不带前导斜杠的规则本来就匹配**任意层级**同名目录。两个"宽松"叠加 → 成品目录 `pages/blog/the-only-direction-home/chapters/` 被一并排除，**从未上传**。该规则与小说成品同在 2026-09-11 那批提交里（`.assetsignore` 21:07 / 小说成品 22:31），故章节页**从上线起就没成功出现过**（独立佐证：线上目录页与本地逐字节相同，说明部署本身是新的）。
+  3. **修复**：根目录规则统一**前导斜杠锚定** —— `/Chapters/`，并把 `/AGENTS/`、`/docs/`、`/tools/`、`/README.md`、`/wrangler.jsonc` 等其余根规则一并锚定；子目录开发说明用 `**/README.md` 显式排除以保持原行为。
+  4. **顺手拆掉第二个拦路虎**：`images/psd/`（663 MB）+ `images/gfx/psd/`（76 MB）只写在 `.gitignore`、没写 `.assetsignore`，而 `assets.directory` 是仓库根 —— **git 忽略 ≠ 不上传**。其中 `dinnertable-rect.psd` 29.1 MiB、`hero-rect.psd` 25.5 MiB 超过 Cloudflare 单资源 25 MiB 上限 → `wrangler deploy` **以 "Asset too large" 整包失败**。补 `/images/psd/`、`/images/gfx/psd/` 后 dry-run 退出码 **0**。
+  5. 新增坑记录 `METHODS.md` **M71 / M72**（编号说明：M69 在并行会话重编号后空置，本条按文件顺序取 M71 / M72）。本次只改 `.assetsignore`，**未动任何 HTML/CSS，无需 bump `?v=`**。
+  6. **推送前整理**：两个一次性 QA 脚本（`_qa_niall_cover_20260915.js`、`_qa_niall_cover_shot.js`）原落在 `tools/` 根目录，按 RULES §2.4 / `tools/README.md`「一次性脚本完成后归档到 `archive/`」移入 `tools/archive/` 并修正脚本内注释里的路径（`node --check` 通过；两个脚本用的都是仓库根相对路径、在仓库根运行，移动不影响功能）。
+- **推送前 ignore 复审**：逐条比对 `.assetsignore` 规则与真实目录树 —— 全仓**只有 `Chapters` / `chapters` 一处大小写同名冲突**（已修）；其余规则的大小写同名命中（`.opencode/node_modules`、`.venv/.../tools`、`images/**/README.md`、`.opencode/.gitignore`）不是已被父目录规则覆盖，就是已用 `**/README.md` 显式排除。站内 HTML/CSS/JS **没有任何引用指向被排除路径**（`images/psd|/tools/|/Chapters/|/docs/|README.md|wrangler.jsonc` 全部 0 命中）；`_audit_site_images.py` **776 refs / Broken: 0**；`?v=` 现状核对为**正确**（`styles.css` 最近一次改动 466956d 全是 `.niall-*` 主页选择器，故只 bump `index.html` 是对的）。
+- **验证**：**单变量 A/B，直接走 wrangler 自己的资源管线**。往 `pages/blog/the-only-direction-home/chapters/00/` 放一个 26 MiB 探针文件，只切换 `Chapters/` ↔ `/Chapters/`：
+  - 规则**未锚定**（= 线上现状）→ `wrangler deploy --dry-run` **完全不报错**，探针"消失" ⇒ 整棵树被排除，**精确复现线上 404**；
+  - 规则**锚定**后 → 同一命令报 `Asset too large ... chapters/00/_probe.bin` ⇒ 章节已回到上传集。
+
+  探针已删除、`.assetsignore` 已确认无残留（`git status` 只剩预期的 ` M`）。`wrangler deploy --dry-run` 退出码 **0**。本地 `python -m http.server` 全量请求 **111/111 章节 + 目录页 = 200**。
+- **Token 消耗**：约 6 万（主会话）
+- **用时**：实测约 10 分钟（00:33→00:43）
+- **经验总结**：① **`.assetsignore` 的匹配不分大小写，根目录规则必须写 `/xxx/`**。② **`.gitignore` ≠ `.assetsignore`**：两张表互相独立，新增"不发布目录"要同时改。③ 「本地好好的、线上 404」先怀疑**部署过滤层**：本地 `python -m http.server` 没有这一层，**永远复现不了**；可靠手段是 `wrangler deploy --dry-run` + 往目标目录塞 **>25 MiB 探针**（探针被报错 = 目录在上传集，探针"消失" = 整棵树不上传）。④ `WRANGLER_LOG=debug` 的文件清单是**过滤前**的 walk 结果，**不能**用来判断"到底传了什么"。
+- **遗留/待办**：
+  1. **改动未提交、未推送**（`.assetsignore` 处于 ` M`）；Cloudflare 重建后线上 404 才会消失。
+  2. **本机无 `CLOUDFLARE_API_TOKEN`**，wrangler 处于非交互环境，故本会话既无法直接部署、也无法查询部署历史（`wrangler deployments list` 直接报缺 token）。
+  3. 与并行会话的「404 页丢 CSS」（M70，改 `404.html` 为根绝对路径）**互不冲突，可一并提交**。
+  4. 建议（未做）：加一个部署前守卫脚本 —— ① 校验 `.assetsignore` 每条根规则都带前导斜杠；② 反向校验站内 HTML 引用的每个相对路径都存在于"过滤后"的上传集。本次事故正属这一类**静默**回归。
+
+## 2026-09-17 — 修复 404 页丢 CSS：`not_found_handling` 不重写 URL，改根绝对路径
+
+- **模型**：deepseek-v4-flash-vision-exp
+- **目的**：作者反馈「404 页没有 CSS 了，变成 H5 纯文字」。定位并修复自定义 404 页在深层路径下样式全丢的问题（本次只处理 404 页）。
+- **结果**：
+  1. **根因**：Cloudflare `assets.not_found_handling = "404-page"` 只把 `404.html` 的**响应体**按**原请求 URL** 返回，不重写 URL、不改 base。`404.html` 里全是相对路径（`css/styles.css`、`images/...`、`js/...`、`pages/...`），于是以用户请求的深层目录为基准解析 → 资源全部 404 → 页面裸奔。线上实测 `/pages/.../chapters/00/css/styles.css` → **404**，`/css/styles.css` → **200**。
+  2. **修复**：`404.html` 全部引用改根绝对路径 —— `css/styles.css`、`images/gfx/*`、`js/*`、`pages/*.html`、`index.html` 统一加 `/` 前缀；`og:image` 顺手改成带 `www` 的完整 origin（符合 RULES §2.1）。CSS 版本号保持站点通用的 `20260911g`（未改 CSS，不 bump）。
+  3. 新增坑记录 `METHODS.md` **M70**（M69 已被并行的 chapters 排查占用，故错号）。
+- **验证**：写模拟 Cloudflare 行为的本地 server（未命中时按原 URL 返回 `404.html` + 404 状态码），Playwright 打开深层不存在路径 `/pages/blog/the-only-direction-home/chapters/999/index.html`：`status 404`、`styleSheets.length=2`、`.four-zero-four` 计算样式生效、背景图/logo 加载成功、除被请求的 404 本身外**无失败请求**；截图已 `open` 给作者复核，视觉恢复官方设计（非纯文字）。静态检查：`404.html` 内已无任何非绝对引用；本地 server 全部资源与 9 个导航链接 **200**。
+- **Token 消耗**：约 6 万（主会话）
+- **用时**：实测约 5 分钟（00:32→00:37）
+- **经验总结**：① **错误页会被在任意路径下原地渲染**，其中任何相对路径都必坏，一律根绝对。② 本地 `http.server` 的 404 与线上不同，**复现不了**这个 bug，得用模拟 server 或直接查线上 URL。③ 排查路径类问题先对同一资源请求两个深度（深层 vs 根）对比状态码，一次就能锁定"基准路径错"。
+- **遗留/待办**：
+  1. 本次只改 `404.html`，**未提交、未推送**；推送后 Cloudflare 重建才在线上生效。
+  2. 作者提到的「小说 chapters 全 404」本次未处理（与 404 页无关，另行排查）。
+
+## 2026-09-15 — Niall 封面换新：作者最新「无接缝」版覆盖六个 tier
+
+- **模型**：deepseek-v4-flash
+- **目的**：上一条日志的遗留①——项目里 `gallery-members-niall-cover-{rect,square}-lrg.png` 落后于作者的最新导出（中间那条缝没删掉）。作者直接发来横竖两版最新封面，要求「直接用，这是最新的没有缝的那个」。
+- **结果**：
+  1. **先证明发来的图 = Downloads 里的母版**：把聊天附件与 `~/Downloads` 的 PNG 逐像素比，`|差|>40` 的像素 **0 个**（只剩 JPEG 重编码噪声）；而项目里的旧版差 **2,998（方）/ 5,997（横）** 像素 —— 正是那条缝。结论：**聊天里的是 JPEG 归一化副本，落地要用 Downloads 的无损 PNG**。
+  2. **整套 6 个 tier 一起换**（不是只换 lrg）：`gallery-members-niall-cover-{rect,square}-{lrg,med,sml}.png`。换之前先核对项目既有约定 —— 现有 med/sml 与 lrg 的 LANCZOS 直接降采样**逐像素完全一致**，于是照同一规则重生成，尺寸 2400×1200 / 1200×600 / 600×300 与 1200×1200 / 600×600 / 300×300 全部命中。
+  3. **为什么不能只换 lrg**：一张封面有 3 条加载路径 —— 桌面卡片走 `retinafy`（DPR>1 时 `-rect-sml` → `-rect-lrg`）、移动端 CSS `!important` 强制 `-square-sml`、`og:image`/`twitter:image` 用 `-rect-med`。只改 lrg 会让移动端继续显示带缝的旧图。
+  4. 脚本 `tools/archive/_update_niall_cover.py`（幂等、写完回读校验尺寸）+ QA `tools/_qa_niall_cover_20260915.js` / `tools/_qa_niall_cover_shot.js`。
+- **验证**：**Playwright + Chrome 12/12 通过** —— 桌面 1440/DPR=2 实际加载 `-rect-lrg.png`、移动 390/DPR=2 实际加载 `-square-sml.png`（证明 retinafy 与移动端 `!important` 两条路径都对）、两处 `filter` 仍为 `none`（灰度例外未被破坏）、封面请求 200 且字节数正常、无 JS 报错、Niall 成员页 200、`og:image`(rect-med) 200；六个 tier 逐个 HTTP 200；`_audit_site_images.py` **776 refs / Broken: 0**；新 lrg 与 Downloads 母版**逐像素完全相同**；med/sml 与「新 lrg 的 LANCZOS 降采样」逐像素完全相同。
+- **Token 消耗**：约 4 万（主会话）
+- **用时**：实测约 12 分钟（12:00→12:12，起点按收到图片后首次扫描的产物时间戳）
+- **经验总结**：
+  1. **换封面 = 换整套 tier**：这个项目一张封面 6 个文件、3 条加载路径，只改 `-lrg` 移动端和分享预览仍是旧图。
+  2. **聊天里收到的图片是归一化（JPEG）副本**，不能直接当 PNG 素材落地；先证明它与 `~/Downloads` 里的无损母版等价（`|差|>40` 的像素数 = 0），再取母版写入。
+  3. **DPR=2 下 element/clip 截图出黑图**（本机已知坑已记）：功能断言用 DPR=2、截图另开 DPR=1 上下文，两件事分开做。
+- **遗留/待办**：
+  1. **`images/gfx/` 的图片 URL 从不带 `?v=`，本次文件名也没变** —— 本地/线上若仍看到旧图，硬刷新一次（Cmd+Shift+R）；已确认服务器返回的是新文件（HTTP 200 + 字节数已核对）。
+  2. 本次 6 张封面是**已跟踪文件的修改**（`git status` 显示 ` M`），推送前需 `git add` + commit，否则线上仍是旧封面。
+  3. 上一条日志的遗留仍在：`niall-33-birthday-general.psd` 存盘时人物图层隐藏（作者已说不用管）；Downloads 里 `niall-33-birthday-general(no-fugure).png`、8 张 `image_*.png` 等创作原料未处理。
+
+## 2026-09-15 — Downloads 素材审查：清理 75 个重复文件，并把 7 个 PSD 母本挪进项目
+
+- **模型**：deepseek-v4-flash
+- **目的**：作者要求审查 `~/Downloads`，把「项目里已经有同一份」的素材清掉；随后追加：新出现的几个 PSD 看看有没有可以挪进项目的，其中 4 个 `-恢复的` 副本按「和原版一样就删、不一样就挪过去并去掉后缀」处理。
+- **结果**：
+  1. **审查手法**：md5 全量比对（Downloads × 项目，先按文件大小预筛）→ 图像逐像素比对 → PSD「画布 / 图层数 / 图层名 / 合成图」四重比对。**不能用文件名判重**：Downloads 里 `awards rect.png` 实为 1200×1200、`awards square.png` 实为 2400×1200（作者侧命名是反的），而 `liam-rect.png` 与项目 `images/gfx/gallery-members-liam-liam-cover-rect-lrg.png` 名字毫无关系却是逐像素同一张。
+  2. **清理 64 个 / 115.2 MB**（md5 完全一致 48 个 + 像素或图层等价 16 个），全部移入废纸篓。
+  3. **7 个 PSD 母本入库 `images/psd/`**：`dinnertable-{rect,square}.psd`、`liam-{rect,square}.psd`、`teen-zayn-{rect,square}.psd`、`niall-33-birthday-general.psd`。这些封面的 PNG 早就在站里，但**源文件一份都没有**（`images/psd/` 只有旧封面的同系列），删掉就只剩扁平图。先复制、md5 校验通过，才移除 Downloads 原件。
+  4. **4 个 `-恢复的` PSD**：`liam-rect` / `liam-square` / `teen-zayn-rect` 三个与原版**画布、图层数、图层名、合成图全同**（只差约 1,600 字节 Photoshop 元数据）→ 直接删；`teen-zayn-square-恢复的.psd` **多一个图层（5 vs 4）、大 3.1 MB**，合成图仍相同（多出的层被遮挡）→ 按指示挪进项目并去掉后缀，成为 `images/psd/teen-zayn-square.psd`，被它取代的旧同名文件一并删除。
+  5. Downloads 从 **114 个文件降到 48 个**，剩下的都是与项目无关的（安装包、周报 zip、录音 m4a、化学 docx、微信存图、`image_*.png` 等）。
+  6. 新增两个可复用脚本：`tools/archive/_cleanup_downloads.py`（+ manifest / report）与 `tools/archive/_migrate_downloads_psd.py`。均支持 `--dry-run`、幂等、**删除前逐项重新校验**，默认移废纸篓而非真删。
+- **验证**：`_audit_site_images.py` → **776 refs / Broken: 0**；`git status --short` 为空（新增 PSD 落在 `.gitignore` 的 `images/psd/` 内，未污染仓库、不会部署）；7 个入库 PSD 逐个 md5 与源文件比对一致；Downloads 侧 `Teen-zayn/`、`liam/`、`niall-dinner-table/` 三个目录已清空（只剩 `.DS_Store`）。
+- **Token 消耗**：约 9 万（主会话）
+- **用时**：分两段，均以产物 mtime 反推（开工时忘了记 `/tmp/td_start`）—— 第一段 9/14 约 10 分钟（21:40→21:50 出报告），第二段 9/15 约 10 分钟（11:43→11:53）。
+- **经验总结**：
+  1. **文件名判重两个方向都会骗人**：既可能「同名不同图」（`awards rect/square` 命名反了），也可能「同图不同名」（`liam-rect.png` ↔ `gallery-members-liam-liam-cover-rect-lrg.png`）。判重必须落到 md5 / 像素。
+  2. **PSD 的字节差 ≠ 内容差**：Photoshop 元数据能让同一文档差 1.1 KB，而恢复版可能大 3.1 MB 且多一层。可靠判据是四项齐平（画布 + 图层数 + 图层名 + 合成图），细节见 METHODS.md M68。
+  3. **macOS 恢复出来的 `-恢复的` 副本不能一律当重复删**：它可能是原件的超集。先按内容比对，再决定删还是留。
+- **遗留/待办**：
+  1. **`images/gfx/gallery-members-niall-cover-square-lrg.png` 落后于 PSD（本次未动，待确认）**：项目里还是 8/23 版，与 9/14 19:45 更新过的 `images/psd/gallery-members-niall-cover-square-lrg.psd` 有 **6,513 像素**不一致（一条 1px 分隔缝）；Downloads 那份 PNG 与 PSD 合成图逐像素一致，是当前正确导出。
+  2. **`gallery-members-niall-cover-rect-lrg.png` 待定**：项目版与其 PSD（8/23，未更新）逐像素一致，Downloads 那份是同一条缝的变体（差 5,997 像素）。
+  3. **新入库的 `images/psd/niall-33-birthday-general.psd`（9/15 11:48 版）存盘时人物图层是隐藏的**：其内嵌合成图相当于 `niall-33-birthday-general(no-fugure).png`，与站上在用的 `images/gfx/niall-bday-2026/niall-33-birthday-general.png` 差 683,679 像素。以后从这份 PSD 直接导出会得到「无人物」版，要先打开人物图层。
+  4. Downloads 里仍未处理：`niall-33-birthday-general(no-fugure).png`、`gallery-members-niall-cover-{rect,square}-lrg.png`、8 张 `image_*.png`、`niall*.jpeg` 等 —— 多为创作原料，未确认前不动。
+  5. 废纸篓里这 75 个文件，人工复核无误后可清空。
+
 ## 2026-09-14 — 移动端触屏适配：修掉点击时整张卡片闪一下
 
 - **模型**：deepseek-v4-flash
