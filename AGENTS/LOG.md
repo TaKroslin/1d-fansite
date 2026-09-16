@@ -20,11 +20,11 @@
 - **Token 消耗**：约 6 万（主会话）
 - **用时**：实测约 10 分钟（00:33→00:43）
 - **经验总结**：① **`.assetsignore` 的匹配不分大小写，根目录规则必须写 `/xxx/`**。② **`.gitignore` ≠ `.assetsignore`**：两张表互相独立，新增"不发布目录"要同时改。③ 「本地好好的、线上 404」先怀疑**部署过滤层**：本地 `python -m http.server` 没有这一层，**永远复现不了**；可靠手段是 `wrangler deploy --dry-run` + 往目标目录塞 **>25 MiB 探针**（探针被报错 = 目录在上传集，探针"消失" = 整棵树不上传）。④ `WRANGLER_LOG=debug` 的文件清单是**过滤前**的 walk 结果，**不能**用来判断"到底传了什么"。
+- **上线结果（同会话闭环）**：commit **`2236c38`**（含并行会话的 `404.html` 根绝对路径修复 + 9/15 的 Niall 封面六 tier + 本次 `.assetsignore` 修复）推 `origin/main`；Cloudflare Workers git 集成自动构建，约 **1 分钟**后线上生效。**线上验收**：111/111 章节目录 **200**、`chapters/00/chapter.md` 200、目录页 / 首页 / 普通 blog 内页 / CSS（两个 `?v=`）/ Niall 封面均 200；排除表仍生效 —— `/AGENTS/RULES.md`、`/README.md`、`/wrangler.jsonc`、`/tools/build/build_blog.py`、`/docs/`、`/Chapters/00_前言.md` 全部 **404**，`/images/psd/*.psd` 与 `/images/gfx/psd/*.psd` 也 **404**（PSD 源文件未泄漏）。
+- **推送障碍（环境事实，值得记）**：本会话沙箱**不继承 macOS 系统代理**，`github.com:443` 直连超时（`api.github.com`、`codeload.github.com`、`registry.npmjs.org` 都正常；`github.com:22` 与 `ssh.github.com:443` 也通，但 `~/.ssh/github_1d` 未在 GitHub 注册，SSH 走不通）。解法是**一次性**走系统代理推送：`git -c http.proxy=http://127.0.0.1:7897 push origin main`（本机代理在 `scutil --proxy`，端口 **7897**）。**不要**为绕这个去改 git 全局 config。
 - **遗留/待办**：
-  1. **改动未提交、未推送**（`.assetsignore` 处于 ` M`）；Cloudflare 重建后线上 404 才会消失。
-  2. **本机无 `CLOUDFLARE_API_TOKEN`**，wrangler 处于非交互环境，故本会话既无法直接部署、也无法查询部署历史（`wrangler deployments list` 直接报缺 token）。
-  3. 与并行会话的「404 页丢 CSS」（M70，改 `404.html` 为根绝对路径）**互不冲突，可一并提交**。
-  4. 建议（未做）：加一个部署前守卫脚本 —— ① 校验 `.assetsignore` 每条根规则都带前导斜杠；② 反向校验站内 HTML 引用的每个相对路径都存在于"过滤后"的上传集。本次事故正属这一类**静默**回归。
+  1. 建议（未做）：加部署前守卫脚本 —— ① 校验 `.assetsignore` 每条根规则都带前导斜杠；② 反向校验站内 HTML 引用的每个相对路径都存在于"过滤后"的上传集。本次事故正属这一类**静默**回归（本地全绿、线上全 404）。
+  2. `CLOUDFLARE_API_TOKEN` 仍不在环境里，`wrangler deployments list` 用不了；但**推送即部署**，不影响发版。
 
 ## 2026-09-17 — 修复 404 页丢 CSS：`not_found_handling` 不重写 URL，改根绝对路径
 
