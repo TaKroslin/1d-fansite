@@ -83,7 +83,7 @@
 
 	<link href="//fonts.googleapis.com/css?family=Playfair+Display:700|Codystar|Cousine:400,700|Source+Code+Pro:300,400,500,600,700|Source+Sans+Pro:400|Oswald:400,700|Vampiro+One|Six+Caps&display=swap" rel="stylesheet" type="text/css" />
 
-	<link href="css/styles.css?v=20260914b" rel="stylesheet" type="text/css" />
+	<link href="css/styles.css?v=20260922a" rel="stylesheet" type="text/css" />
 
 </head>
 
@@ -154,47 +154,47 @@
 </header>
 
 
-	<div class="panel-group niall-bday-group">
+	<div class="panel larry-cd">
 
-	<div class="panel niall-panel">
+	<div class="larry-cd-stripes" aria-hidden="true"></div>
 
-	<div class="panel-header">
+	<div class="larry-cd-stage">
 
-		<div class="title"><span class="en">13th September 1993</span><span class="zh">1993年9月13日</span></div>
+		<div class="panel-header">
 
-		<div class="section-name"><span><span class="en">Birthday</span><span class="zh">生日纪念</span></span></div>
+			<div class="title"><span class="en">2026.9.28</span><span class="zh">2026年9月28日</span></div>
 
-	</div>
+			<div class="section-name"><span><span class="en">Counting down</span><span class="zh">倒计时</span></span></div>
 
-	<div class="niall-hearts" aria-hidden="true"></div>
+		</div>
 
-	<h2 class="niall-headline"><span class="en">Happy Birthday<br>Captain Niall!</span><span class="zh">奶儿船长<br>生日快乐！</span></h2>
+		<div class="larry-cd-main">
 
-	<div class="niall-copy-bottom">
+			<div class="larry-cd-motif larry-cd-motif--louis" role="img" aria-label="Oops! — Louis"></div>
 
-		<p class="niall-sub"><span class="en">It's the captain's birthday.</span><span class="zh">今天是船长的生日。</span></p>
+			<div class="larry-cd-clock" role="timer" aria-label="Time left until 28 September 2026, 00:00 UTC+8">
 
-		<p class="niall-hint"><span class="en">Tap anywhere for hearts</span><span class="zh">点一下，冒颗心</span></p>
+				<span class="larry-cd-unit"><span class="larry-cd-num" data-unit="d">05</span><span class="larry-cd-lab"><span class="en">days</span><span class="zh">天</span></span></span>
 
-		<div class="niall-date">13 &middot; 09 &middot; 1993</div>
+				<span class="larry-cd-sep" aria-hidden="true">:</span>
 
-	</div>
+				<span class="larry-cd-unit"><span class="larry-cd-num" data-unit="h">23</span><span class="larry-cd-lab"><span class="en">hrs</span><span class="zh">时</span></span></span>
 
-	</div>
+				<span class="larry-cd-sep" aria-hidden="true">:</span>
 
-	<div class="panel niall-photo-panel">
+				<span class="larry-cd-unit"><span class="larry-cd-num" data-unit="m">52</span><span class="larry-cd-lab"><span class="en">min</span><span class="zh">分</span></span></span>
 
-	<img class="niall-photo" src="images/gfx/niall-bday-2026/bg.png" alt="">
+				<span class="larry-cd-sep" aria-hidden="true">:</span>
 
-	<button type="button" class="niall-figure niall-figure--main" aria-label="Niall Horan"><img src="images/gfx/niall-bday-2026/main.png" alt="Niall Horan"></button>
+				<span class="larry-cd-unit"><span class="larry-cd-num" data-unit="s">40</span><span class="larry-cd-lab"><span class="en">sec</span><span class="zh">秒</span></span></span>
 
-	<button type="button" class="niall-figure niall-figure--sm niall-figure--top" aria-label="Surprised Niall sticker"><img src="images/gfx/niall-bday-2026/sticker-top.png" alt=""></button>
+			</div>
 
-	<button type="button" class="niall-figure niall-figure--sm niall-figure--left" aria-label="Niall with bunny ears sticker"><img src="images/gfx/niall-bday-2026/sticker-left.png" alt=""></button>
+			<div class="larry-cd-motif larry-cd-motif--harry" role="img" aria-label="Hi. — Harry"></div>
 
-	<button type="button" class="niall-figure niall-figure--sm niall-figure--right" aria-label="Young Niall sticker"><img src="images/gfx/niall-bday-2026/sticker-right.png" alt=""></button>
+		</div>
 
-	<div class="niall-hearts" aria-hidden="true"></div>
+		<p class="larry-cd-script"><span class="en">Thirteen years since a promise only two of them ever needed to hear.</span><span class="zh">十三年前的那个约定，不需要别人听懂。</span></p>
 
 	</div>
 
@@ -583,6 +583,8 @@
 <script src="js/main.js"></script>
 <script src="js/translate.js"></script>
 
+<script src="js/larry-anniv.js"></script>
+
 	
 
 	
@@ -606,260 +608,6 @@
     }).on('mouseleave blur', function () {
       $(this).closest('.homepage-blog-card').removeClass('hover');
     });
-  });
-}(jQuery));
-</script>
-
-<script>
-(function ($) {
-  "use strict";
-  if (window.__5GUYS_NIALL_HEARTS__) return;
-  window.__5GUYS_NIALL_HEARTS__ = true;
-
-  // 与生日图里用到的两颗 emoji 保持一致：橙色爱心 + 爱尔兰国旗
-  var EMOJI = ['\uD83E\uDDE1', '\uD83C\uDDEE\uD83C\uDDEA']; // 🧡 / 🇮🇪
-  // 作者要求：一次点击只用一种 emoji，两种**交替**出现（这次爱心、下次国旗），
-  // 而不是每次随机、更不是一簇里混着两种。
-  var emojiTurn = 0;
-
-  function nextEmoji() {
-    var e = EMOJI[emojiTurn % EMOJI.length];
-    emojiTurn++;
-    return e;
-  }
-
-  function rand(min, max) {
-    return min + Math.random() * (max - min);
-  }
-
-  // 温馨上浮：从落点轻轻漂起、微微左右摆、微微放大后淡出。
-  // 不再用“从中心向外放射”的爆炸式位移——那个太像烟花，不像生日祝福。
-  // 注意用 textContent 写 emoji，且**不加 .icon-heart 类**：那个类自带
-  // :before{content:"\e60e"}，再写一次文本就会渲染出两颗连在一起的心。
-  function burst($layer, x, y) {
-    var emoji = nextEmoji();
-    var n = 3 + Math.floor(Math.random() * 3); // 3–5 颗，比之前收敛
-    for (var i = 0; i < n; i++) {
-      var el = document.createElement('i');
-      el.className = 'niall-heart';
-      el.setAttribute('aria-hidden', 'true');
-      el.textContent = emoji;
-      el.style.left = (x + rand(-26, 26)).toFixed(0) + 'px';
-      el.style.top = (y + rand(-10, 10)).toFixed(0) + 'px';
-      el.style.fontSize = rand(15, 30).toFixed(1) + 'px';
-      el.style.animationDelay = (i * 0.09).toFixed(3) + 's';
-      el.style.animationDuration = rand(1.7, 2.4).toFixed(2) + 's';
-      el.style.setProperty('--drift', rand(-34, 34).toFixed(0) + 'px');
-      el.style.setProperty('--rise', (-rand(80, 170)).toFixed(0) + 'px');
-      el.style.setProperty('--rot', rand(-16, 16).toFixed(1) + 'deg');
-      $layer[0].appendChild(el);
-      el.addEventListener('animationend', function () { this.remove(); });
-      window.setTimeout(function () { el.remove(); }, 3400);
-    }
-  }
-
-  function seedFloaters($layer, count, minSize, maxSize) {
-    for (var i = 0; i < count; i++) {
-      var el = document.createElement('i');
-      el.className = 'niall-float';
-      el.setAttribute('aria-hidden', 'true');
-      el.textContent = nextEmoji();
-      el.style.left = rand(5, 82).toFixed(1) + '%';
-      el.style.fontSize = rand(minSize, maxSize).toFixed(1) + 'px';
-      el.style.animationDuration = rand(9, 18).toFixed(1) + 's';
-      el.style.animationDelay = '-' + rand(0, 12).toFixed(1) + 's';
-      el.style.setProperty('--rise', rand(620, 900).toFixed(0) + 'px');
-      el.style.setProperty('--o', rand(0.45, 0.8).toFixed(2));
-      $layer[0].appendChild(el);
-    }
-  }
-
-  $(function () {
-    // 两格都来几颗常驻上浮的 emoji，让格子“活着”
-    $('.niall-panel .niall-hearts, .niall-photo-panel .niall-hearts').each(function () {
-      seedFloaters($(this), 5, 14, 26);
-    });
-
-    // ---- 贴纸命中判定：直接读 PNG 的 alpha 通道 ----
-    // 为什么不用 CSS 裁剪：实测 mask 只裁剪绘制、不裁剪命中测试；clip-path 用外部
-    // .svg 引用和 data URI 两种写法在本环境都未生效（按钮始终是整块矩形命中区）。
-    // 因此改为把每张贴纸缩小画到离屏 canvas，取 alpha 做逐像素判定 ——
-    // 命中区域精确等于贴纸轮廓，且不依赖任何裁剪特性。
-    var ALPHA_N = 150;          // 采样分辨率（150x150 足够，越小越快）
-    var HIT_THRESHOLD = 24;     // alpha 阈值，留余量以便边缘也能点到
-    var hitData = {};           // name -> { data: Uint8ClampedArray, box: DOMRect }
-
-    function buildHitData() {
-      var tasks = [];
-      $('.niall-figure').each(function () {
-        var btn = this;
-        // 注意：class 形如 "niall-figure niall-figure--sm niall-figure--top"，
-        // 用 /niall-figure--(\w+)/ 会匹配到 "--sm"（不是 --top），导致三张小贴纸同名、
-        // alpha 数据互相覆盖。必须精确匹配四个修饰名。
-        var name = (btn.className.match(/niall-figure--(main|top|left|right)\b/) || [])[1];
-        var img = btn.querySelector('img');
-        if (!name || !img) return;
-        tasks.push(new Promise(function (resolve) {
-          var build = function () {
-            try {
-              var cv = document.createElement('canvas');
-              cv.width = ALPHA_N; cv.height = ALPHA_N;
-              var ctx = cv.getContext('2d');
-              ctx.drawImage(img, 0, 0, ALPHA_N, ALPHA_N);
-              hitData[name] = { data: ctx.getImageData(0, 0, ALPHA_N, ALPHA_N).data };
-            } catch (err) {
-              hitData[name] = null;   // 取不到像素就退回矩形命中
-            }
-            resolve();
-          };
-          if (img.complete && img.naturalWidth) build();
-          else { img.addEventListener('load', build, { once: true }); img.addEventListener('error', resolve, { once: true }); }
-        }));
-      });
-      return Promise.all(tasks);
-    }
-
-    // 命中检测：用 event.target 精确判断指针是否落在某张贴纸上
-    function hitTest(ev) {
-      var found = null;
-      $('.niall-figure').each(function () {
-        var btn = this;
-        // 注意：class 形如 "niall-figure niall-figure--sm niall-figure--top"，
-        // 用 /niall-figure--(\w+)/ 会匹配到 "--sm"（不是 --top），导致三张小贴纸同名、
-        // alpha 数据互相覆盖。必须精确匹配四个修饰名。
-        var name = (btn.className.match(/niall-figure--(main|top|left|right)\b/) || [])[1];
-        var hd = hitData[name];
-        var box = btn.getBoundingClientRect();
-        if (ev.clientX < box.left || ev.clientX > box.right || ev.clientY < box.top || ev.clientY > box.bottom) return;
-        if (!hd) { found = btn; return; }
-        var px = Math.floor((ev.clientX - box.left) / box.width * ALPHA_N);
-        var py = Math.floor((ev.clientY - box.top) / box.height * ALPHA_N);
-        px = Math.max(0, Math.min(ALPHA_N - 1, px));
-        py = Math.max(0, Math.min(ALPHA_N - 1, py));
-        if (hd.data[(py * ALPHA_N + px) * 4 + 3] > HIT_THRESHOLD) found = btn;
-      });
-      return found;
-    }
-
-    var hovered = null;
-    function refreshHover(ev) {
-      var btn = hitTest(ev);
-      if (btn === hovered) return;
-      if (hovered) hovered.classList.remove('is-on-sticker');
-      hovered = btn;
-      if (hovered) hovered.classList.add('is-on-sticker');
-    }
-
-    // 人物贴纸：小手办戳一下会晃、主人物会鼓一下。
-    // 重复触发时先摘类 + 强制 reflow 再挂上，动画才能从头重放。
-    //
-    // 定时器必须按元素保存并每次都清掉上一个：之前每次点击都新建一个 1200ms 定时器且
-    // 从不取消，连点时**前一次的定时器会把后一次正在播的动画类摘掉**，动画被腰斩，
-    // 表现就是"连点会重复、动画完不成"。
-    var popTimers = new WeakMap();
-    // ---- 触屏专用：几何缓存 ----
-    // 触摸期间按钮尺寸/位置不会变，没必要每次点击都做 getBoundingClientRect()
-    // （触摸中反复触发布局计算会让合成器掉帧，表现为画面闪一下）。
-    // 只在 pointerType=touch 时用到；桌面路径完全不走这里。
-    var geomCache = null;
-    function figGeom() {
-      if (geomCache) return geomCache;
-      var out = [];
-      $('.niall-figure').each(function () {
-        var name = (this.className.match(/niall-figure--(main|top|left|right)\b/) || [])[1];
-        if (!name) return;
-        var r = this.getBoundingClientRect();
-        out.push({ name: name, el: this, left: r.left, top: r.top, w: r.width, h: r.height });
-      });
-      geomCache = out;
-      return out;
-    }
-    function hitTestTouch(ev) {
-      var gs = figGeom();
-      for (var i = 0; i < gs.length; i++) {
-        var g = gs[i], hd = hitData[g.name];
-        if (ev.clientX < g.left || ev.clientX > g.left + g.w ||
-            ev.clientY < g.top || ev.clientY > g.top + g.h) continue;
-        if (!hd) return g.el;
-        var px = Math.floor((ev.clientX - g.left) / g.w * ALPHA_N);
-        var py = Math.floor((ev.clientY - g.top) / g.h * ALPHA_N);
-        px = Math.max(0, Math.min(ALPHA_N - 1, px));
-        py = Math.max(0, Math.min(ALPHA_N - 1, py));
-        if (hd.data[(py * ALPHA_N + px) * 4 + 3] > HIT_THRESHOLD) return g.el;
-      }
-      return null;
-    }
-    function invalidateGeom() { geomCache = null; }
-    $(document).on('pointerdown', function (ev) {
-      if (ev.pointerType === 'touch') invalidateGeom();
-    });
-    $(window).on('resize orientationchange', invalidateGeom);
-
-    function pop(el, cls, isTouch) {
-      var other = cls === 'is-pulse' ? 'is-wiggle' : 'is-pulse';
-      el.classList.remove(cls, other);
-      // 强制 reflow 是为了让动画从头重放；但触屏下这步带来一次同步布局计算，
-      // 移动端表现为掉帧/闪一下。触屏路径去掉它，改为摘类后再挂回。
-      if (!isTouch) void el.offsetWidth;
-      el.classList.add(cls);
-      var prev = popTimers.get(el);
-      if (prev) window.clearTimeout(prev);
-      // 兜底：animationend 万一没触发（如系统开了"减少动效"），类也不会永久残留。
-      popTimers.set(el, window.setTimeout(function () {
-        el.classList.remove(cls);
-        popTimers.delete(el);
-      }, 1300));
-    }
-    function popName(el) {
-      return el.classList.contains('niall-figure--main') ? 'is-pulse' : 'is-wiggle';
-    }
-    // 动画挂在 .niall-figure img 上（见 CSS），所以 animationend 的 target 是 img。
-    $('.niall-photo-panel').on('animationend', '.niall-figure img', function () {
-      var btn = this.closest('.niall-figure');
-      if (!btn) return;
-      btn.classList.remove('is-wiggle', 'is-pulse');
-      var t = popTimers.get(btn);
-      if (t) { window.clearTimeout(t); popTimers.delete(btn); }
-    });
-
-    // 指针反馈只对图片格（左格没有贴纸，不需要指针态判定）
-    $('.niall-photo-panel')
-      .on('pointermove', function (ev) { refreshHover(ev); })
-      .on('pointerleave', function () {
-        if (hovered) hovered.classList.remove('is-on-sticker');
-        hovered = null;
-      });
-
-    // ---- 点击：两格各用一套独立逻辑 ----
-    // 左格（文字格）没有贴纸，点任何位置都冒 emoji —— 独立绑定，逻辑最简。
-    $('.niall-panel').on('click', function (ev) {
-      var $layer = $(this).find('.niall-hearts').first();
-      if (!$layer.length) return;
-      var o = $layer.offset();
-      burst($layer, ev.pageX - o.left, ev.pageY - o.top);
-    });
-
-    // 右格（图片格）：先做贴纸命中判定，踩在贴纸上只让贴纸动；否则冒 emoji。
-    // 提示：命中判定是在**所有**贴纸上按坐标找"哪张在该点不透明"（不是看 ev.target）。
-    // 四个按钮都是满格 1200x1200 叠放（图片才能按原位置 1:1 摆放），
-    // 指针永远会被最后一个满格按钮接住，用 ev.target 判定会让贴纸整体失效。
-    $('.niall-photo-panel').on('click', function (ev) {
-      var oe = ev.originalEvent || {};
-      var isTouch = oe.pointerType === 'touch' || (oe.sourceCapabilities && oe.sourceCapabilities.firesTouchEvents === true);
-      var btn = isTouch ? hitTestTouch(ev) : hitTest(ev);
-      if (btn) { pop(btn, popName(btn), isTouch); return; }
-      var $layer = $(this).find('.niall-hearts').first();
-      if (!$layer.length) return;
-      var o = $layer.offset();
-      burst($layer, ev.pageX - o.left, ev.pageY - o.top);
-    });
-
-    // 键盘可达：Tab 聚焦后回车/空格
-    $(document).on('keydown', '.niall-figure', function (e) {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pop(this, popName(this), false); }
-    });
-
-    buildHitData();
   });
 }(jQuery));
 </script>

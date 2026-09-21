@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html class="lang-en" lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0, user-scalable=0" />
+	<title>Larry 9-28 demo · 倒计时 panel</title>
+
+	<link href="//fonts.googleapis.com/css?family=Playfair+Display:700|Codystar|Cousine:400,700|Source+Code+Pro:300,400,500,600,700|Source+Sans+Pro:400|Oswald:400,700|Vampiro+One|Six+Caps&display=swap" rel="stylesheet" type="text/css" />
+	<link href="../../css/styles.css?v=20260922a" rel="stylesheet" type="text/css" />
+	<link href="css/larry-anniv.css" rel="stylesheet" type="text/css" />
+</head>
+
+<body class="duo home-section">
+
+<!-- === DEMO ONLY — 合并前删除 ===
+     语言切换为纯 CSS（checkbox + label + :has()），不依赖 JS -->
+<div class="larry-demo-bar">
+	<input type="checkbox" id="larry-demo-zh" class="larry-demo-toggle" />
+	<label for="larry-demo-zh" class="larry-demo-lang"></label>
+</div>
+
+<!-- 预览上下文（非交付物）：线上第一屏是这块全出血照片 hero，倒计时紧接其下 -->
+<div class="panel hero four"><div class="bg retinafy"></div><h1><div class="bg retinafy" style="background-image: url(../../images/gfx/5guys/logo-white.png);">FIVE GUYS ONE DIRECTION</div></h1></div>
+
+<div class="panel larry-cd">
+
+	<div class="larry-cd-stripes" aria-hidden="true"></div>
+
+	<div class="larry-cd-stage">
+
+		<div class="panel-header">
+			<div class="title"><span class="en">2026.9.28</span><span class="zh">2026年9月28日</span></div>
+			<div class="section-name"><span><span class="en">Counting down</span><span class="zh">倒计时</span></span></div>
+		</div>
+
+		<div class="larry-cd-main">
+
+			<div class="larry-cd-motif larry-cd-motif--louis" role="img" aria-label="Oops! — Louis"></div>
+
+			<div class="larry-cd-clock" role="timer" aria-label="Time left until 28 September 2026, 00:00 UTC+8">
+				<span class="larry-cd-unit"><span class="larry-cd-num" data-unit="d">06</span><span class="larry-cd-lab"><span class="en">days</span><span class="zh">天</span></span></span>
+				<span class="larry-cd-sep" aria-hidden="true">:</span>
+				<span class="larry-cd-unit"><span class="larry-cd-num" data-unit="h">00</span><span class="larry-cd-lab"><span class="en">hrs</span><span class="zh">时</span></span></span>
+				<span class="larry-cd-sep" aria-hidden="true">:</span>
+				<span class="larry-cd-unit"><span class="larry-cd-num" data-unit="m">37</span><span class="larry-cd-lab"><span class="en">min</span><span class="zh">分</span></span></span>
+				<span class="larry-cd-sep" aria-hidden="true">:</span>
+				<span class="larry-cd-unit"><span class="larry-cd-num" data-unit="s">14</span><span class="larry-cd-lab"><span class="en">sec</span><span class="zh">秒</span></span></span>
+			</div>
+
+			<div class="larry-cd-motif larry-cd-motif--harry" role="img" aria-label="Hi. — Harry"></div>
+
+		</div>
+
+		<p class="larry-cd-script"><span class="en">Thirteen years since a promise only two of them ever needed to hear.</span><span class="zh">十三年前的那个约定，不需要别人听懂。</span></p>
+
+	</div>
+
+</div>
+
+<script src="js/larry-anniv.js"></script>
+
+</body>
+
+</html>

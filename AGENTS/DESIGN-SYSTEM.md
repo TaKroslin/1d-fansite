@@ -26,6 +26,26 @@
 | `instagram-blue` | `rgba(83,128,165,.7)` | Instagram hover overlay |
 | `history-blue` | `rgba(206,211,241,.75)` | Homepage video overlay |
 
+Larry 9-28 纪念日套件（设计稿 §3.1；末两枚为 2026-09-21 新增）：
+
+| Token | Value | Use |
+|---|---|---|
+| `larry-blue-deep` | `#1e4d6e` | Louis 半区主底、图案（蓝） |
+| `larry-blue-mid` | `#3a7ca5` | Louis 半区渐变次层 |
+| `larry-blue-wash` | `#e8f1f6` | Louis 半区卡片底色（**不用于条纹**：与 green-wash 明度几乎相同） |
+| `larry-green-deep` | `#2f5d4e` | Harry 半区主底、图案（绿） |
+| `larry-green-mid` | `#57a787` | Harry 半区渐变次层 |
+| `larry-green-wash` | `#e9f4ef` | Harry 半区卡片底色（**不用于条纹**，同上） |
+| `larry-gold` | `#c9a86a` | 金线／分隔／心形节点 |
+| `larry-cream` | `#faf6ef` | 奶油纸牌底、文字反白底 |
+| `larry-ink` | `#141b21` | 浅底上的正文文字 |
+| `larry-blue-fresh` | `#c8e6fb` | **浅色场专用**：清新浅蓝（Louis）。只能落在**白底**上；配奶油底会发脏 |
+| `larry-green-fresh` | `#cfefd7` | **浅色场专用**：清新浅绿（Harry）。同上 |
+
+> `fresh` 两枚的由来：deep/mid/wash 三档都是灰调色，wash 两色明度太近（分不出蓝绿），
+> mid 叠在偏黄的奶油底上会发浑（作者反馈"蓝绿好脏"）。要"浅浅的、非常清新"的颜色，
+> 必须是**高亮度 + 中高彩度**的粉彩，且底必须是中性白。
+
 不得为同一语义重复创建近似颜色；新颜色必须先更新本表。
 
 ### Typography

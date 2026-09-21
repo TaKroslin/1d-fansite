@@ -515,3 +515,51 @@
 - **处理**：`.assetsignore` 补上 `/images/psd/` 与 `/images/gfx/psd/`，与 `.gitignore` 对齐。
 - **验证**：补规则前 `wrangler deploy --dry-run` 退出码 **1**（Asset too large）；补后退出码 **0**、`Total Upload: 0.34 KiB`。同时线上探测 `/images/psd/hero-rect.psd`、`/images/psd/dinnertable-rect.psd`、`/images/gfx/psd/liam-rect.psd` 均 **404**（尚未泄漏）。
 - **预防**：① **新增"不发布的目录"要同时改两张表**：`.gitignore`（不进版本库）+ `.assetsignore`（不上传）。② 定期跑 `find . -type f -not -path "./.git/*" -size +25M`，任何命中都必须是已被 `.assetsignore` 排除的路径。③ 部署失败先读**第一行错误**：`Asset too large` 是资源体积问题，跟代码/配置无关。④ `.venv/lib/.../playwright/driver/node`（115 MB）因为 `.venv/` 已被排除所以不触发 —— 这正好反证**体积检查跑在过滤之后**。
+
+### M73. 作者口语化比例（"长形 1:2 横长方形 / 方形 1:1"）vs site 默认 `.panel`（实际 2:1）—— 开工前必看 gallery 模式
+- **现象**：设计稿 v0.1 给作者过完，开 demo 时自作主张写了 `.larry-square{padding-top:100%}` 和 `.larry-wide{padding-top:50%}`（直觉映射"1:1 → 1, 2:1 → 0.5"）。第一版文字排版还被作者评价"特别特别特别特别丑"，且对横向卡片比例理解错位。
+- **根因**：① **作者口语的"1:2" = 宽:高 = 2:1（横长方形）**，"1:1" = 正方形；这是项目里 Gallery 封面的同一套比例（桌面 600×300 = 2:1，移动 300×300 = 1:1，见 `.agents/skills/gallery-page/SKILL.md` §6.1）。Site 默认 `.panel` 的 `padding:50% 0 0` 恰好是 2:1，但**没有 1:1 方形 panel**——site 上要 1:1 得新增 modifier。② 自造 class（`.larry-square`、`.larry-wide`、`.larry-half--blue`）绕开了 site 真实 `.panel` / `.panel-header` / `h2` / `.info` 结构，丢了所有继承自官方样式（字体、定位、hover/focus、retinafy）。DESIGN-SYSTEM.md §4 第一句就是「所有内容块优先使用 `.panel`」，被跳过；ELEMENT-NAMING.md 锁住真实 class 名，新组件乱起名也是踩线。
+- **处理**：① **每个 larry panel 用 `.panel larry-panel` 双 class**：`.panel` 接管 site 默认 padding（2:1）+ `.panel-header` + `h2` + `.info` + `.bg retinafy` 全套继承；`.larry-panel` 仅做"桌面 2:1、移动 1:1 切换"和 larry 专属颜色 token override。② CSS 里**只写差异部分**（`.larry-panel{padding:50% 0 0}` + `@media(max-width:767px){.larry-panel{padding:100% 0 0}}`），不复造 .panel-header / h2 / .info 的样式——它们在 styles.css 里已经写好。③ 文字排版对齐 site 头条卡片：panel-header 用 `Source Code Pro` mono letter-spacing（取自 site mono token），h2 用 `Playfair Display italic`（DESIGN-SYSTEM §2 字体表），`.info` 用同 serif italic + 居中，`a.more` 用 mono uppercase。④ 占位图直接用项目已有的 `images/gfx/filmstrip-harry-lrgc4ca.jpg` + `filmstrip-louis-lrgc4ca.jpg` + `images/blog/larry-*` 三张，不要臆造新路径。
+- **预防**：① **比例先核 gallery 模式**：横长方形 = 2:1、方形 = 1:1（gallery cover 两个比例就是项目唯二的"内容卡比例"），不要瞎定。② **新组件必复用 `.panel`**：DESIGN-SYSTEM §4 + RULES §"新增选择器必须覆盖移动端高 specificity 规则" + ELEMENT-NAMING 的 class 名唯一性，三条规则一起生效，缺一不可。③ **写 CSS 前先 grep site 已有 token**：`.panel-header` 默认 `font-family:'Times New Roman'` + 顶部 absolute；自造字体前先想"site 用什么"。④ **"横长方形"和"方形"是同一个 panel 的两种形态**（媒体查询切换），不是两个不同的 panel——前者把 panel 锁死成 2:1 或 1:1 都是错的。
+
+### M74. CSS 里的相对 URL 以 **CSS 文件自身** 为基准，不是引用它的 HTML
+- **现象**：倒计时面板左右两个手绘图案完全不显示。Playwright 抓到两个 404：`/docs/images/gfx/larry-anniv-2026/motif-oops.png` —— 路径里**多了一层 `docs/`**。同一份 CSS 在桌面/移动截图里都缺图，但面板其余部分一切正常，所以肉眼只看到"图没出来"。
+- **根因**：CSS 里写的是 `url(../../images/...)`。CSS 文件在 `docs/demo/css/larry-anniv.css`，`../../` 从 **CSS 自身**起算 = `docs/`；而 HTML 里同样的 `../../` 从 `docs/demo/index.html` 起算 = 仓库根。**同一条 `../../` 在两个文件里指向不同位置**——`../../` 在 HTML 里对、在 CSS 里差一级。
+- **处理**：CSS 内改成 `../../../images/...`。
+- **验证**：Playwright 挂 `page.on('response')` 统计 404，改前 2 条、改后 0 条。
+- **预防**：① **在 CSS 里写图片路径时，基准永远是 CSS 文件所在目录**。② 本项目的 demo 稿在 `docs/demo/`（比线上深两级），移植进线上时**这段相对层级必然要改**（线上 CSS 在 `css/`，只需 `../images/`）——合并清单里必须显式写上这一条。③ 只要页面出现"图没显示"，先抓 `response` 的 4xx 看**请求到的完整 URL**，不要盯着 HTML 里的写法猜。
+
+### M75. flex column + `align-items:center` 的子项没有确定宽度，内部百分比宽度会塌成几像素
+- **现象**：面板里两个图案槽位（`width:21%` + `aspect-ratio:4/3`）在 1440 视口下量出来是 **3×2 px**，几乎不可见；但"左右两个等宽"这条断言居然**通过**了（两个都是 3px，确实等宽）。
+- **根因**：舞台是 `display:flex;flex-direction:column;align-items:center`，子项 `.larry-cd-main` 在**交叉轴**上是 fit-content（内容宽）而不是撑满；它内部的 `width:21%` 于是相对一个由内容反推、近乎为 0 的宽度解析。
+- **处理**：`.larry-cd-main{width:100%}`。
+- **验证**：`getBoundingClientRect` 从 3×2 → 278×209；断言同时补了"宽度必须 > 200"的下界。
+- **预防**：① **flex 交叉轴上的百分比尺寸必须先给父项一个确定宽度**（`width:100%` / `align-self:stretch`），否则百分比失去基准。② 写几何断言时**必须同时约束下界**——"两个都等于 3px"这种"等宽"断言会把塌陷判成通过，比没有断言更危险。
+
+### M76. 线稿抠图：阈值收紧去不掉"与主笔画相连的软凸起"，要用 3×3 形态学开运算
+- **现象**：白底手写 "OOPS!" 抠成透明 PNG 后，第一个 O 的左端外侧残留一片淡灰凸起。把 alpha 提取阈值从 `(240-L)/110` 收到 `(225-L)/95` 之后**仍在**。
+- **根因**：① 那片凸起是扫描/JPEG 残留，峰值 alpha 约 150，且**与主笔画连通**——"按连通块面积+均值去孤点"抓不到它（它属于最大连通块，6 万像素的均值 237 把它的影响摊平了）。② 提高提取阈值只改变 alpha 的映射斜率，只要凸起峰值仍高于阈值就会留下。
+- **处理**：对最终 alpha 做 **3×3 形态学开运算**——只保留"邻域 8 个像素都 > 180"的像素并保留其原 alpha；同时对 `<= 60` 的像素直接清零。粗笔画内部完全不受影响，薄而软的凸起整片消失。
+- **验证**：放大 6× 目检凸起消失、笔画完整；文件体积 105 KB → 37 KB（实心黑 + 硬边让 PNG 压缩率大幅提升，是"边缘确实变干净"的旁证）。
+- **预防**：① **线稿（黑线／白底）抠图的标准流水线**：亮度→alpha（陡坡）→ 4× 高质量重采样 → 二次收紧边缘 → 3×3 形态学开运算 → 连通域/列投影切分 → 墨迹外框 + 透明留边。**放大这步不能省**：源图常常只有预览分辨率，直接抠出来放进 300px 槽位会糊，而"重采样后再收紧"能把边缘重新变锐。② 去噪不要只按连通块做，**与主体相连的软凸起只能靠形态学**。
+
+### M77. 计时类组件别用固定 sleep 验证——后台页定时器会被节流，且长得像真 bug
+- **现象**：同一份"倒计时在走秒"断言，前两轮跑过（58→57、34→32），第三轮失败（04→04）。代码没改过，结果不稳定。
+- **根因**：断言写的是 `read(); await waitForTimeout(1600); read()`。Chromium 对不可见/后台渲染的页面会**节流 `setTimeout`**，1.6 秒内定时器可能一次都没触发。不是组件 bug，是**验证手段的 bug**——但它呈现出来的样子和真 bug 一模一样。
+- **处理**：改成"等它真的变化"——`page.waitForFunction(prev => 当前值 !== prev, prev, {timeout:5000})`；并补一条**正确性**断言：显示值必须等于 `目标时间 − Date.now()` 独立算出的剩余（漂移 ≤1s）。
+- **验证**：改后连续多轮全绿，漂移 0s。
+- **预防**：① **异步/计时行为不要用固定 sleep 判定**："事件是否发生"用 `waitForFunction`，"值是否正确"用与**独立计算源**对比。② 断言时好时坏时，先怀疑验证方式（节流、竞态），但**要用更强的断言把"验证方式的问题"和"被测代码的问题"区分开**，别直接放宽阈值或删掉断言。
+
+### M78. `em` 尺寸跟的是 `.panel` 的字号阶梯，而官方在 ≤400px 把它砍到 66.67%
+- **现象**：倒计时奶油牌里的单位标签（DAYS / HRS / MIN / SEC）在 390px 下**掉到牌底边框外面**（实测标签底边比牌底还低 **6.8px**），桌面 1440 下也已经越过内圈金线 0.3px。牌的内边距写的是 `padding:.85em 1.6em 1.7em`，看起来够用。
+- **根因**：`em` 相对的是**元素自身字号**，而 `.panel` 的字号是官方的一套**阶梯**：1440 下 `116.666667%`（18.67px），但 `@media (max-width:400px)` 直接给 `.panel{font-size:66.6666667%}`（**10.67px**）。于是底边距从 31.7px 掉到 **18.1px**，而单位标签的字号是我用 `vw` clamp 定的（390 下 11.3px，**不跟着阶梯缩**）——一边缩一边不缩，标签就溢出了。又因为标签是 `position:absolute` 挂在数字下方（脱离文档流），牌的高度不会因它增长，溢出不会被撑开，只会被压住。
+- **处理**：牌的内边距从 `em` 改成 `rem`（`padding:1rem 1.5rem 2.4rem`）。`rem` 只跟根字号（16px）走，不随 `.panel` 阶梯变；2.4rem 恒定容下 16px 标签 + 金内框。
+- **验证**：实测"标签底边 − 牌底 − 5px 金内框"的余量：桌面 **+6.4px**、390px **+8.5px**、360px **+8.6px**（改前分别是 −0.3 / −6.8）。
+- **预防**：① **同一元素里混用 `em` 与 `vw`/`rem` 是危险信号**：`em` 跟面板阶梯、`vw`/`rem` 跟视口/根字号，两者会在某些断点各自朝相反方向走。要跨断点稳定，**内边距/间距优先 `rem`**。② **绝对定位的装饰（单位标签、角标、focus 环）不会撑开父容器**，必须显式预留在父元素的 padding 里，并且**要按最窄断点验证**（本次 390px 就是最坏的）。③ 这类 bug 的判断法是量"装饰元素底边 − 容器内边框底边"的余量，正负一眼看出来，别靠目测截图。
+
+### M79. 浅色场要"清新"，必须高亮度 + 中高彩度，且底必须是中性白
+- **现象**：倒计时面板的蓝绿条纹第一版用两枚 `wash` token（`#e8f1f6` / `#e9f4ef`）→ 作者反馈"完全看不出蓝绿"；第二版改用 `mid` token（`#3a7ca5` / `#57a787`）加 34% 透明度叠在奶油底上 → 作者反馈"**蓝绿好脏**"。
+- **根因**：两个独立原因叠加。① `wash` 两色的**明度几乎相同**（96% vs 96%），只差色相，在屏幕上就是一片白灰，谈不上"浅蓝浅绿"。② `mid`/`deep` 这几档是**灰调色**（为深色半区设计，彩度本来就低），再叠在**偏黄的奶油底** `#faf6ef` 上，蓝被黄中和成灰青（实测 `#b8ccd5`）、绿被中和成橄榄灰（`#c2dbcb`）——这就是"脏"。透明叠加还会把底色混进来，越叠越浑。
+- **处理**：① 新增两枚**浅色场专用** token：`larry-blue-fresh:#c8e6fb`、`larry-green-fresh:#cfefd7`（高亮度 ~89% + 中高彩度），并登记进 `DESIGN-SYSTEM.md` 颜色表。② 条纹改为**不透明**直接上色，不再叠透明度。③ 面板底从 `--larry-cream` 改成 **`#fff`**——清新粉彩必须落在中性白底上。
+- **验证**：条带中心像素采样 `#c8e6fb` / `#cfefd7`，最大通道差 ≈ 40（改前 7 → 15）；黑字对比度仍 >12:1。
+- **预防**：① **"浅色"和"清新"不是一回事**：浅 = 高亮度，清新 = 高亮度 **+ 够用的彩度**；只降透明度做不出清新，只会做出灰。② **给浅色场配色时先问底色**：暖色底（奶油/米白）会把任何冷色拖脏，浅色场底色一律用中性白。③ **深色场用的 token 不要直接搬到浅色场**（反之亦然）——`deep/mid/wash` 是按深底设计的，浅底需要单独一档，新增时要进 token 表。

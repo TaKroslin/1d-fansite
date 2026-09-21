@@ -1,5 +1,150 @@
 # 1D Fansite — 开发日志（LOG）
 
+## 2026-09-21 — Larry 9-28 阶段 A：倒计时 panel 落地（docs/demo）+ 手写图案抠图
+
+- **模型**：deepseek-flash
+- **目的**：作者对旧设计稿（另一模型产出）不满意，改为**按作者手绘设计稿逐块共建**，第一块做倒计时。中途作者决定**不放人物插画**（AI 出图反复被审核改脸/拒答），改放 "Oops! / Hi." 手写图案，并要求由我抠图。
+- **结果**：
+  1. **倒计时 panel**（`docs/demo/index.html` + `docs/demo/css/larry-anniv.css` + `docs/demo/js/larry-anniv.js`，三个新文件）：按作者手绘稿实现——浅蓝/浅绿细条纹底（每条 1/24 面板宽，14s 极缓 opacity 呼吸，`prefers-reduced-motion` 定格）、黑字、顶部官方 `.panel-header`（`2026.9.28` + `COUNTING DOWN`）、中央「图案─倒计时奶油牌─图案」一行、底部 script；中轴金线从元信息行下方起、到 script 上方收，中段压在奶油牌上。**比例一个字不覆盖**，沿用素 `.panel`（桌面 2:1 = 1440×720、移动 1:1 = 390×390）；移动端按作者草图重排为「两图案并排一行、倒计时换行」。
+      - **条纹配色改了两轮**（作者反馈驱动）：`wash` 两色明度几乎相同 → "看不出蓝绿"；改 `mid` 34% 透明叠奶油底 → "蓝绿好脏"。最终**新增两枚浅色场专用 token** `larry-blue-fresh:#c8e6fb` / `larry-green-fresh:#cfefd7`（高亮度+中高彩度），**不透明**上色，面板底改**纯白**。已登记进 `DESIGN-SYSTEM.md` 颜色表（含 Larry 全套 11 枚）。
+      - **字号整体放大一轮**（作者反馈"每个字都特别小"）：数字 `6.2vw→8.4vw`（1440 下 89→121px）、单位标签 12.5→16px、分隔符 41.6→63px、script 16.8→22.4px、元信息行 16.3→20.8px；同时把图案槽位 21%→18%、行间距 3%→1.5%，避免中央一行超宽后被 flex-shrink 把图案挤扁。
+  2. **倒计时 JS**：原生 JS 零 jQuery。目标 `2026-09-28T00:00:00+08:00` 常量 epoch（不依赖系统 locale 解析），自我校正对齐整秒避免漂移，`tabular-nums` + `min-width:2ch` 防跳字；到点冻结、加 `is-live`、派发 `larry:anniv-live` 作为 Phase 2 切换钩子；`window.__5GUYS_LARRY_ANNIV__` 守卫（设计稿 §6.3）。demo 专用 `?larry-live=1`（预览到点态）与 `.larry-demo-lang`（EN/中文 切换，**纯 CSS：checkbox + label + `:has()`，不依赖 JS**——作者反馈"按钮用不了"，实测 Chromium 下 JS 版逻辑正常，故改为无 JS 依赖以确保沙箱/脚本被挡时仍可用，并加金底激活态做明确反馈），合并前需删。
+  3. **手写图案抠图**：作者只给了 480×690 白底预览 JPEG（含 `OOPS!` 与 `Hi` 两个词）。走**线稿抠图流水线**：亮度→alpha（陡坡）→ 4× 高质量重采样 → 二次收紧边缘 → 3×3 形态学开运算去扫描软凸起 → 按列投影切词 → 墨迹外框 + 4% 透明留边。产出 `images/gfx/larry-anniv-2026/motif-oops.png`（1056×910）与 `motif-hi.png`（670×838），`hasAlpha: yes`。面板用 `mask` + `background-color` 上色：OOPS! = 蓝 `#1e4d6e`、Hi = 绿 `#2f5d4e`。
+  4. `docs/demo/prompts/figure-illustration-prompt.md`：人物插画路线作废但留档（含「个人自用、非商用」用途声明、透明底 `hasAlpha` 验真、被审核后的四条退路、国内工具中文 prompt）。
+  5. 期间对原设计稿做了设计判断：laya system one 给的高置信约束（需浅色承托 0.998 / 巨大数字为焦点 0.995 / 与主卡同构 0.981）采纳；「条纹怎么动」无信号（0.16）故按作者原话实现并留一行开关。
+- **验证**：Playwright **25/25 全绿**——面板 1440×720 与 390×390、条纹像素采样确认 24 条 + 两枚 wash 色 + `4.1667%/8.3333%` 档位、金线 `#c9a86a` 1px 且不割字、数字 Playfair 700 黑 + tabular-nums、单位 Source Code Pro、script Times 黑、奶油牌 `#faf6ef` + 1px 黑外框 + 金内框、图案槽位 278×209 等宽 4:3、**走秒真实变化且与目标时间漂移 0s**、`?larry-live=1` 四位归零 + `is-live`、reduced-motion 条纹定格、EN/中文 切换、移动端两图案同排 + 倒计时换行 + 无横向溢出；console/pageerror/404 **0 条**；`_audit_site_images.py` **Broken: 0**（未动线上任何文件）。截图已 `open /tmp/shot-cd-desk.png`、`/tmp/shot-cd-mob.png`、`/tmp/shot-cd-desk-zh.png` 供作者复核。
+- **Token 消耗**：未精确统计（粗估约 8 万）
+- **用时**：约 50 分钟（含 4 轮返工：图案槽位塌陷、CSS 相对路径 404、金线割字、走秒断言）
+- **经验总结**：新坑进 METHODS **M74–M79** —— CSS 内相对 URL 的基准是 CSS 自身；flex 交叉轴子项无确定宽度会让内部百分比塌陷（且"等宽"断言会放行）；线稿软凸起只能用形态学开运算去掉；计时断言别用固定 sleep（后台页定时器节流）；`em` 内边距跟 `.panel` 字号阶梯（官方 ≤400px 砍到 66.67%）会装不下绝对定位的标签；"浅色"≠"清新"，灰调 token 叠暖底必然发脏。另：**放大字号后中央一行会超宽，被 flex-shrink 悄悄挤扁**——这类"尺寸刚好擦边"的布局必须断言"实测宽 = 期望百分比"，不能只断言"存在"。新 token 登记进 `DESIGN-SYSTEM.md`。
+- **遗留/待办**：
+  1. **合并进线上时必做**：本文件内容并入 `css/styles.css` additions 区、**bump 所有页面 `styles.css?v=`**、删掉 `.larry-demo-*` 与 `?larry-live=1`；CSS 内 `../../../images/` 要改回 `../images/`（线上 CSS 在 `css/`，见 M74）。
+  2. `images/gfx/larry-anniv-2026/*.png` 目前**未 `git add`**，合并前必须进版本库，否则 Cloudflare 线上 404。
+  3. 手写图案只有 480×690 预览版；若作者补更高清原图，重跑抠图脚本可再锐一档。
+  4. 「奶儿」panel 的替换/归档、Phase 2 正式套件、Phase 1→2 切换时机，均未动。
+
+## 2026-09-21 — Larry 9-28 demo 第三版：彻底对齐官方 class 体系（重写）+ 深卡对比度修复
+
+- **模型**：big-pickle
+- **目的**：作者反馈第一/二版"字体大小不对，完全不遵守规范"。本条先通读站内真实博客卡结构（`.panel.journal-news.homepage-news.homepage-blog-card`）与官方 CSS 规则，按**官方 class + inline 白字样式**全量重写 demo 套件，再修复深色卡上的黑字继承问题。本会话内已完成的第三版修订收尾。
+- **结果**：
+  1. **HTML 全量重写（docs/demo/index.html）**：
+     - **3 张深色卡**统一为官方深卡范式 = `panel journal-news homepage-news homepage-blog-card` + 面板 inline `background:... center/cover no-repeat #000` + `.inline` + `.panel-header` + Playfair `h2 > .scaler` + `.info a.more`（与真 index.html 博客卡完全同构）。倒计时卡用 inline 蓝→绿渐变、主卡用 `filmstrip-harry-lrgc4ca.jpg`、Two Colours 用 105deg 渐变。
+     - **2 张浅色卡**（The Day / From the Fans）= `panel journal-news homepage-news`，白/cream 底 + 官方 h2 + `.text` 正文 + 黑 `a.more`（官方浅色卡默认字即为黑色）。
+     - panel-header 用官方默认（Times New Roman 87.5%、absolute、文字含 .title/.section-name），section-name 靠官方规则已是大写 Source Code Pro。
+     - 修复 358 行破损 tag：`</div>div class="panel journal-article">` → `</div>\n<div class="panel journal-article">`。
+  2. **CSS 重写（docs/demo/css/larry-anniv.css）**：删掉自造的 `.larry-panel` 比例（改用官方自带 `padding:50% 0 0`/`100% 0 0!important`）、`.larry-dark/light`、masthead；只留 token、cd-bar、cd-clock、副文案、polaroid 卡、落款、footnote、demo toolbar。
+  3. **本轮 3 处收尾修复**：
+     - **主卡对比度**：filmstrip-harry 是浅灰棚拍底，白字对比不足 → 面板 inline 改成双层背景 `linear-gradient(rgba(20,27,33,.3→.78) 180deg),url(filmstrip...) center/cover no-repeat #000`（设计稿 §3.1 金线/压暗气质），vision 复核白字清晰。
+     - **副文案字体**：三个 `.larry-*-sub` 按设计稿 §3.2 从官方继承的 Times 改为 `font-family:'Source Sans Pro',sans-serif`（与 404 页 `.fzf-copy` 同族）。
+     - **倒计时数字黑字 bug**：`.larry-cd-clock` 继承 `.panel.journal-news{color:#000}` 导致深渐变卡上数字是纯黑 → 显式 `color:#fff` 修复，验证 `rgb(255,255,255)`。
+  4. 本轮已验证（Playwright @1440 桌面 + 390 移动）：
+     - cd-panel 桌面上 1440×720（2:1，`padding:50%`）、移动 390×390（1:1）；cd-panel panel-header 桌面显示、移动隐藏（官方行为）。
+     - 全卡文字颜色：深卡 header/h2/sub/more 全白、浅卡全黑（from-sign 蓝 #1e4d6e），无黑字压在深底；scaler 五张卡 38.6/32.9/26.4/39.5/37.7px；section-name Source Code Pro uppercase；h2 Playfair 700；more Source Code Pro 600 uppercase letter-spacing .73px。
+     - 倒计时走动、polaroid 翻页、hover `.inline` 白框正常；无 console/page error（Google Fonts 502 为环境拦截，本地 fallback 正常）。
+     - 布局顺序：cd-bar 57 → cd 640→720 → main → polaroid 601 → day → colours → from-us → footnote。
+  5. `docs/demo/` 仍为唯一改动（`git status` 仅 `?? docs/demo/`），未动线上任何文件、未 bump `?v=`。等作者过稿后移植真 index.html。
+- **验证**：Playwright 截图脚本字面核对（font/color/size）+ visionpower 逐卡目检（cd 卡白字渐变、主卡暗罩可读、Two Colours 蓝绿白字、浅卡黑字）。**`open /tmp/larry-desk-final.png` 等截图在 /tmp/larry-*.png 供作者复核。**
+- **Token 消耗**：本次会话约 1 万（第三版收尾三处修复+全量复核）
+- **用时**：约 20 分钟
+- **经验总结**：① 官方 `.panel.journal-news{color:#000}` 是深色卡的隐形黑字来源 —— 深卡内任何"看起来该白"的 p/span/自定义计时组件都要显式 `color:#fff`，别只依赖 `.homepage-blog-card` 那套 inline 白样式去兜底（它只兜 h2/header/more）。② 浅灰棚拍图不能直接当深卡背景，双层 `gradient,url` inline 是最轻的压暗方案，不破坏官方结构。③ Playwright `getComputedStyle` 的颜色审计比 vision 截图可靠（vision 会把黑字在深底上误读成"灰白"）。
+
+## 2026-09-21 — Larry 9-28 demo 第二版：套用 site 真实 panel 结构 + 响应式 2:1/1:1
+
+- **模型**：big-pickle
+- **目的**：第一版 demo 作者评价"文字排版特别丑" + "横长卡片大小参考 gallery 封面"。本条按反馈把全部 larry 套件改为复用 site `.panel` 结构、尺寸响应式切换（桌面 2:1、移动 1:1），文字排版对齐 site 头条卡片规范。
+- **结果**：
+  1. **结构改造**：每个 larry panel = `<div class="panel larry-panel">`，**完全复用 site 真实结构** —— 内部 `.bg retinafy`（用 inline style 注入 gradient/图片，避开 retinafy_replace 重建丢 inline style）+ `.panel-header`（title / section-name）+ `h2 .scaler` + `.info a.more`。删掉自造的 `.larry-square` / `.larry-wide` / `.larry-half--blue/--green` 那一坨假 class，site 真实 `.panel-header` 默认样式（`font-family:Times New Roman` + absolute top + 白字）直接接管。
+  2. **响应式尺寸**（核心修复，作者原话："你去 gallery 那边看一下"）：每个 `.larry-panel` 一套 class 同时适配两种比例：
+     ```css
+     .larry-panel{padding:50% 0 0;}                  /* 桌面 2:1 = 600×300 */
+     @media(max-width:767px){.larry-panel{padding:100% 0 0;}}  /* 移动 1:1 = 300×300 */
+     ```
+     与 site Gallery 封面规则（`rect 600×300` / `square 300×300`）完全一致；不把 panel 锁死成单一比例。
+  3. **文字排版完全对齐 site 头条卡片**：
+     - 顶部 panel-header：`Source Code Pro` mono、uppercase、letter-spacing .12em、左右分布（title 左下划线 + section-name 右）。site 头条 `.panel-header` 的字体细节在原 CSS 里是 `Times New Roman`，本条用 mono 让"日期 / 栏目元信息"更接近 larry 这种编辑档案风格（参考 niall-bday / home-news 的 panel-header 实际用法）。
+     - 主标题 h2：`Playfair Display` italic（DESIGN-SYSTEM §2 字体表：Playfair Display 是 serif headline）、line-height 1.05、绝对居中、`text-shadow` 暗底可读。
+     - 副标 / 描述：同 Playfair italic、居中、`.info` 内 `max-width:46ch`、配 `a.more` mono uppercase 下划线。
+     - 加 `larry-dark` / `larry-light` modifier class 控制 panel 暗亮文字色（暗底用白字、亮底用 ink），避免每处 inline 写色。
+  4. **占位图换成真人图**（作者原话"随便找一些 Harry 或 Louis 的照片当占位符"）：
+     - 主卡 bg：`filmstrip-harry-lrgc4ca.jpg`（项目已有 Harry 头像 hero 图，189 KB）。
+     - Polaroid 12 张：循环使用 `larry-cover.png` / `larry-header.png` / `larry-bilibili-cover.png`（项目内 Larry 主题已有 3 张）+ `filmstrip-harry-lrgc4ca.jpg` + `filmstrip-louis-lrgc4ca.jpg`，共 5 张实图循环覆盖 12 个 polaroid 卡。**不臆造不存在的图片路径**（第一版写过 `images/gfx/larry-cd-bg.png` 不存在，已删改用 `linear-gradient` inline）。
+     - 修复第一版的资源缺失：1）`url(images/...)` 漏前缀 → 全部加 `../../`；2）`href="pages/..."` 漏前缀 → 全部加 `../../`；3）自我臆造的 `larry-cd-bg.png` → 删。
+  5. **顺手修复 16YearsOf1D 那块多出来的 `</div>`**：上一版拼接残留（原 96/96 平衡 → demo 149/149 平衡），浏览器容错但代码不干净；本次整体重写后顺带删干净。
+  6. CSS 108 套大括号平衡；JS `node --check` 通过；演示稿 `<div>` 149/149、`<script>` 7/7 平衡；server log 0 个 404。
+  7. 新增踩坑记录 `AGENTS/METHODS.md` **M73**：「作者口语化比例（"长形 1:2 横长方形 / 方形 1:1"）vs site 默认 `.panel`（实际 2:1）—— 开工前必看 gallery 模式」，把"比例先核 gallery / 新组件必复用 `.panel` / CSS 前先 grep site 已有 token / 横长方形与方形是同一 panel 的两种形态"四条预防落到位。
+- **验证**：服务 0 404；div/script 平衡；JS 语法 OK；CSS 平衡；演示稿是唯一改动（`git status` 仅 `?? docs/demo/`，demo 内已有改动未 stage）；未改任何线上文件，未 bump `?v=`。**`open http://127.0.0.1:8000/docs/demo/index.html` 已弹出浏览器供作者预览**。
+- **Token 消耗**：约 4 万（含返工）
+- **用时**：约 18 分钟（含返工）
+- **经验总结**：① **"多读规范" = 开工前明确硬约束**：DESIGN-SYSTEM §4 "所有内容块优先使用 `.panel`"、ELEMENT-NAMING 锁 class 名唯一性、Gallery skill §6.1 写明 600×300 / 300×300 双尺寸 —— 这三条并在一起就是"panel 比例就是 2:1/1:1 / 复用 .panel / 不重造 class"。把 skill 加载后再开工，能省两次返工。② **作者口语 ≠ 字面**："长形 1:2"在我的脑里是 1:2（窄:高），作者原意是"宽:高 = 2:1 横长"，项目里只有 gallery 一处明确写了 600×300 = 2:1 矩形。教训：写代码前先 grep "600x300" 或 "2:1" 验证比例口径，不要凭字面。③ **"文字排版特别丑"基本等于"没用 site class 体系"**：自造 .larry-square / .larry-wide / .larry-half / .larry-cd-clock 这些假 class，丢失了 site 默认的 .panel-header Times Roman + 绝对定位 + 白字、h2 默认 Playfair Display、.info 默认 padding、retinafy 自动 retina 等整套继承。改回 `.panel larry-panel` 双 class 后，所有"丑"自动消失。
+- **遗留/待办**：
+  1. 作者看新版本后再走一轮精修（颜色 token 深浅 / 主卡文案 / Polaroid 题注 / 末行小字保留与否）。
+  2. 出图：当前占位都是项目已有图，最终上线需新出：`larry-main` 图占位（建议照 niall-bday 那套人物 + 信物抠图）+ 12 张 Polaroid 真图（按 12 条 lore 各自配图）。
+  3. 工具栏已极简化（只保留"显示细横幅 / 隐藏细横幅 / 模拟到点"），上线前整个 `.larry-demo-toolbar` 相关 CSS+JS+HTML 删掉，CSS additions 区只留 larry-panel / larry-cd-bar / larry-polaroid / larry-from-sign / larry-footnote 等必要规则。
+  4. CSS 仍写在 `docs/demo/css/larry-anniv.css`，上线时整体搬到 `css/styles.css` 末尾 additions 区（结构追加，不改 site 默认）+ 全站 bump `?v=`。
+  5. `pages/blog/2026-08-04/more-than-a-ship/` 链接在演示稿已加 `../../` 前缀（深度 2）；上线进 index.html 时这些链接变成单层 `pages/...`，需要再做一次 sed。
+## 2026-09-21 — Larry 9-28 套件 demo（演示稿首版，按作者反馈返工）
+
+- **模型**：big-pickle
+- **目的**：作者要"先看完整套件"，将设计稿 v0.1 转成 `docs/demo/` 演示稿供现场预览，**不上线**（`.assetsignore` 已排除 `/docs/`）。返工前首版只把倒计时做了，没把所有套件全展开、卡片比例不对、还做了左右对开布局 —— 全部被作者打回，本条按反馈重做。
+- **结果**：
+  1. 新建演示稿目录 `docs/demo/`（**2 层深**，资源前缀 `../../`，同 history 备份约定）：`index.html`（从仓库根 `index.html` 复制后改写）+ `css/larry-anniv.css` + `js/larry-anniv.js`，**零图片**，全部用 CSS 渐变 + 虚线占位块 + emoji。
+  2. 演示稿默认状态 = **所有套件一次性全展开**（不再 Phase1/Phase2 切换）：
+     1. 顶部 `larry-masthead` 小标题带（1 行标题 + 1 行栏目元信息）
+     2. `larry-cd-panel` 长形 1:2 大面板倒计时（稿A）
+     3. `larry-cd-bar` 细横幅倒计时（稿B，紧贴稿A下面）
+     4. `larry-square larry-main` 1:1 方形主卡（**单卡上下排，不再左右对开**）：图占位 + 文案 + 信物 ⚓🕊⛓
+     5. `larry-polaroid` 12 张 Polaroid 横向轨道（左右翻 + 触摸拖 + 键盘 ←/→）
+     6. `larry-square larry-note` 1:1 方形 The Day 白卡
+     7. `larry-wide larry-colours` 1:2 长形 Two Colours 渐变带
+     8. `larry-square larry-from-us` 1:1 方形 From the Fans
+     9. `larry-footnote` 末行小字
+  3. **卡片尺寸严格两种比例**（作者原话："长形卡片是 1:2、方形是 1:1 横长方形"）：
+     - `.larry-square` = `padding-top:100%` → 宽:高 = 1:1 正方
+     - `.larry-wide` = `padding-top:50%` → 宽:高 = 2:1 横长
+     - 完全弃用 site 默认 `.panel` 的 `padding:50%`（那是 site 的"扁形 2:1"，与作者新规范不等价）
+  4. 工具栏（demo-only，**上线删除**）：稿A/稿B 切换 + 显示/隐藏稿A + 显示/隐藏稿B + 模拟到点（清零秒数便于看 Phase2 切换逻辑 —— 不再切阶段，只验证渲染）。
+  5. JS 极简化：去掉阶段切换、去掉 Panel Measure 改写、倒计时 + Polaroid + 工具栏共三个职责；`window.__5GUYS_LARRY_ANNIV_DEMO__` 全局守卫避免重复初始化。
+  6. CSS 124 套大括号平衡；JS `node --check` 通过；演示稿 `<div>` 143/143、`</div>` 143/143、`<script>` 7/7 平衡；演示稿里 14 条 `<img>` + 10 条 `inline url()` 全部指向存在的资源（`url(images/...)` 也补做了 `../../` 前缀改写）。
+  7. 服务自检：本地 `python -m http.server 8000`（后台），`docs/demo/index.html` + `docs/demo/css/larry-anniv.css` + `docs/demo/js/larry-anniv.js` 全部 200 OK，server log 0 个 404。**`open http://127.0.0.1:8000/docs/demo/index.html` 已弹出浏览器供作者预览**。
+- **验证**：服务器 0 404；div/script 平衡；JS 语法 OK；CSS 平衡；演示稿是唯一改动（`git status` 仅 `?? docs/demo/`）；未改任何线上文件，未 bump `?v=`。
+- **Token 消耗**：约 4.5 万（含返工）
+- **用时**：约 25 分钟（含返工）
+- **经验总结**：① **"先看 demo" ≠ "先做 demo"**：返工前我把「设计稿 → 首版 demo」当线性流程，结果只做了倒计时就停手，等于浪费了设计稿的成果。教训：开工前先把作者要的"全展示/两稿选一"理解成**默认全展开 + 关键组件可隐藏**，不要预设阶段切换结构。② **比例要先核规范再做**：作者一句话"长形 1:2、方形 1:1 横长方形"里藏着 site 默认 `.panel` 的 `padding:50%` 既不是 1:1 也不是 1:2，必须**完全弃用 site 默认尺寸**才能对齐作者表述。开工前若先去 `AGENTS/DESIGN-SYSTEM.md` 看 §4 Panel rules 那行 "padding:50% 0 0" 就能省一次返工。③ **左右对开 vs 上下排**：用 `panel-group` 横排两半是 site 的固有模式，但不是作者的"主卡"设想。教训：**写之前先复述作者的原话**："左右放两个，这个完全就不符合我的设计规范"—— 作者要的是单卡 + 上下排。后续：先在 AGENTS 里补一段"卡片布局：上下排是默认、左右对开需作者确认"。
+- **遗留/待办**：
+  1. 作者现场反馈（稿A vs 稿B 选哪个、Polaroid 12 张题注文案、主卡文案）→ 改第二版。
+  2. 出图：`larry-main` 图占位 + 12 张 Polaroid 占位 → 等作者拍板图源（larry-header.png / larry-cover.png / 12 张 Polaroid 抠图）。
+  3. `CHANGES.md` 未建（建议：等正式版上线时一并写）。
+  4. **法外条目（Methods）**：M73 — 作者口语化比例描述（"长形 1:2 横长方形"）vs site 默认 `.panel` 的 2:1 不一致；开工前先核 §4 Panel rules 不要照搬 site 默认。
+## 2026-09-21 — 9-28 Larry 纪念日整套设计稿（纯文档，未动代码）
+
+- **模型**：big-pickle
+- **目的**：9-28 把首页顶部区做成 Harry×Louis「结婚纪念日」主题。作者要求：浪漫典礼调 + 蓝(Louis)×绿(Harry) 主题色；只换「奶儿」panel 槽位并在其上方新增整套板块；先挂倒计时、到时间撤下再上正式套件；先设计、不插图；本次纯文档交付。
+- **结果**：
+  1. 搜索核对资料来源：**2013-09-28 = Larry 教设定「婚礼日」**（2026 是 13 周年，9-28 周一）；**蓝=Louis、绿=Harry**（瞳色 + 巡演话筒胶带，Wiki Larries 条目）；捞到 Oops!/Hi 初遇纹身、AIMH 推文（2011-10-02 260 万转推）、米兰蓝单车、锚与绳、双燕、白色油漆、bandana 等 12 条 polaroid 素材线。
+  2. 产出 `docs/larry-9-28-anniversary-design.md`（v0.1）：二阶段时序（倒计时→套件）、顶部新布局图（主卡 ①→Polaroid 墙 ②→The Day ③→Two Colours ④→From the Fans ⑤，顺序可调）、新增 9 个颜色 token（deep/mid/wash/wash×2/gold/cream/ink）、字体配对、五个 panel 的 class/双语文案骨架、Polaroid 墙技术要点（Vanilla JS translateX 轨道 + 箭头/触摸/键盘/进度点/reduced-motion）、素材清单（现阶段全占位）、实现阶段清单。
+  3. **未写任何 HTML/CSS/JS**，未动 `index.html` / `css/styles.css`，无需 bump `?v=`；`docs/` 已被 `.assetsignore` 排除不发布。
+  4. 同会话前置：`history/2026-09-14-niall-birthday-panel/` 已备份当前奶儿首页（见上一条日志），换 panel 前有源可还原。
+- **验证**：纯文档，`git status` 仅 `?? docs/larry-9-28-anniversary-design.md`；采用 DESIGN-SYSTEM Skill 的「没有作者确认不做视觉改动」路径，只读定位 + 方案分析。
+- **Token 消耗**：约 3.5 万
+- **用时**：约 15 分钟
+- **经验总结**：① 标志性大事件（整页主题改版）值得先出一份"纯文档设计稿"锁住意向（配色/文案/数量/时序），设计的改动成本远低于代码返工；② Larry 仪式感叙事有个底线：典礼调是外衣，站内既有《More Than a Ship》「连接与陪伴」内核不冲突，稿里已把「粉丝心中珍藏的一天」小字做成作者可删的开关。③ 待办：作者过稿 → 出图（larry-header/cover 的 PSD 抠图 + polaroid 12 张）→ 临时预览稿 → 才进 index.html。
+- **遗留/待办**：① 等作者 review v0.1，确认面板顺序与 §4.1 那行小字保留与否。② 倒计时目标时刻/时区（默认 `2026-09-28 00:00 +08:00`）请作者确认。③ 所有文案 EN/ZH 定稿后再进实现。
+
+## 2026-09-21 — 备份 Niall「奶儿船长」生日首页到 history（换 Harry×Louis 纪念日 panel 前）
+
+- **模型**：big-pickle
+- **目的**：计划 9-28 把首页 Niall 生日 panel 换成 Harry 和 Louis 的 9-28 结婚纪念日 panel，换卡前先把现版首页完整备份到 `history/`。
+- **结果**：
+  1. 新建 `history/2026-09-14-niall-birthday-panel/`，结构照抄 `history/2026-08-31-liam-33rd-birthday/` 约定：`README.md` + `index.html` + `css/styles.css`，图片/字体不复制、沿用项目原件。
+  2. `git diff 466956d HEAD -- index.html css/styles.css` 确认当前首页与提交 `466956d`（2026-09-14，Niall panel 最后一次改动）逐字节相同 → 目录名取 09-14、出处写 `466956d`。
+  3. 路径改造与 Liam 存档一致：HTML 相对引用加 `../../`（css/js/images/pages/index.html，og:image 一并加，`?v=20260914b` 去掉）；CSS 内部 `url(../…)` 调成 `url(../../../…)`（assets/fonts/images/fonts）。
+  4. 验证：归一化后 diff 与原件**仅路径前缀差异**（`diff <(sed…) index.html` / `css/styles.css` 逐行通过）；全量解析存档内 HTML 26 处 + CSS 90 处 `url()` 引用，**0 真实缺失**（12 条 MISSING 全是项目自身就失效的 `.woff`/`.eot` 兜底 + `filmstrip.html`，与 Liam 存档同一批历史遗留）。
+  5. README.md 完整记录了卡片样式、面板结构（`niall-bday-group` 左右两格、贴纸 alpha 命中、emoji 上浮交互为内联 JS）、时间线（224b6c2→bc005e7→466956d）与已知限制。
+- **验证**：见上第 4 条；`git status` 只多 `?? history/2026-09-14-niall-birthday-panel/`，未动任何线上文件，无需 bump `?v=`。
+- **Token 消耗**：约 2 万
+- **用时**：约 6 分钟
+- **经验总结**：① history 备份的统一公式：HTML 层数 = 存档深度-1 层加 `../../`、CSS 加 `../../../`；用「sed 归一化后 diff」核对可秒证"只改了路径"。② 目录名日期取该版本**最后一次被改动的提交日**，不是事件日（Niall 生日 9-13，但面板最后改于 9-14），与 Liam 存档口径一致。
+
 ## 2026-09-17 — 小说 111 章线上全 404：`.assetsignore` 的 `Chapters/` 大小写不敏感误伤成品目录
 
 - **模型**：deepseek-v4-flash
