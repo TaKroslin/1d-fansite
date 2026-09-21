@@ -1,5 +1,26 @@
 # 1D Fansite — 开发日志（LOG）
 
+## 2026-09-22 — Larry 9-28 倒计时 panel 合并上线（奈尔面板下线并归档）
+
+- **模型**：deepseek-flash
+- **目的**：作者验收倒计时 panel 后拍板「把奈尔那个换下来，然后上线」；demo(`docs/demo/`) 保留作预览源。
+- **结果**（commit `d6aebe1`，已推送 `main`，Cloudflare 自动部署）：
+  1. **index.html**：奈尔双格 `panel-group.niall-bday-group` 整块替换为 `.panel.larry-cd`；**奈尔的内联交互 JS（253 行）一并删除** —— 先例核对：Liam 归档时同样是「HTML + JS 从 index.html 移除、CSS 留在 styles.css」，因为归档页 `history/2026-08-31-liam-33rd-birthday/index.html` 引的是 `../../css/styles.css`（根文件）。
+  2. **css/styles.css**：末尾追加倒计时面板样式 8.4 KB（token / 24 条清新条纹 / 中轴金线 / 奶油牌 / 图案 / script）。**图片 URL 由 `../../../images/` 降为 `../images/`**（本文件在 `css/` 下，见 M74）。
+  3. **js/larry-anniv.js** 新建：原生 JS 零 jQuery；常量 epoch 目标、自我校正对齐整秒、`visibilitychange` 隐藏时停表/回前台补算、到点冻结并派发 `larry:anniv-live`、`__5GUYS_LARRY_ANNIV__` 守卫。
+  4. **images/gfx/larry-anniv-2026/**：两张透明 PNG 入库（未 `git add` 就是线上 404）。
+  5. **`?v=` 只在首页 bump 到 `20260922a`**：本次新增 CSS 全部挂在 `.larry-cd` 下（实测追加块里非 `.larry-*` 选择器 0 条、`:has` 0 次、`html.` 0 次），线上只有 index.html 渲染它 → 符合 RULES §2.2「**相关页面**」与同类改动先例（466956d 纯 `.niall-*` 时也判定只 bump 首页）。**laya 对"bump 范围"无信号（confidence 0.0036，四选项打平）**，故自行判定。另按 RULES §8.1.4 **同步 4 个 build 脚本 + 1 个模板的版本常量**。
+  6. **奈尔归档入库**：`history/2026-09-14-niall-birthday-panel/`（此前未跟踪）。laya 对此给 **0.8918（可用）**。注意 `/.agentsignore` 未排除 `/history/`，归档页会公开托管 —— 与 Liam 归档既有的公开状态一致。
+  7. **推送**：沙箱**直连 github 不通**（`git ls-remote` 超时），按 2026-09-21 记录的解法**一次性借系统代理**推送：`git -c http.proxy=http://127.0.0.1:7897 push origin main` → `9070f1a..d6aebe1`。**未改 git 全局 config**。
+- **验证**：
+  - **合并前（本地）**：Playwright **12/12** —— 奈尔类名归零 / 倒计时唯一 / 1440×720 与 390×390 / `fade-me` 滚动渐入 opacity=1 / 走秒且与目标时间**漂移 0s** / 图案 mask 接入且蓝绿上色 / 站内 translate.js 中文切换对面板生效 / 首页其余板块完好（hero + journal-article + 8 张博客卡）/ 归档奈尔页样式仍生效；`_audit_site_images.py` **771 refs / Broken 0**；抽样 10 个 URL 全 200。
+  - **diff 纯度**：386 个 HTML 的改动逐条核对为"仅版本号"（脚本判定），唯一实质改动是 `index.html`（300 行）。
+  - **推送后（线上 `https://www.5guys1direction.asia/`）**：连发 6 次探测（约 2 分钟）后首页出现 `larry-cd`；真实浏览器端到端 —— 面板 **1440×720（2:1）/ 390×390（1:1）**、opacity 1、走秒 27→26、图案 mask 已接入、奈尔残留 0、**0 个 4xx/5xx、0 pageerror**；`css/styles.css?v=20260922a`(200, 含 37 条 larry-cd 规则)、`js/larry-anniv.js`(200)、两张图片(200)。
+- **Token 消耗**：未精确统计（粗估约 10 万）
+- **用时**：约 40 分钟（合并 + 检查表取证 + 推送 + 线上验证）
+- **经验总结**：① **合并上线要按「先例」而不是「直觉」处理三件事**：HTML 删除、JS 删除、CSS 保留 —— 判据是"归档页引的是哪个 styles.css"（本次实测确认引根文件，所以奈尔 CSS 必须留）。② **`?v=` 的 bump 范围要以"哪些页面渲染得到新规则"为准**，不是无脑全站；本次先用脚本证明追加块 100% 作用域在 `.larry-cd` 下，再决定只 bump 首页。③ **laya 无信号时不要硬用它的选择**（0.0036 时四个选项概率打平，等于抛硬币），要显式说明"无信号、由我判定"。④ 推送前把「纯版本号改动」和「实质改动」用脚本分离，才能让 386 文件的 diff 可信。
+- **遗留/待办**：① Phase 2 正式套件（主卡 / Polaroid 墙 / The Day / Two Colours / From the Fans）与 Phase 1→2 切换时机未做（切换钩子 `larry:anniv-live` 已就位）。② 作者手写图案只有 480×690 预览版，补高清原图可重跑抠图脚本再锐一档。③ `docs/demo/` 与 `docs/larry-9-28-anniversary-design.md` 已入库（`/docs/` 被 `.assetsignore` 排除，不公开）。④ 其余 385 个页面的 `?v=` 仍是 `20260911g`（本次新增 CSS 与其无关，属预期）。
+
 ## 2026-09-21 — Larry 9-28 阶段 A：倒计时 panel 落地（docs/demo）+ 手写图案抠图
 
 - **模型**：deepseek-flash
