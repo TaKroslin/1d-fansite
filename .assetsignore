@@ -39,7 +39,12 @@
 /images/gfx/psd/
 
 # 对外文档与部署配置
-/docs/
+# 例外：Larry 9-28 的 demo 预览页要发布（作者需要在其他设备上直接输地址测试，
+# 站内没有任何入口指向它）。注意**不能**写成 "/docs/" + "!/docs/demo/" ——
+# gitignore 语义下已排除目录的子项无法反选；必须用 "/docs/*" 只排除直接子项，
+# 再反选 demo 目录（该库与 wrangler 一致，且规则不分大小写）。
+/docs/*
+!/docs/demo/
 /README.md
 # 子目录里的开发说明（如 images/gfx/niall-bday-2026/README.md）同样不对外
 **/README.md
