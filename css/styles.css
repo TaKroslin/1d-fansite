@@ -1346,3 +1346,28 @@ font-size:clamp(2.1rem,3.75vw,3.8rem);line-height:1.02;letter-spacing:.01em;colo
 @media (prefers-reduced-motion:reduce){
   .larry-cd-stripes{animation:none;opacity:1}
 }
+
+/* =================================================================
+   Larry 相册（2026-09-22 新增，Harry 与 Louis 各一份副本）
+   -----------------------------------------------------------------
+   本相册存在的意义就是"点进去看未裁剪的原图"，所以必须用 contain，
+   不能沿用官方 .panel.gallery 的 3:2 cover 裁切（那会把竖版照片再裁一次，
+   正好和相册的用途相反）。为不影响站内其他 8 个相册，
+   作用域只加修饰类 .larry-photos。
+   封面沿用本区策展封面的惯例：保留彩色（filter:none）。
+   ================================================================= */
+.gallery-section .panel.gallery.larry-photos{background:#000}
+.gallery-section .panel.gallery.larry-photos #slideshow .slide .bg{
+  background-size:contain!important;
+  background-repeat:no-repeat!important;
+  background-position:center center!important;
+}
+.panel.gallery-cover.larry-photos-cover .bg{
+  -webkit-filter:none!important;
+  filter:none!important;
+}
+@media (max-width: 767px){
+  .panel.gallery-cover.larry-photos-cover .bg{
+    background-image:url(../images/gfx/gallery-members-larry-photos-cover-square-sml.png)!important;
+  }
+}
