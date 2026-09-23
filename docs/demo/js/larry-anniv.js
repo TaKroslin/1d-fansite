@@ -402,71 +402,40 @@
 			go(e.deltaX > 0 ? 1 : -1);
 		}, { passive: false });
 
-		/* 手势：照搬 mirayavandiepen/image-card-stack
-		   · 跟手：顶张随手指走（x/y），拖距同时驱动 3D 倾斜
-		     （原库 useCardRotation：rotateX = map(y,[-100,100],[60,-60])，rotateY = map(x,[-100,100],[-60,60])）
-		   · 松手未过阈值（原库 180px）→ 弹回原位，不换牌
-		   · 过了阈值 → 这张排到牌堆**底**（sendToBack），其他牌深度各减一层：
-		     因为"深度"是连续可动画的量，换层表现为轻轻转 4°、缩 6%，而不是瞬间换 z 的闪跳。
-		     换牌发生在它被拖出 180px 之外时 ⇒ 层叠变化看不见。 */
+		/* 手势：**不跟手**。按下只记录起点，松开时若横向划动超过阈值（≈0.2 卡宽 ≈27px）
+		   就翻一张；划得不够就什么都不做。卡片在按下/划动过程中完全不动、也不倾斜 ——
+		   作者要求"轻轻一划就可以翻"，不要跟手拖拽的那种黏手感和 3D 倾斜。 */
 		var sx = null, sy = null;
-		var clamp = function (v, a, b) { return v < a ? a : v > b ? b : v; };
 
 		function topCard() { return cards[order[0]]; }
 
-		function releaseDrag(commit, dir) {
-			if (!drag) return;
-			var card = drag.card;
-			card.style.transition = "";                    /* 恢复过渡 ⇒ 归位/缩进牌堆都是动画 */
-			/* 顶张 → **整副牌的最底下**（队尾）—— 这样 40 张才能全部轮流上场。
-			   注意不能插到"可见的第 3 位"：那样牌序会在前 4 张里打转，另外 36 张永远轮不到
-			   （作者发现"为什么只有 4 张牌"）。
-			   但它也不能就此瞬间消失 —— 由下面的 leaving 机制让它**先滑到牌堆最下层**再隐藏。 */
-			if (commit) {
-				var went = order.shift();
-				order.push(went);
-				leaving = { idx: went, dir: dir || 1 };   /* 方向 = 甩的方向（就近滑出） */
-				window.setTimeout(function () { leaving = null; render(); }, 560);
-			}
-			drag = null;
-			card.style.setProperty("--drag-x", "0px");
-			card.style.setProperty("--drag-y", "0px");
-			card.style.setProperty("--rx", "0deg");
-			card.style.setProperty("--ry", "0deg");
-			render();                                      /* 重算深度：所有牌平滑换深度 */
+		/* 翻一张：顶张 → 整副牌最底下（40 张才能全部轮流上场）；
+		   同时记下 leaving，让它顺着划动方向就近滑出、动画结束再隐藏（不瞬间消失）。 */
+		function flipDeck(dir) {
+			var went = order.shift();
+			order.push(went);
+			leaving = { idx: went, dir: dir || 1 };
+			render();
+			window.setTimeout(function () { leaving = null; render(); }, 560);
 		}
 
 		view.addEventListener("pointerdown", function (e) {
-			if (!MOBILE.matches) { sx = e.clientX; sy = e.clientY; return; }
-			var card = topCard();
-			if (!card) return;
-			drag = { card: card, x0: e.clientX, y0: e.clientY };
-			card.style.transition = "none";                /* 跟手期间不能有过渡，否则慢半拍 */
-			try { view.setPointerCapture(e.pointerId); } catch (err) {}
-		});
-		view.addEventListener("pointermove", function (e) {
-			if (!drag) return;
-			var dx = e.clientX - drag.x0, dy = e.clientY - drag.y0;
-			drag.card.style.setProperty("--drag-x", dx + "px");
-			drag.card.style.setProperty("--drag-y", dy + "px");
-			drag.card.style.setProperty("--rx", (-clamp(dy, -100, 100) * 0.6).toFixed(2) + "deg");
-			drag.card.style.setProperty("--ry", (clamp(dx, -100, 100) * 0.6).toFixed(2) + "deg");
+			if (!MOBILE.matches) { sx = e.clientX; sy = e.clientY; }
+			else { sx = e.clientX; sy = e.clientY; }
 		});
 		view.addEventListener("pointerup", function (e) {
-			if (drag) {
-				var dx = e.clientX - drag.x0, dy = e.clientY - drag.y0;
-				/* 参考库阈值是 180px，但那是给 208px 方图卡的；我们卡宽 133px、屏宽 390px，
-				   180px 等于要拖半屏，永远拖不到（作者反馈"翻不了了"）⇒ 按卡宽标定。 */
-				var TH = Math.max(22, (drag.card.offsetWidth || 133) * 0.2);   /* 轻到几乎不用力（≈27px） */   /* 轻轻一扫就翻（≈36px） */
-				releaseDrag(Math.abs(dx) > TH || Math.abs(dy) > TH, dx < 0 ? -1 : 1);
-				return;
-			}
 			if (sx === null) return;
-			var mx = e.clientX - sx, my = e.clientY - sy;
-			if (Math.abs(mx) > 40 && Math.abs(mx) > Math.abs(my)) go(mx < 0 ? 1 : -1);
+			var dx = e.clientX - sx, dy = e.clientY - sy;
+			if (MOBILE.matches) {
+				var card = topCard();
+				var TH = Math.max(22, (card ? card.offsetWidth : 133) * 0.2);   /* 轻扫即翻（≈27px） */
+				if (Math.abs(dx) > TH || Math.abs(dy) > TH) flipDeck(dx < 0 ? -1 : 1);
+			} else if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+				go(dx < 0 ? 1 : -1);                     /* 桌面：整轨方向判定 */
+			}
 			sx = null; sy = null;
 		});
-		view.addEventListener("pointercancel", function () { releaseDrag(false, 1); sx = null; sy = null; });
+		view.addEventListener("pointercancel", function () { sx = null; sy = null; });
 
 		/* 断点切换：重算呈现方式（保留当前索引） */
 		var onMq = function () { render(); };
