@@ -8,7 +8,7 @@ from textwrap import dedent
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "AGENTS" / "element-previews"
 DOC = ROOT / "AGENTS" / "ELEMENT-PREVIEWS.md"
-CSS = "../../css/styles.css?v=20260922a"
+CSS = "../../css/styles.css?v=20260922b"
 FONTS = "https://fonts.googleapis.com/css?family=Playfair+Display:700|Codystar|Cousine:400,700|Source+Code+Pro:300,400,500,600,700|Source+Sans+Pro:400|Oswald:400,700|Vampiro+One|Six+Caps&display=swap"
 
 
