@@ -246,14 +246,21 @@
 				var isLeaving = (leaving && leaving.idx === i);
 				var deep = isLeaving ? 1 : Math.min(pos, 4);   /* 离场那张：就近让开一格 */
 				if (isLeaving) {
-					/* 顺着甩的方向就近滑出（约 48px），不再跑到扇形最远端 */
+					/* 顺着划动方向就近滑出（约 48px），动画跑完再隐藏 */
 					el.style.setProperty("--fan-x", (leaving.dir * 48) + "px");
 					el.style.setProperty("--fan-y", "7px");
 					el.style.setProperty("--fan-rot", (leaving.dir * 13) + "deg");
 					el.style.setProperty("--fan-scale", ".93");
 					z = 1;
 					hidden = false;
+					el.style.setProperty("--dur", ".5s");
+					el.style.setProperty("--delay", "0ms");
+				} else {
+					/* 统一时长 + 按层轻错开（级联，不显得"粘在一起"）+ 温和弹簧（不过冲、不抖） */
+					el.style.setProperty("--dur", ".46s");
+					el.style.setProperty("--delay", (deep * 30) + "ms");
 				}
+				el.style.setProperty("--ease", "cubic-bezier(.3,1.12,.42,1)");
 				mult = 0; px = 0; dy = 0;
 				/* ★ 左右对称的扇形（5 张：中间 + 左右各 2）
 				   关键：**每张牌的左右侧固定**（按索引奇偶），深度只决定"离中心多远"
@@ -318,44 +325,22 @@
 			   - 顶上来接位的那张：晚 ~110ms 才动（它是被让开后跟上来的）
 			   - 从牌堆里钻出来的那张：再晚一点（~190ms），它只挪 2px，是跟随动作
 			   这就是动画里的 overlapping action：错开时长与起点，三张牌才是独立的。 */
-			if (prevSlot[i] !== undefined && prevSlot[i] !== mult) {
-				var thrown = prevSlot[i] === 0;
-				var toCenter = mult === 0 && prevSlot[i] !== 0;
-				el.style.setProperty("--lift-max", thrown ? "26px" : "14px");
+			if (prevSlot[i] !== undefined && prevSlot[i] !== mult && !mobile) {
+				/* 桌面端换槽时挂"抬起→回落"的弧线；移动端是牌堆，节奏统一由上面的 --dur/--delay 控制。 */
+				el.style.setProperty("--lift-max", prevSlot[i] === 0 ? "24px" : "13px");
 				el.style.setProperty("--over-max", (mult < prevSlot[i] ? "-5deg" : "5deg"));
-				if (mobile && thrown) {
-					/* ★ 抄 image-card-stack 的机制：被甩出的那张先顺着甩的方向**再冲出去 70px**
-					   （这就是"往外让一点"）—— 此时它已远离牌堆，两卡包围盒不相交，
-					   就在这一刻切层叠（看不见）；随后它再滑回左边那张的位置（"再过来"）。
-					   接位卡完全不退开，只走它本来那一段槽位位移。 */
-					el.style.setProperty("--drag-x", (mult * 100) + "px");
-					el.style.setProperty("--dur", ".2s");        /* 冲出去：快 */
-					el.style.setProperty("--delay", "0ms");
-					el.style.setProperty("--ease", "cubic-bezier(.3,.9,.35,1)");
-					outEls[i] = el;
-				} else if (mobile && toCenter) {
-					/* 接位卡：只走"槽位 → 中间"这一段，多一点点延迟错开时间线 */
-					el.style.setProperty("--drag-x", "0px");
-					el.style.setProperty("--dur", ".46s");
-					el.style.setProperty("--delay", "160ms");   /* 等被甩出的那张先冲出去、层叠切完 */
-					el.style.setProperty("--ease", "cubic-bezier(.34,1.42,.5,1)");
-				} else {
-					el.style.setProperty("--dur", ".46s");
-					el.style.setProperty("--delay", "0ms");
-					el.style.setProperty("--ease", "cubic-bezier(.32,1.32,.48,1)");
-				}
-			} else if (mobile) {
-				/* 没换槽位的牌：跟随动作也晚一点（它们只挪 2px） */
-				/* 牌堆里的跟随动作：更晚、更短、无过冲（它只是被带着挪 2px） */
-				el.style.setProperty("--dur", ".34s");
-				el.style.setProperty("--delay", "220ms");
-				el.style.setProperty("--ease", "cubic-bezier(.3,.85,.4,1)");
+				el.classList.remove("is-arc");
+				void el.offsetWidth;
+				el.classList.add("is-arc");
 			}
 			prevSlot[i] = mult;
 			el.style.visibility = hidden ? "hidden" : "visible";
 			/* 只有真正远在视口外的卡才关过渡：模运算窗口在边界会把 d 从 +N/2 跳到 -N/2 */
 			el.style.transition = hidden ? "none" : "";
-			el.style.willChange = (mobile ? Math.abs(d) <= 3 : (d >= -1 && d <= 5)) ? "transform" : "auto";
+			/* will-change 只给真正在动的：牌堆里的可见窗口 + 离场那张。
+			   旧写法按 |d| ≤ 3 判定，但牌堆模型里 d 与可见窗口已脱钩 ⇒ 真的在动的牌反而没有合成层（掉帧）。 */
+			var moving = mobile ? (pos <= 5 || isLeaving) : (d >= -1 && d <= 5);
+			el.style.willChange = moving ? "transform" : "auto";
 		}
 	}
 
@@ -416,7 +401,7 @@
 			order.push(went);
 			leaving = { idx: went, dir: dir || 1 };
 			render();
-			window.setTimeout(function () { leaving = null; render(); }, 560);
+			window.setTimeout(function () { leaving = null; render(); }, 620);
 		}
 
 		view.addEventListener("pointerdown", function (e) {
