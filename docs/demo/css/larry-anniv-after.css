@@ -1,0 +1,609 @@
+/* =================================================================
+   Larry 9-28 顶部套件 · 阶段 A：倒计时 panel
+   仅作用于 docs/demo/，不发布（.assetsignore 排除 /docs/）
+   合并进线上时：本文件内容追加到 css/styles.css 末尾 additions 区，
+   删掉 .larry-demo-* 段，并 bump 所有页面的 styles.css?v=
+   ================================================================= */
+
+/* === token（设计稿 §3.1，九枚） === */
+:root{
+  --larry-blue-deep:#1e4d6e;
+  --larry-blue-mid:#3a7ca5;
+  --larry-blue-wash:#e8f1f6;
+  --larry-green-deep:#2f5d4e;
+  --larry-green-mid:#57a787;
+  --larry-green-wash:#e9f4ef;
+  --larry-gold:#c9a86a;
+  --larry-cream:#faf6ef;
+  --larry-ink:#141b21;
+  /* 浅色场专用"清新"层（2026-09-21 新增，已登记进 DESIGN-SYSTEM 颜色表）：
+     deep/mid/wash 三档都是灰调色——mid 叠在偏黄的奶油底上会发脏（作者反馈"蓝绿好脏"）。
+     这两枚是高亮度 + 中高彩度的粉彩，只在**白底**上使用；蓝绿语义不变（蓝=Louis、绿=Harry）。 */
+  --larry-blue-fresh:#c8e6fb;
+  --larry-green-fresh:#cfefd7;
+}
+
+/* =================================================================
+   1. 面板本体
+   比例一个字都不覆盖：素 .panel 自带 padding:50% 0 0（桌面 2:1），
+   767 断点官方 .panel{padding-top:100%}（移动 1:1）。
+   不要套 .panel.journal-news.homepage-news —— 那条在 767 被官方改成
+   padding-top:0!important;height:auto!important，移动端会丢掉 1:1（METHODS M57）。
+   ================================================================= */
+.panel.larry-cd{
+  /* 白底，不用奶油底：奶油 #faf6ef 偏黄，会把上面的蓝绿条带拖脏。
+     清新粉彩必须落在中性白底上才干净。 */
+  background:#fff;
+  color:var(--larry-ink);
+  /* 手绘图案的宽高比，作者交付的 PNG 不是 4:3 时只改这一行 */
+  --larry-motif-ratio:4/3;
+}
+
+/* === 条纹场：每 1/24 面板宽一条，蓝绿交替 ===
+   百分比 stop 相对渐变线长度：0→4.1667% 蓝、4.1667%→8.3333% 绿，
+   一个周期 = 8.3333% = 面板宽的 1/12（即每条 1/24），共 24 条。
+   用两枚 deep/mid token 叠透明层都会发浑：wash 两色明度几乎相同（分不出蓝绿），
+   mid 是灰调色（叠上去发脏）。这里用新增的 fresh 两色，直接不透明上色，最干净。 */
+.larry-cd-stripes{
+  position:absolute;
+  inset:0;
+  z-index:0;
+  background:repeating-linear-gradient(90deg,
+    var(--larry-blue-fresh) 0 4.1667%,
+    var(--larry-green-fresh) 4.1667% 8.3333%);
+  /* 作者原话「柔和地淡入淡出」：单层 opacity 呼吸，只重绘一层。
+     想改成「只进场淡入一次」：把 infinite 换成 1 forwards。 */
+  animation:larry-cd-breathe 14s ease-in-out infinite;
+}
+@keyframes larry-cd-breathe{
+  0%,100%{opacity:.86}
+  50%{opacity:1}
+}
+
+/* === 中轴金线 ===
+   不贯穿到顶／底边：作者草图里的金线在文字带处是断开的（TITLE 上方、script 下方各留一段），
+   贯穿会实实在在把 "COUNTING DOWN" 与底部 script 割字。
+   上端 14% 让开元信息行（实测文字带下沿 12.7%），下端 22% 让开 script（实测其上沿在距底 16.7%），
+   中段正好压在倒计时奶油牌上（牌不透明，把线遮住，线只在牌的上下露出来）。移动端另行微调。 */
+.panel.larry-cd::after{
+  content:'';
+  position:absolute;
+  left:50%;
+  top:14%;
+  bottom:22%;
+  width:1px;
+  background:var(--larry-gold);
+  transform:translateX(-50%);
+  z-index:2;
+  pointer-events:none;
+}
+
+/* =================================================================
+   2. 舞台
+   .panel 的内容盒高度为 0（height:0 + padding-top 撑高），
+   所以内部一切必须由一层绝对定位的舞台承载。
+   z-index 3 > 金线 2：舞台内容压住金线，奶油牌把中间那段金线遮住，
+   金线只在牌的上下露出来。
+   ================================================================= */
+.larry-cd-stage{
+  position:absolute;
+  inset:0;
+  z-index:3;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  align-items:center;
+  padding:1.7em 4% 6%;
+}
+
+/* === 元信息行：官方 .panel-header（Times 87.5%）转为流内居中 ===
+   display:block!important 专治 @media(max-width:767px) 里
+   .home-section .panel .panel-header{display:none}（官方面板在移动端隐藏元信息）。 */
+.panel.larry-cd .panel-header,
+.panel.larry-pola .panel-header{
+  position:static;
+  display:block!important;
+  width:auto;
+  padding:0;
+  text-align:center;
+  color:var(--larry-ink);
+  /* 官方 .panel-header 是 87.5%（1440 下约 16px），作者反馈"每个字都特别小"，
+     这里提升到 1.5vw 档（1440 下约 21px）。 */
+  font-size:clamp(.95rem,1.5vw,1.3rem);
+}
+.panel.larry-cd .panel-header .title,
+.panel.larry-pola .panel-header .title{
+  color:var(--larry-ink);
+}
+.panel.larry-cd .panel-header .section-name,
+.panel.larry-pola .panel-header .section-name{
+  font-family:'Source Code Pro';
+  color:var(--larry-ink);
+  margin-top:.35em;
+}
+.panel.larry-cd .panel-header .section-name span,
+.panel.larry-pola .panel-header .section-name span{
+  color:var(--larry-ink);
+  border-bottom:.1em solid var(--larry-gold);
+}
+/* 覆盖 body.home-section 强制给 .panel-header .zh 的 Smiley Sans，
+   回到设计稿 §3.2 的面板元信息中文族 */
+.panel.larry-cd .panel-header .zh,
+.panel.larry-pola .panel-header .zh{
+  font-family:'LXGW WenKai Mono','LXGW WenKai','Noto Sans SC',monospace;
+}
+
+/* =================================================================
+   3. 中央一行：图案 · 倒计时 · 图案
+   ================================================================= */
+.larry-cd-main{
+  flex:1;
+  /* width:100% 不能少：舞台是 flex column + align-items:center，
+     交叉轴上子项宽度收缩为内容宽，.larry-cd-motif 的百分比宽度会失去解析基准而塌成几像素。 */
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  /* 间距不能大：放大字号后 图案+倒计时牌 几乎占满行宽，
+     留 3% 会让 flex 把图案挤扁（靠 shrink 兜底很脆）。1.5% 留出余量。 */
+  gap:1.5%;
+}
+
+/* === 手绘图案槽位 ===
+   图案来自作者手写原图，已抠成透明 PNG（见下）。槽位只负责给位置与比例。 */
+.larry-cd-motif{
+  width:18%;
+  aspect-ratio:var(--larry-motif-ratio);
+  background-repeat:no-repeat;
+  background-position:center;
+  background-size:contain;
+}
+
+/* === 两张图案 ===
+   由作者原图（白底、手写 "OOPS!" 与 "Hi"）抠出，流水线：
+   alpha 提取 → 4x 重采样 → 二次收紧 → 3x3 形态学开运算去扫描残留 → 词间列投影切分。
+   源图只有 480×690 预览版，4x 处理后为 1056×910 / 670×838，放进本槽位够用。
+   mask 只用 alpha 通道，所以 PNG 是黑字透明底即可，蓝/绿由 background-color 给。
+   想保留 PNG 原本颜色：把 background-color 换成 background-image:url(...)。 */
+.larry-cd-motif--louis{
+  background-color:var(--larry-blue-deep);
+  -webkit-mask:url(../../../images/gfx/larry-anniv-2026/motif-oops.png) center/contain no-repeat;
+          mask:url(../../../images/gfx/larry-anniv-2026/motif-oops.png) center/contain no-repeat;
+}
+.larry-cd-motif--harry{
+  background-color:var(--larry-green-deep);
+  -webkit-mask:url(../../../images/gfx/larry-anniv-2026/motif-hi.png) center/contain no-repeat;
+          mask:url(../../../images/gfx/larry-anniv-2026/motif-hi.png) center/contain no-repeat;
+}
+
+/* === 倒计时奶油牌（官方 .inline 的做法：外框 + 内金框）=== */
+.larry-cd-clock{
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:.35em;
+  /* 内边距用 rem，不用 em：em 跟的是 .panel 的字号阶梯（≤400px 官方降到 66.67%），
+     会让底边距缩到装不下单位标签 —— 实测移动端标签底边比牌底还低 6.8px。
+     rem 不随面板阶梯变，底边 2.4rem 恒定容下 16px 标签 + 金内框。 */
+  padding:1rem 1.5rem 2.4rem;
+  background:var(--larry-cream);
+  border:1px solid var(--larry-ink);
+}
+.larry-cd-clock::before{
+  content:'';
+  position:absolute;
+  inset:5px;
+  border:1px solid var(--larry-gold);
+  pointer-events:none;
+}
+/* 单位标签绝对定位挂到数字下方：这样 .larry-cd-unit 的盒子高度＝数字行高，
+   分隔冒号按整行居中时才会落在数字的垂直中心上（否则会掉到数字下沿）。 */
+.larry-cd-unit{
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+/* tabular-nums + min-width：每秒换数字时不抖、不跳位 */
+.larry-cd-num{
+  font-family:'Playfair Display',serif;
+  font-weight:700;
+  font-size:clamp(2.9rem,8.4vw,8.4rem);
+  line-height:1;
+  color:var(--larry-ink);
+  font-variant-numeric:tabular-nums;
+  min-width:2ch;
+  text-align:center;
+}
+.larry-cd-lab{
+  position:absolute;
+  top:100%;
+  left:50%;
+  transform:translateX(-50%);
+  margin-top:.45em;
+  white-space:nowrap;
+  font-family:'Source Code Pro';
+  font-size:clamp(.72rem,1.15vw,1rem);
+  text-transform:uppercase;
+  letter-spacing:.2em;
+  color:var(--larry-ink);
+  opacity:.6;
+}
+.larry-cd-sep{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(2rem,4.4vw,4.4rem);
+  color:var(--larry-gold);
+}
+
+/* === 底部 script === */
+.larry-cd-script{
+  margin:0;
+  max-width:min(78%,640px);
+  text-align:center;
+  font-family:'Times New Roman',Times,serif;
+  font-size:clamp(1rem,1.7vw,1.4rem);
+  line-height:1.5;
+  color:var(--larry-ink);
+  opacity:.85;
+}
+
+/* =================================================================
+   4. 移动端 1:1（390×390）：按作者草图重排 ——
+   两图案并排一行（中轴金线正好落在两者之间），倒计时换到下一行。
+   ================================================================= */
+@media (max-width:767px){
+  /* 1:1 更矮、字号阶梯更陡，金线按实测文字带（到 14.7%）下沿收紧；
+     18.5% 同时避开上方 gold 下划线（不接成 T 字）和下方图案行 */
+  .panel.larry-cd::after{top:18.5%;bottom:22%}
+  .larry-cd-stage{padding:1.4em 5% 7%}
+  .larry-cd-main{flex-wrap:wrap;align-content:center;gap:4% 0}
+  .larry-cd-motif{width:38%}
+  .larry-cd-motif--louis{order:1}
+  .larry-cd-motif--harry{order:2}
+  .larry-cd-clock{order:3;width:100%;margin-top:6%;justify-content:center}
+  /* 移动端同步放大字号（作者反馈"每个字都特别小"） */
+  .panel.larry-cd .panel-header{font-size:clamp(.9rem,3.8vw,1.1rem)}
+  .larry-cd-num{font-size:clamp(2.6rem,12.5vw,3.6rem)}
+  .larry-cd-lab{font-size:clamp(.7rem,2.9vw,.95rem)}
+  .larry-cd-sep{font-size:clamp(1.6rem,7.5vw,2.4rem)}
+  .larry-cd-script{font-size:clamp(.92rem,3.9vw,1.15rem)}
+}
+
+/* =================================================================
+   5. 无障碍
+   ================================================================= */
+@media (prefers-reduced-motion:reduce){
+  .larry-cd-stripes{animation:none;opacity:1}
+}
+
+/* === DEMO ONLY — 合并前删除 ===
+   纯 CSS 语言切换：checkbox + label + :has()，不依赖任何 JS。
+   这样即使预览环境挡住脚本（沙箱 iframe），或 JS 加载失败，切换依然可用。
+   规则等价于站内 translate.js 的 html.lang-zh，只是驱动源换成了 checkbox。 */
+.larry-demo-bar{
+  position:fixed;
+  left:0;
+  top:0;
+  z-index:9999;
+}
+/* 视觉隐藏但保持可聚焦（不用 hidden，否则键盘无法切换） */
+.larry-demo-toggle{
+  position:absolute;
+  width:1px;
+  height:1px;
+  opacity:0;
+  pointer-events:none;
+}
+.larry-demo-lang{
+  display:inline-block;
+  font-family:'Source Code Pro';
+  font-size:13px;
+  letter-spacing:.08em;
+  padding:6px 12px;
+  color:var(--larry-ink);
+  background:var(--larry-cream);
+  border:1px solid var(--larry-ink);
+  cursor:pointer;
+  -webkit-user-select:none;
+  user-select:none;
+}
+.larry-demo-lang::after{content:'中文'}
+/* 切到中文时的明确反馈：按钮文字翻转 + 变金边金底 */
+html:has(#larry-demo-zh:checked) .larry-demo-lang::after{content:'EN'}
+html:has(#larry-demo-zh:checked) .larry-demo-lang{
+  background:var(--larry-gold);
+  border-color:var(--larry-ink);
+}
+html:has(#larry-demo-zh:focus-visible) .larry-demo-lang{
+  outline:2px solid var(--larry-gold);
+  outline-offset:2px;
+}
+/* 双语切换：与 html.lang-zh 同效 */
+html:has(#larry-demo-zh:checked) .zh{display:inline!important}
+html:has(#larry-demo-zh:checked) .en{display:none!important}
+
+/* 抬起量注册成可插值长度：未注册的自定义属性不能被 keyframes 平滑动画 */
+@property --lift { syntax:'<length>'; inherits:false; initial-value:0px; }
+@property --pop  { syntax:'<number>'; inherits:false; initial-value:1; }
+@property --over { syntax:'<angle>';  inherits:false; initial-value:0deg; }
+/* 跟手拖拽：位移与 3D 倾斜都必须注册成可插值，松手"弹回"才会是动画而不是瞬移 */
+@property --drag-x { syntax:'<length>'; inherits:false; initial-value:0px; }
+@property --ry     { syntax:'<angle>';  inherits:false; initial-value:0deg; }
+@property --rx     { syntax:'<angle>';  inherits:false; initial-value:0deg; }
+@property --depth  { syntax:'<number>'; inherits:false; initial-value:0; }
+/* 扇形：位置/角度/缩放也做成连续量，翻牌时每张牌"沿扇形移一格"而不是跳变 */
+@property --fan-x     { syntax:'<length>'; inherits:false; initial-value:0px; }
+@property --fan-y     { syntax:'<length>'; inherits:false; initial-value:0px; }
+@property --fan-rot   { syntax:'<angle>';  inherits:false; initial-value:0deg; }
+@property --fan-scale { syntax:'<number>'; inherits:false; initial-value:1; }
+@property --drag-y { syntax:'<length>'; inherits:false; initial-value:0px; }
+
+/* =================================================================
+   6. Polaroid 照片墙（阶段 B）
+   依据：docs/larry-9-28-polaroid-wall-design.md v1.1 + 作者手绘设计图
+   - 面板沿用素 .panel：桌面 2:1 = 1440×720、移动 1:1 = 390×390（不覆盖 padding）
+   - 桌面：4 张并排、各自倾斜、互不重叠、垂直错落；箭头滚动；有 hover
+   - 移动：3 张扇形（中间正立在最上层，左右各 ±20° 从后面露出）；滑动翻卡；无 hover、无箭头
+   - 只有底部 CTA 可点；卡片本身不可点（作者要求，避免滑动误触）
+   ================================================================= */
+.panel.larry-pola{
+  background:#f5efe4;                 /* 淡金底 = --larry-gold 混白 18% */
+  color:var(--larry-ink);
+  /* 间距必须大于倾斜带来的横向膨胀（H·sinθ ≈ 61px，两侧各 ~29px），
+     否则相邻卡片的**包围盒**会重叠：视觉上只是角靠近，但 hover 会命中错的那张。 */
+  /* 间距必须大于倾斜带来的横向膨胀（H·sinθ ≈ 59px，两侧各 ~29px），
+     否则相邻卡片的**包围盒**会重叠：视觉上只是角靠近，但 hover 会命中错的那张。 */
+  --pola-gap:64px;
+  /* 倾斜会让卡片的包围盒比自身宽，两侧各多出约 28px。
+     不预留就会被 .larry-pola-view 的 overflow:hidden 裁掉角，故轨道左右各内缩。 */
+  --pola-inset:34px;
+  /* 卡宽：这里的 100% 在 width 上下文里解析 = 轨道宽 → 桌面恒为 4 张铺满 */
+  --pola-w:calc((100% - 3 * var(--pola-gap)) / 4);
+  /* ★ 一步的位移。**不能**写成 calc(var(--pola-w) + gap)：
+     同一个 100% 在 width 上下文按"轨道宽"解析、在 translateX 上下文按"卡片自身宽"解析，
+     那样会算出 82px 而不是 327px，40 张卡会全挤在一起。
+     写在 translateX 里的 100% 本来就等于卡片自身宽，所以这里直接用 100% 表达"一步=自身宽+间距"。 */
+  --pola-step-pct:calc(100% + var(--pola-gap));
+  --pola-blue:var(--larry-blue-fresh);
+  --pola-green:var(--larry-green-fresh);
+}
+
+/* 淡金底 + 中央极轻提亮（只为把视线收到照片区） */
+.larry-pola-bg{
+  position:absolute;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  background:radial-gradient(120% 78% at 50% 46%,
+    color-mix(in srgb, var(--larry-gold) 9%, transparent) 0%,
+    transparent 68%);
+}
+
+/* 纹身纹样：作者给的所有元素（含成对双燕，未拆）先逐个抠出、再去碎边，
+   然后按参考图的疏密拼成一张可无缝平铺的单元图，铺满整块面板。
+   整层压到 .14 并统一染金（laya 唯一可用信号：装饰要淡到近乎纹理）。 */
+.larry-pola-deco{
+  position:absolute;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  /* 作者反馈：有点浅、元素太小看不到。整层 .14 → .22；单元图显示 470×527 → 820×920（元素放大约 1.75 倍）。
+     laya 的 ≤0.14 是「别抢主体」的保守取值，此处按作者明确要求放宽。 */
+  opacity:.22;
+  background-color:var(--larry-gold);
+  /* 单层单元图（货架装箱：紧密、大小交错、结构上不重叠）。 */
+  -webkit-mask:url(../../../images/gfx/larry-anniv-2026/tattoo-tile.png) 0 0/820px 729px repeat;
+          mask:url(../../../images/gfx/larry-anniv-2026/tattoo-tile.png) 0 0/820px 729px repeat;
+}
+
+.larry-pola-stage{
+  position:absolute;
+  inset:0;
+  z-index:2;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  align-items:center;
+  padding:3.2em 4% 4.5%;
+}
+
+/* 本面板标题全大写（作者要求）；倒计时的 title 是日期，不受影响。 */
+.panel.larry-pola .panel-header .title{text-transform:uppercase}
+
+/* 抬头与倒计时面板共用同一套规则（选择器已并入方 §2 的 .panel.larry-cd 组）*/
+
+/* === 照片区（视口 + 轨道）=== */
+.larry-pola-view{
+  position:relative;
+  flex:1;
+  width:100%;
+  min-height:0;
+  overflow:hidden;                    /* 卡片超出即裁，天然不透出页面 */
+  /* 真机上横向滑动会被浏览器的滚动手势接管（左右都翻不动）：
+     pan-y 表示纵向留给页面、横向交给我们；再禁掉横向 overscroll 触发的返回导航。 */
+  touch-action:pan-y;
+  overscroll-behavior-x:contain;
+}
+.larry-pola-track{
+  position:absolute;
+  top:0;
+  bottom:0;
+  /* ★ perspective 必须挂在卡片的**直接父级**上：写在 .larry-pola-view 上时卡片是孙元素，
+     只对直接子元素生效 ⇒ 卡片的 rotateY 变成正交投影，转到 90° 也不收窄（实测矩阵旋转部分为单位矩阵）。
+     挂在轨道上（卡片就是它的直接子元素）才真正产生透视收缩。 */
+  perspective:600px;
+  left:var(--pola-inset, 0px);
+  right:var(--pola-inset, 0px);
+}
+
+/* === Polaroid 卡 ===
+   图像区 3:4 竖版 + 上/左/右 6% 白边 + 下白边 20% 放题注 ⇒ 整卡 ≈ 1:1.43 */
+.larry-pola-card{
+  position:absolute;
+  top:50%;
+  left:0;
+  width:var(--pola-w);
+  aspect-ratio:1 / 1.43;
+  /* ★ 不能用百分比 padding：百分比按**包含块**（轨道宽 1256）解析，6% 会变成 75px
+     而不是自身宽 266 的 6%（16px），图会被挤成一小块（METHODS M60 的坑，
+     绝对定位元素同样中招）。用 calc(--pola-w * .06)：--pola-w 里的 100% 在
+     padding 上下文同样按包含块解析，而卡宽正是同一个表达式，故两者必然相等。 */
+  padding:calc(var(--pola-w) * .06) calc(var(--pola-w) * .06) 0;
+  box-sizing:border-box;
+  background:var(--pola-frame, #fff);
+  box-shadow:0 5px 14px rgba(20,27,33,.16);
+  cursor:default;                     /* 卡片不可点：绝不出现 pointer，避免暗示可点击 */
+  /* 一条 transform 同时服务两种呈现：
+     桌面 = 槽位位移（--d/--px）+ 固定倾斜（--tilt）；移动端 = 牌堆（--depth 决定旋转与缩放，
+     这正是参考库 image-card-stack 的核心：层叠变化表现为"深度"变化，而深度是连续可动画的量，
+     所以换层时其他牌只是轻轻转 4°、缩 6%，不会跳变、也不会飞）。 */
+  transform:translate3d(
+              calc(var(--pola-center, 0px) + var(--d, 0) * var(--pola-step-pct) + var(--px, 0px) + var(--drag-x, 0px) + var(--fan-x, 0px)),
+              calc(-50% + var(--dy, 0px) + var(--drag-y, 0px) - var(--lift, 0px) + var(--fan-y, 0px)),
+              0)
+            rotateX(var(--rx, 0deg))
+            rotateY(var(--ry, 0deg))
+            /* 歪斜度只用"每张牌自己的"（桌面那张 -9/+5/-6/+8 表），堆叠不再统一加旋转 ——
+               否则摊开看每张都朝同一边斜，不像一叠拍立得（作者指出）。 */
+            rotate(calc(var(--tilt, 0deg) + var(--over, 0deg) + var(--fan-rot, 0deg)))
+            scale(calc(var(--depth-scale, 1) * var(--pop, 1) * (1 - var(--depth, 0) * .06)))
+            /* 每深一层再向左下错开一点：参考库只靠 4°/6%，那是给 208px 方图卡的；
+               我们卡宽只有 133px，缩 6% 后会被顶张整张盖住（作者反馈"只剩一张"），
+               所以要加大旋转并补一点位移，牌堆才读得出是"一叠"。 */
+            ;
+  /* 只动位置，不做透明度渐变。缓动取开源卡片组常用的"弹簧"曲线：末段轻微过冲，落位更自然。 */
+  /* 时长/延迟/缓动三者都按角色分级（--dur / --delay / --ease）：三张牌各有各的时间线，
+     不再共用一套 ⇒ 不会"粘在一起"。 */
+  transition:transform var(--dur, .52s) var(--ease, cubic-bezier(.34,1.56,.64,1)), box-shadow .25s ease;
+  transition-delay:var(--delay, 0ms);
+  will-change:transform;
+}
+.larry-pola-card--blue{--pola-frame:var(--larry-blue-fresh)}
+.larry-pola-card--green{--pola-frame:var(--larry-green-fresh)}
+.larry-pola-img{
+  display:block;
+  width:100%;
+  aspect-ratio:3 / 4;                 /* 图纸：picture 4:3 vertical */
+  object-fit:cover;
+  background:#ddd;
+  -webkit-user-drag:none;
+  user-select:none;
+}
+.larry-pola-cap{
+  margin:.55em 0 0;
+  font-family:'Caveat','LXGW WenKai','LXGW WenKai Mono',cursive;
+  font-size:clamp(.86rem,1.3vw,1.2rem);   /* 作者反馈：题注偏小 */
+  line-height:1.18;
+  color:var(--larry-ink);
+  text-align:center;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* === 翻卡弧线：牌先被"拿起来"一点，再落到位（而不是平平地滑过去）===
+   位移主过渡负责 x/旋转，这条动画只叠加一个抬起量 --lift，两者合成一条弧线。 */
+@keyframes larry-pola-arc{
+  0%   {--lift:0px;                        --pop:1;     --over:0deg}
+  38%  {--lift:var(--lift-max, 26px);      --pop:1.025; --over:var(--over-max, 5deg)}
+  74%  {--lift:-3px;                       --pop:.998;  --over:calc(var(--over-max, 5deg) * -.25)}
+  100% {--lift:0px;                        --pop:1;     --over:0deg}
+}
+/* 抬起时阴影变深变大：卡片离桌面更高的物理线索 */
+.larry-pola-card.is-arc{box-shadow:0 16px 26px rgba(20,27,33,.26)}
+.larry-pola-card.is-arc{animation:larry-pola-arc var(--dur, .52s) cubic-bezier(.34,.72,.25,1) var(--delay, 0ms) both}
+
+/* ★ 接位卡"翻进来"：前进途中绕 Y 轴转过去，在**侧立（视觉不可见）**的那一瞬间切换层叠。
+   这比"退开让位"更好：不需要退开 ⇒ 扇形中间不会被掏空（作者反馈"位置乱套"）。 */
+@keyframes larry-pola-flipin{
+  0%   {--ry:0deg}
+  46%  {--ry:var(--ry-max, -80deg)}
+  100% {--ry:0deg}
+}
+/* 同一元素上两条 animation 声明会互相覆盖（后者赢，抬起动画被顶掉）⇒ 必须并列在一条里 */
+.larry-pola-card.is-flip{animation:larry-pola-flipin var(--dur, .46s) cubic-bezier(.4,.1,.3,1) both}
+.larry-pola-card.is-arc.is-flip{
+  animation:larry-pola-arc var(--dur, .46s) cubic-bezier(.34,.72,.25,1) var(--delay, 0ms) both,
+            larry-pola-flipin var(--dur, .46s) cubic-bezier(.4,.1,.3,1) both;
+}
+
+/* === 桌面 hover：扶正 + 抬升 + 阴影加重（光标保持 default，见 §5.1 的张力说明）=== */
+@media (hover:hover) and (min-width:768px){
+  .larry-pola-card:hover{
+    cursor:default;
+    transform:translateY(calc(-50% + var(--dy, 0px) - 6px - var(--lift, 0px)))
+              translateX(calc(var(--pola-center, 0px) + var(--d, 0) * var(--pola-step-pct) + var(--px, 0px)))
+              rotate(0deg) scale(1.03);
+    box-shadow:0 14px 26px rgba(20,27,33,.26);
+    z-index:20;
+  }
+}
+
+/* === 箭头（桌面；移动端隐藏）=== */
+.larry-pola-arrow{
+  position:absolute;
+  top:50%;
+  margin-top:-.5em;
+  z-index:30;
+  width:1em;
+  height:1em;
+  padding:0;
+  border:0;
+  background:none;
+  color:var(--larry-ink);
+  font-size:clamp(1.9rem,3.4vw,3rem);
+  line-height:1;
+  opacity:.72;
+  cursor:pointer;
+  -webkit-appearance:none;
+  appearance:none;
+}
+.larry-pola-arrow::before{content:'‹'}
+.larry-pola-arrow--prev{left:0}
+.larry-pola-arrow--next{right:0;text-align:right}
+.larry-pola-arrow--next::before{content:'›'}
+.larry-pola-arrow:hover{opacity:1}
+.larry-pola-arrow:focus-visible{outline:2px solid var(--larry-gold);outline-offset:3px}
+
+/* === 底部 CTA（面板内唯一点得动的元素）=== */
+.larry-pola-cta-row{margin:0;text-align:center}
+.larry-pola-cta{
+  display:inline-block;
+  padding:.8em 2.6em;
+  border:.12em solid var(--larry-ink);
+  font-family:'Source Code Pro';
+  font-weight:600;
+  font-size:clamp(.66rem,1.05vw,.9rem);
+  text-transform:uppercase;
+  letter-spacing:.16em;
+  color:var(--larry-ink);
+  background:transparent;
+}
+.larry-pola-cta:hover{background:var(--larry-ink);color:#fff}
+.larry-pola-cta:focus-visible{outline:2px solid var(--larry-gold);outline-offset:3px}
+
+/* =================================================================
+   7. Polaroid 墙 · 移动端（≤767px，1:1）
+   3 张扇形：中间那张正立且在最大层，左右各 ±20° 从后面露出（照图纸）
+   扇形几何由 JS 每帧写 --d / --tilt / --dy，这里只管尺寸与隐藏
+   ================================================================= */
+@media (max-width:767px){
+  .panel.larry-pola{
+    --pola-gap:0px;
+    /* 中心卡宽 = 内容宽的 38%（图纸上中心卡约占面板 39%） */
+    --pola-w:38%;
+    --pola-step-pct:52%;                     /* 一步 = 自身宽的 52%（重叠 48%），扇形总跨 ≈ 322px ≤ 351 */
+  }
+  .larry-pola-stage{padding:2.6em 5% 5%}
+  .panel.larry-pola{--pola-inset:0px}
+  .larry-pola-arrow{display:none}            /* 移动端只用滑动，不显示箭头 */
+  .larry-pola-cap{font-size:clamp(.9rem,3.6vw,1.05rem)}
+  /* 题注与相框是一体的：**任何情况下都不隐藏**（作者明确要求）。
+     牌堆里深处的卡片本来就整张被顶张盖住，题注不需要额外处理。 */
+}
+
+@media (prefers-reduced-motion:reduce){
+  .larry-pola-card{transition:none}
+  .larry-pola-card.is-arc{animation:none}
+}
