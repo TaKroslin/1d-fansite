@@ -246,16 +246,14 @@
 				var isLeaving = (leaving && leaving.idx === i);
 				var deep = isLeaving ? 1 : Math.min(pos, 4);   /* 离场那张：就近让开一格 */
 				if (isLeaving) {
-					/* 顺着划动方向就近滑出（约 48px），动画跑完再隐藏 */
-					el.style.setProperty("--fan-x", (leaving.dir * 48) + "px");
-					el.style.setProperty("--fan-y", "7px");
-					el.style.setProperty("--fan-rot", (leaving.dir * 13) + "deg");
-					el.style.setProperty("--fan-scale", ".93");
+					/* 离场那张：留在**自己那一侧的最靠后一槽**（深度 4），动画跑完再隐藏 —— 
+					   读起来就是"滑到自己那侧的牌堆后面去了"，与方向无关、也不需要特殊坐标。 */
+					deep = 4;
 					z = 1;
 					hidden = false;
 					el.style.setProperty("--dur", ".5s");
 					el.style.setProperty("--delay", "0ms");
-				} else {
+								} else {
 					/* 统一时长 + 按层轻错开（级联，不显得"粘在一起"）+ 温和弹簧（不过冲、不抖） */
 					el.style.setProperty("--dur", ".46s");
 					el.style.setProperty("--delay", (deep * 30) + "ms");
@@ -394,12 +392,21 @@
 
 		function topCard() { return cards[order[0]]; }
 
-		/* 翻一张：顶张 → 整副牌最底下（40 张才能全部轮流上场）；
-		   同时记下 leaving，让它顺着划动方向就近滑出、动画结束再隐藏（不瞬间消失）。 */
+		/* 翻一张（方向感知）：右滑 → 把**左侧**最近那张弄上来；左滑 → 把**右侧**最近那张弄上来。
+		   每张牌的左右侧固定（索引奇偶），所以做法是"窗口沿牌堆滑动 1 格或 2 格"
+		   —— 目标侧最近的那张若在第 1 层就滑 1 格、在第 2 层就滑 2 格。
+		   这样每张牌只在自己那一侧朝中心挪一步，**永不横跨到另一侧**（--fan-x 的符号全程不变）。 */
 		function flipDeck(dir) {
-			var went = order.shift();
-			order.push(went);
-			leaving = { idx: went, dir: dir || 1 };
+			var wantSide = (dir > 0) ? -1 : 1;          /* 右滑要左侧牌(-1)；左滑要右侧牌(+1) */
+			var step = 1;
+			for (var k = 1; k <= 2; k++) {
+				var idx = order[k];
+				if (!idx && idx !== 0) break;
+				if (((idx % 2 === 0) ? -1 : 1) === wantSide) { step = k; break; }
+			}
+			var went = order[0];
+			for (var m = 0; m < step; m++) order.push(order.shift());
+			leaving = { idx: went };
 			render();
 			window.setTimeout(function () { leaving = null; render(); }, 620);
 		}
@@ -414,7 +421,7 @@
 			if (MOBILE.matches) {
 				var card = topCard();
 				var TH = Math.max(22, (card ? card.offsetWidth : 133) * 0.2);   /* 轻扫即翻（≈27px） */
-				if (Math.abs(dx) > TH || Math.abs(dy) > TH) flipDeck(dx < 0 ? -1 : 1);
+				if (Math.abs(dx) > TH || Math.abs(dy) > TH) flipDeck(dx < 0 ? -1 : 1);   /* 左滑=-1 / 右滑=+1 */
 			} else if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
 				go(dx < 0 ? 1 : -1);                     /* 桌面：整轨方向判定 */
 			}
