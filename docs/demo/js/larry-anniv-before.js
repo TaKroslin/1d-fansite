@@ -71,3 +71,19 @@
 	trigger.addEventListener('mouseenter', function () { panel.classList.add('hover'); });
 	trigger.addEventListener('mouseleave', function () { panel.classList.remove('hover'); });
 })();
+
+/* History 视频卡：点击三角形才加载 Bilibili 播放器（懒加载，避免一进页面就拉播放器），
+   加载后把三角形按钮淡出，让出点击给播放器。data-youtube-id 已移除 ⇒ 不会触发站内的 YouTube 灯箱。 */
+(function () {
+	var panel = document.querySelector('.panel.homepage-video');
+	if (!panel) return;
+	var btn = panel.querySelector('.play-button');
+	var frame = panel.querySelector('.larry-video-frame iframe');
+	if (!btn || !frame) return;
+	btn.addEventListener('click', function (e) {
+		e.preventDefault();
+		if (!frame.getAttribute('src')) frame.setAttribute('src', frame.getAttribute('data-src'));
+		btn.classList.add('is-playing');
+		panel.classList.add('is-playing');   /* 面板也标记，用来撤掉覆盖层 */
+	});
+})();

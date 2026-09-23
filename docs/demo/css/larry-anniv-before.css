@@ -293,20 +293,6 @@
 }
 
 /* === 9/28 前主页节日化卡片 === */
-.home-section #nav{
-  background:linear-gradient(
-    90deg,
-    var(--larry-blue-deep) 0 11.1111%,
-    var(--larry-green-deep) 11.1111% 22.2222%,
-    var(--larry-blue-deep) 22.2222% 33.3333%,
-    var(--larry-green-deep) 33.3333% 44.4444%,
-    var(--larry-blue-deep) 44.4444% 55.5555%,
-    var(--larry-green-deep) 55.5555% 66.6666%,
-    var(--larry-blue-deep) 66.6666% 77.7777%,
-    var(--larry-green-deep) 77.7777% 88.8888%,
-    var(--larry-blue-deep) 88.8888% 100%
-  );
-}
 .home-section #nav #main > ul{
   height:auto;
   min-height:0;
@@ -865,20 +851,6 @@ body.home-section header#sticky.scrolled{
 }
 
 /* === 9/28 前主页节日化卡片 === */
-.home-section #nav{
-  background:linear-gradient(
-    90deg,
-    var(--larry-blue-deep) 0 11.1111%,
-    var(--larry-green-deep) 11.1111% 22.2222%,
-    var(--larry-blue-deep) 22.2222% 33.3333%,
-    var(--larry-green-deep) 33.3333% 44.4444%,
-    var(--larry-blue-deep) 44.4444% 55.5555%,
-    var(--larry-green-deep) 55.5555% 66.6666%,
-    var(--larry-blue-deep) 66.6666% 77.7777%,
-    var(--larry-green-deep) 77.7777% 88.8888%,
-    var(--larry-blue-deep) 88.8888% 100%
-  );
-}
 .home-section #nav #main > ul{
   height:auto;
   min-height:0;
@@ -1168,3 +1140,122 @@ body.home-section header#sticky.scrolled{
   border:.2em solid #fff;display:none;
 }
 .panel.novel-feature-card.hover .inline{display:block}
+
+
+/* =================================================================
+   底色改浅 + 同色系爱心点缀（作者方案）
+   原来 8 个卡刷的是特殊版自创的 --larry-blue-card(#c9dfed) / --larry-green-card(#cbe4d3)
+   —— 亮度不低、彩度很低，卡在"不够白也不够彩"的中间地带，8 块叠在一起就发闷（作者："堆满了"）。
+   现在改用**设计系统里已有的 wash**（近乎白）作底，并铺一层同色系爱心做点缀：
+   爱心用 SVG data-URI 平铺（不是 emoji 字形），颜色可控、跨设备一致；
+   放在 ::before 里 + 内容抬到 z-index:1，避免压住文字、也不与封面的 background-image 打架。
+   ================================================================= */
+.larry-before-blue{background-color:var(--larry-blue-wash)!important}
+.larry-before-green{background-color:var(--larry-green-wash)!important}
+
+
+/* =================================================================
+   爱心点缀：用**真的 emoji**（💙 💚），不是画的心形。
+   每张卡 5 个，蓝色卡以 💙 为主、绿色卡以 💚 为主，各掺 2 个另一色（作者：可以混着放）。
+   位置由 .larry-heart:nth-of-type() 给，散落不排队；爱心在内容之下（z-index:0）。
+   ================================================================= */
+.larry-heart{
+  position:absolute;
+  z-index:0;
+  pointer-events:none;
+  line-height:1;
+  font-size:2.1em;
+  opacity:.55;
+  -webkit-user-select:none;
+  user-select:none;
+}
+.larry-before-blue .larry-heart:nth-of-type(1){top:12%;left:8%}
+.larry-before-blue .larry-heart:nth-of-type(2){top:26%;right:11%;font-size:1.5em;opacity:.4}
+.larry-before-blue .larry-heart:nth-of-type(3){bottom:22%;left:14%;font-size:1.7em;opacity:.45}
+.larry-before-blue .larry-heart:nth-of-type(4){bottom:11%;right:18%;font-size:1.3em;opacity:.35}
+.larry-before-blue .larry-heart:nth-of-type(5){top:48%;right:38%;font-size:1.2em;opacity:.3}
+.larry-before-green .larry-heart:nth-of-type(1){top:15%;right:9%}
+.larry-before-green .larry-heart:nth-of-type(2){top:34%;left:10%;font-size:1.5em;opacity:.4}
+.larry-before-green .larry-heart:nth-of-type(3){bottom:26%;right:15%;font-size:1.7em;opacity:.45}
+.larry-before-green .larry-heart:nth-of-type(4){bottom:9%;left:16%;font-size:1.3em;opacity:.35}
+.larry-before-green .larry-heart:nth-of-type(5){top:52%;left:38%;font-size:1.2em;opacity:.3}
+
+
+/* =================================================================
+   ★ 封面层级修正（作者反馈"绿色卡片的纹身都不显示"）
+   实测这 8 张卡的封面根本不是画在卡片自身，而是画在伪元素上：
+     ::before → position:absolute / inset 铺满 / 有不透明底色 + 原封面 background-image
+     ::after  → z-index:1 / 一层不透明的蓝或绿中间色
+   而我把纹身写在**卡片自身**的 background 上 ⇒ 被上面两层完全盖住 ✗。
+   修法：让这两层透明，卡片自己的纹身背景直接露出来。
+   （不删别的属性，只把 background 置透明 —— 影响面最小。）
+   ================================================================= */
+.larry-before-photo-card::before,
+.larry-before-photo-card::after{
+  background:transparent!important;
+}
+
+
+/* =================================================================
+   按钮与框框改黑（作者要求）
+   浅 wash 底上，原来的白色描边按钮 + 白色外框几乎看不见 ✗。
+   统一改用设计系统的 ink（--larry-ink:#141b21，与标题同色），比纯黑更贴规范。
+   作用域限定在 .larry-before-* 这些卡上，不动站内其它页面。
+   ================================================================= */
+
+
+
+/* =================================================================
+   按钮与框框改黑（作者要求）· 第 2 版：加重选择器
+   第 1 版没生效 —— 站内 css/styles.css 里 .panel .info a.more 一类规则带 !important
+   且选择器更具体，压过了我的 .larry-before-x a.more；这里按"面板 .info 里的 a.more"
+   这一层写，并全部加 !important，同时覆盖行内 color/border-color。
+   ================================================================= */
+.panel.larry-before-blue .info a.more, .panel.larry-before-green .info a.more,
+.panel.larry-before-blue .info a.more:visited, .panel.larry-before-green .info a.more:visited,
+.panel.larry-before-blue .info a.more span, .panel.larry-before-green .info a.more span{
+  color:var(--larry-ink)!important;
+  border-color:var(--larry-ink)!important;
+}
+.panel.larry-before-blue .info a.more:hover, .panel.larry-before-green .info a.more:hover,
+.panel.larry-before-blue .info a.more:visited:hover, .panel.larry-before-green .info a.more:visited:hover{
+  background-color:var(--larry-ink)!important;
+  color:#fff!important;
+  border-color:var(--larry-ink)!important;
+}
+.panel.larry-before-blue .inline, .panel.larry-before-green .inline{
+  border-color:var(--larry-ink)!important;
+}
+
+
+/* ★ 第 3 版：按钮改黑 —— 行内 !important 锁死了文字/描边色（站内 CSS 带 !important
+   且选择器更具体，常规写法压不过），所以颜色写在行内。hover 反馈改为"浅底填充"，
+   因为文字色已被行内锁定，不能再用反色（否则黑底黑字）。 */
+.panel.larry-before-blue .info a.more:hover,
+.panel.larry-before-green .info a.more:hover,
+.panel.larry-before-blue .info a.more:visited:hover,
+.panel.larry-before-green .info a.more:visited:hover{
+  background-color:rgba(20,27,33,.10)!important;
+}
+
+
+/* =================================================================
+   History 视频卡：改成直接内嵌 Bilibili iframe（作者给的 src）
+   只用 src —— 不带 border/frameborder/framespacing/scrolling 那一套 ✗，
+   尺寸与定位交给下面这两条，铺满整卡且在文字层之下。
+   ================================================================= */
+/* 只占右半边那一块（左边留给文案），铺满该半区、无边框 */
+.larry-video-frame{position:absolute;top:0;right:0;bottom:0;width:50%;z-index:0;overflow:hidden}
+.larry-video-frame iframe{display:block;width:100%;height:100%;border:0}
+/* 播放后把三角形按钮淡出并让出点击（否则它会一直挡在播放器上） */
+.panel.homepage-video .play-button.is-playing{opacity:0!important;pointer-events:none!important}
+
+
+/* 播放时不要盖任何东西：视频卡原本有一层不透明的 --larry-green-mid/blue-mid ::after
+   压在播放器之上（截图里视频发绿就是它 ✗），封面 .bg 也没必要再留。
+   点击播放后由 JS 给面板加 .is-playing ⇒ 这两层透明。 */
+.panel.homepage-video.is-playing::after,
+.panel.homepage-video.is-playing::before{background:transparent!important}
+.panel.homepage-video.is-playing .bg{opacity:0!important}
+
+

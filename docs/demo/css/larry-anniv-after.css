@@ -393,8 +393,8 @@ html:has(#larry-demo-zh:checked) .en{display:none!important}
   opacity:.22;
   background-color:var(--larry-gold);
   /* 单层单元图（货架装箱：紧密、大小交错、结构上不重叠）。 */
-  -webkit-mask:url(../../../images/gfx/larry-anniv-2026/tattoo-tile.png) 0 0/820px 729px repeat;
-          mask:url(../../../images/gfx/larry-anniv-2026/tattoo-tile.png) 0 0/820px 729px repeat;
+  -webkit-mask:url(../../../images/gfx/larry-anniv-2026/tattoo-tile.png?v=20260927a) 0 0/820px 870px repeat;
+          mask:url(../../../images/gfx/larry-anniv-2026/tattoo-tile.png?v=20260927a) 0 0/820px 870px repeat;
 }
 
 .larry-pola-stage{
