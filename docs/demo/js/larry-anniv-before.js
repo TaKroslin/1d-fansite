@@ -59,3 +59,15 @@
 
 	tick();
 }());
+
+
+
+/* 小说卡：hover 按钮时显示白色外框（gallery 卡由 main.js 处理，
+   但 main.js 的选择器只覆盖 .gallery-cover，所以这里补一份同样行为的） */
+(function () {
+	var panel = document.querySelector('.panel.novel-feature-card');
+	if (!panel) return;
+	var trigger = panel.querySelector('a.more') || panel;
+	trigger.addEventListener('mouseenter', function () { panel.classList.add('hover'); });
+	trigger.addEventListener('mouseleave', function () { panel.classList.remove('hover'); });
+})();
