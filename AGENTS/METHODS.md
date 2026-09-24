@@ -563,3 +563,24 @@
 - **处理**：① 新增两枚**浅色场专用** token：`larry-blue-fresh:#c8e6fb`、`larry-green-fresh:#cfefd7`（高亮度 ~89% + 中高彩度），并登记进 `DESIGN-SYSTEM.md` 颜色表。② 条纹改为**不透明**直接上色，不再叠透明度。③ 面板底从 `--larry-cream` 改成 **`#fff`**——清新粉彩必须落在中性白底上。
 - **验证**：条带中心像素采样 `#c8e6fb` / `#cfefd7`，最大通道差 ≈ 40（改前 7 → 15）；黑字对比度仍 >12:1。
 - **预防**：① **"浅色"和"清新"不是一回事**：浅 = 高亮度，清新 = 高亮度 **+ 够用的彩度**；只降透明度做不出清新，只会做出灰。② **给浅色场配色时先问底色**：暖色底（奶油/米白）会把任何冷色拖脏，浅色场底色一律用中性白。③ **深色场用的 token 不要直接搬到浅色场**（反之亦然）——`deep/mid/wash` 是按深底设计的，浅底需要单独一档，新增时要进 token 表。
+
+### M80. QA 截图只写 `/tmp` 等于没截——临时目录会被清掉，归档点是 `tools/_qa_screenshots/`
+- **现象**：作者反馈"每一次检测的截图都要放 `tools/_qa_screenshots/`，你有些放错了，有些留在 temp 没存，我都要作为存档"。复核后发现：一批截图写在 `/tmp/*.png`（会随系统清理消失），另一批被我放进了自建的 `docs/qa/`（仓库里凭空多出第二个 QA 归档点）。
+- **根因**：Playwright 脚本图省事，`screenshot({path:'/tmp/xxx.png'})` 先落盘看一眼，事后没有搬；而规则其实**早就写在 `AGENTS/RULES.md` §3 第 3 层**（截图归档到 `tools/_qa_screenshots/`、按任务建子文件夹），只是脚本输出路径没照着写。另外 `docs/qa/` 是我临时新建的，属于"在正确归档点之外另开目录"。
+- **处理**：① 把 93 个文件按任务收拢进 `tools/_qa_screenshots/{larry-928,larry-pola,larry-gallery-album}/`，每个文件夹配 `README.md` 逐图对照表；`docs/qa/` 删除。② 收拢脚本对每个文件做 `sha256` 校验，通过后才删 `/tmp` 源文件（避免"搬丢了"）。③ 在 RULES.md §3 补三条硬约束：不许只留 `/tmp`、不许另开 QA 目录、截图脚本必须带 `path` 落盘。
+- **验证**：`ls /tmp/*.png /tmp/*.jpg | wc -l` = 0；`find docs -name '*.png' -o -name '*.jpg'` 为空；`git status` 不再出现 `?? docs/qa/`。
+- **预防**：① **写 Playwright 脚本时，`path` 直接写归档路径**（`tools/_qa_screenshots/<任务名>/x.png`），不要写 `/tmp` 再"回头再搬"——后台任务和长会话里这步最容易漏。② **归档点只有一个**：看到自己想 `mkdir docs/qa` 就是违规信号，先去 `AGENTS/RULES.md` §3 读一眼。③ 搬移文件一律"先 `sha256` 比对、再删源"，尤其是跨 `/tmp` 的操作。
+
+### M81. 换 hero 底图时用「后代选择器 + `!important`」，会把 `h1` 里的 logo `.bg` 一起打掉
+- **现象**：给 `docs/demo/index-demo-after-928.html` 的 hero 换作者新图后，页面中央多出一块**小方块**：里面是"被 `contain` 缩小的一整张 hero 图"，正好夹在两个人中间。几何上看，那块方块的盒子与 `.panel.hero h1` **完全重合**（1440 下都是 `t511 l144 1152×130`）——也就是说，它渲染在 logo 的位置上。
+- **根因**：两个坑叠加。① hero 面板里有**两个 `.bg`**：面板自己的 `<div class="bg retinafy">`，以及 `h1` 内部那个 `<div class="bg retinafy" style="background-image:url(.../logo-white.png)">`（官方用 `.bg` 做图片替换，并不是只有面板底图用这个类）。我写的是**后代选择器** `.panel.hero .bg{background-image:…!important}`，把里面那个也命中了。② **作者样式表里的 `!important` 声明，优先级高于元素上的 inline 非 important 声明**（CSS 层叠顺序：author important > inline normal）——所以 logo div 的 inline 背景被顶掉，只剩官方那条 `.panel.hero h1 .bg{background-size:contain!important}` 生效，于是 hero 图以 contain 比例被塞进 logo 框。
+- **处理**：选择器改成**子选择器** `.panel.hero > .bg{…}`（hero 自己的 `.bg` 是 `.panel.hero` 的直接子元素，logo 那个在 `h1` 里，隔了一层，落不进 `>`）。`retinafy` 替换出来的新 div 也是 `insertAfter(obj)`，同样是直接子元素，所以 `>` 覆盖得到。`!important` 保留 —— 因为官方 `.mono .panel.hero .bg` 是 4 个 class，而 `.panel.hero > .bg` 只有 3 个（`>` 不增加特异性）。
+- **验证**：`document.querySelector('.panel.hero > .bg')` 的背景 = `larry-928-hero-rect.png`（移动端 `…-square.png`），`document.querySelector('.panel.hero h1 .bg')` 的背景 = `logo-white.png`，两者分离；1440/390 两档 logo 框坐标与改动前**逐像素一致**（`t511 l144 1152×130` / `t330 l39 312×70`），0 个 404。
+- **预防**：① **改某个类的背景前先数一遍页面里这类元素有几个** —— `.bg`、`.inline`、`.text` 这类"面团类名"在官方克隆里到处复用，且常常是嵌套的；用 `querySelectorAll` 数一次比事后截图找 bug 便宜。② **要"只作用于某一层"就用 `>`**；`!important` 只会让越界更难发现（它连 inline 都能压）。③ 记住层叠顺序里 **author `!important` 打败 inline 非 important** —— 这条在别处已经吃过一次亏（见日志里"按钮白色"的三次失败），只是那次是靠"inline 也加 `!important`"绕过去的，这次的正解是**缩小选择器作用域**。④ 视觉复核不要只看"整体对不对"，要看**有没有多出来的东西**：本次 hero 底图、logo、题词三样都"对"，错的是多出的一块。
+
+### M82. 单行 `nowrap` 题注的字号上限 = 内宽 ÷ 最长文本；用 `cqw` 顶住它，比堆断点稳
+- **现象**：Polaroid 田字格里的短题注要"字号大一些"，但题注是 `white-space:nowrap; overflow:hidden; text-overflow:ellipsis`。直接调大 `font-size` 会开始出现省略号；而且**不同断点的可用大小完全对不上**：1440 卡宽 266（能到 32px）、1280 卡宽 229（27.7px）、**768 卡宽只有 112（13.6px，而当时的字号 13.76 已经在被截了）**、390 卡宽 133（16.0px）、360 卡宽 123（14.9px）。
+- **根因**：字号是 `clamp(.86rem,1.3vw,1.2rem)` 这类**视口/根字号**驱动的，而题注能用的宽度是**卡片宽度**驱动的，两者不同步。768 档尤其反直觉：它在 `>767px` 的桌面分支，卡宽按 `(100% - 3*gap)/4` 分，反而比 767 以下移动端的 `--pola-w:38%` **更窄**（112 vs 133），于是出现"桌面比手机还小、且已经在截"。
+- **处理**：给 `.larry-pola-card` 加 `container-type:inline-size`，题注写 `font-size:min(clamp(...),13.5cqw)`（前面留一条纯 `clamp` 给旧浏览器回退）。`cqw` 相对的是**卡片内容盒**（已扣掉左右 6% 白边）＝题注真正能用的内宽，所以这个比例是"物理上限"，一次就覆盖面所有断点。
+- **验证**：上限实测 = `0.96 × 内宽 ÷ 最长题注(7 汉字 = 7em) ≈ 13.7% 内宽`，1440/1280/768/390/360 五档全部落在 13.6%~13.7%（惊人地整齐）。改后：1440 **18.72 → 24.8px（+32%）**、1280 **16.64 → 23.04（+38%）**、390 **14.4 → 15.85（+10%）**、768 **13.76 → 13.27（不再被截）**；`scrollWidth > clientWidth` 的题注数在 en/zh 两种语言、桌面/移动两档下**全部为 0/40**，且 `container-type` 加上后 view/track/卡片尺寸与位置一字未变。
+- **预防**：① **"字号大一些"这种需求，先量"内宽 ÷ 最长那条文本"**，那才是真正的天花板；不要靠感觉加断点。② **`cqw` = 容器内容盒的 1%**，不是边框盒——扣掉 padding 后才是可用宽度，算比例时别算错（第一次按边框盒取了 11.8cqw，结果移动端反而变小了）。③ **组件尺寸与视口脱钩时（宽高由父级百分比/`aspect-ratio` 定），字号也应该用容器单位而不是 `vw`/`rem`**，否则必然在某些断点失配。④ 改字号前先查 `scrollWidth > clientWidth`，这是"有没有被省略号吃掉"的唯一可靠判据。

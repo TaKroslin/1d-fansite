@@ -1,0 +1,1261 @@
+/* =================================================================
+   Larry 9-28 顶部套件 · 阶段 A：倒计时 panel
+   仅作用于 docs/demo/，不发布（.assetsignore 排除 /docs/）
+   合并进线上时：本文件内容追加到 css/styles.css 末尾 additions 区，
+   删掉 .larry-demo-* 段，并 bump 所有页面的 styles.css?v=
+   ================================================================= */
+
+/* === token（设计稿 §3.1，九枚） === */
+:root{
+  --larry-blue-deep:#1e4d6e;
+  --larry-blue-mid:#3a7ca5;
+  --larry-blue-wash:#e8f1f6;
+  --larry-green-deep:#2f5d4e;
+  --larry-green-mid:#57a787;
+  --larry-green-wash:#e9f4ef;
+  --larry-gold:#c9a86a;
+  --larry-cream:#faf6ef;
+  --larry-ink:#141b21;
+  /* 浅色场专用"清新"层（2026-09-21 新增，已登记进 DESIGN-SYSTEM 颜色表）：
+     deep/mid/wash 三档都是灰调色——mid 叠在偏黄的奶油底上会发脏（作者反馈"蓝绿好脏"）。
+     这两枚是高亮度 + 中高彩度的粉彩，只在**白底**上使用；蓝绿语义不变（蓝=Louis、绿=Harry）。 */
+  --larry-blue-fresh:#c8e6fb;
+  --larry-green-fresh:#cfefd7;
+  --larry-blue-card:#c9dfed;
+  --larry-green-card:#cbe4d3;
+}
+
+/* =================================================================
+   1. 面板本体
+   比例一个字都不覆盖：素 .panel 自带 padding:50% 0 0（桌面 2:1），
+   767 断点官方 .panel{padding-top:100%}（移动 1:1）。
+   不要套 .panel.journal-news.homepage-news —— 那条在 767 被官方改成
+   padding-top:0!important;height:auto!important，移动端会丢掉 1:1（METHODS M57）。
+   ================================================================= */
+.panel.larry-cd{
+  /* 白底，不用奶油底：奶油 #faf6ef 偏黄，会把上面的蓝绿条带拖脏。
+     清新粉彩必须落在中性白底上才干净。 */
+  background:#fff;
+  color:var(--larry-ink);
+  /* 手绘图案的宽高比，作者交付的 PNG 不是 4:3 时只改这一行 */
+  --larry-motif-ratio:4/3;
+}
+
+/* === 条纹场：每 1/24 面板宽一条，蓝绿交替 ===
+   百分比 stop 相对渐变线长度：0→4.1667% 蓝、4.1667%→8.3333% 绿，
+   一个周期 = 8.3333% = 面板宽的 1/12（即每条 1/24），共 24 条。
+   用两枚 deep/mid token 叠透明层都会发浑：wash 两色明度几乎相同（分不出蓝绿），
+   mid 是灰调色（叠上去发脏）。这里用新增的 fresh 两色，直接不透明上色，最干净。 */
+.larry-cd-stripes{
+  position:absolute;
+  inset:0;
+  z-index:0;
+  background:repeating-linear-gradient(90deg,
+    var(--larry-blue-fresh) 0 4.1667%,
+    var(--larry-green-fresh) 4.1667% 8.3333%);
+  /* 作者原话「柔和地淡入淡出」：单层 opacity 呼吸，只重绘一层。
+     想改成「只进场淡入一次」：把 infinite 换成 1 forwards。 */
+  animation:larry-cd-breathe 14s ease-in-out infinite;
+}
+@keyframes larry-cd-breathe{
+  0%,100%{opacity:.86}
+  50%{opacity:1}
+}
+
+/* === 中轴金线 ===
+   不贯穿到顶／底边：作者草图里的金线在文字带处是断开的（TITLE 上方、script 下方各留一段），
+   贯穿会实实在在把 "COUNTING DOWN" 与底部 script 割字。
+   上端 14% 让开元信息行（实测文字带下沿 12.7%），下端 22% 让开 script（实测其上沿在距底 16.7%），
+   中段正好压在倒计时奶油牌上（牌不透明，把线遮住，线只在牌的上下露出来）。移动端另行微调。 */
+.panel.larry-cd::after{
+  content:'';
+  position:absolute;
+  left:50%;
+  top:22%;
+  bottom:22%;
+  width:1px;
+  background:var(--larry-gold);
+  transform:translateX(-50%);
+  z-index:2;
+  pointer-events:none;
+}
+
+/* =================================================================
+   2. 舞台
+   .panel 的内容盒高度为 0（height:0 + padding-top 撑高），
+   所以内部一切必须由一层绝对定位的舞台承载。
+   z-index 3 > 金线 2：舞台内容压住金线，奶油牌把中间那段金线遮住，
+   金线只在牌的上下露出来。
+   ================================================================= */
+.larry-cd-stage{
+  position:absolute;
+  inset:0;
+  z-index:3;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  align-items:center;
+  padding:1.7em 4% 6%;
+}
+
+/* 倒计时取代 hero 后，黑色站点 logo 作为本 panel 的品牌锚点。 */
+.larry-cd-logo{
+  position:absolute;
+  top:.5%;
+  left:50%;
+  z-index:1;
+  width:min(12%,140px);
+  aspect-ratio:3000 / 548;
+  transform:translateX(-50%);
+  background:url(../images/gfx/5guys/logo-black.png) center/contain no-repeat;
+}
+
+/* === 元信息行：官方 .panel-header（Times 87.5%）转为流内居中 ===
+   display:block!important 专治 @media(max-width:767px) 里
+   .home-section .panel .panel-header{display:none}（官方面板在移动端隐藏元信息）。 */
+.panel.larry-cd .panel-header,
+.panel.larry-pola .panel-header{
+  position:static;
+  display:block!important;
+  width:auto;
+  padding:0;
+  text-align:center;
+  color:var(--larry-ink);
+  /* 官方 .panel-header 是 87.5%（1440 下约 16px），作者反馈"每个字都特别小"，
+     这里提升到 1.5vw 档（1440 下约 21px）。 */
+  font-size:clamp(.95rem,1.5vw,1.3rem);
+}
+.panel.larry-cd .panel-header .title,
+.panel.larry-pola .panel-header .title{
+  color:var(--larry-ink);
+}
+.panel.larry-cd .panel-header .section-name,
+.panel.larry-pola .panel-header .section-name{
+  font-family:'Source Code Pro';
+  color:var(--larry-ink);
+  margin-top:.35em;
+}
+.panel.larry-cd .panel-header .section-name span,
+.panel.larry-pola .panel-header .section-name span{
+  color:var(--larry-ink);
+  border-bottom:.1em solid var(--larry-gold);
+}
+/* 覆盖 body.home-section 强制给 .panel-header .zh 的 Smiley Sans，
+   回到设计稿 §3.2 的面板元信息中文族 */
+.panel.larry-cd .panel-header .zh,
+.panel.larry-pola .panel-header .zh{
+  font-family:'LXGW WenKai Mono','LXGW WenKai','Noto Sans SC',monospace;
+}
+
+/* =================================================================
+   3. 中央一行：图案 · 倒计时 · 图案
+   ================================================================= */
+.larry-cd-main{
+  flex:1;
+  /* width:100% 不能少：舞台是 flex column + align-items:center，
+     交叉轴上子项宽度收缩为内容宽，.larry-cd-motif 的百分比宽度会失去解析基准而塌成几像素。 */
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  /* 间距不能大：放大字号后 图案+倒计时牌 几乎占满行宽，
+     留 3% 会让 flex 把图案挤扁（靠 shrink 兜底很脆）。1.5% 留出余量。 */
+  gap:1.5%;
+}
+
+/* === 手绘图案槽位 ===
+   图案来自作者手写原图，已抠成透明 PNG（见下）。槽位只负责给位置与比例。 */
+.larry-cd-motif{
+  width:18%;
+  aspect-ratio:var(--larry-motif-ratio);
+  background-repeat:no-repeat;
+  background-position:center;
+  background-size:contain;
+}
+
+/* === 两张图案 ===
+   由作者原图（白底、手写 "OOPS!" 与 "Hi"）抠出，流水线：
+   alpha 提取 → 4x 重采样 → 二次收紧 → 3x3 形态学开运算去扫描残留 → 词间列投影切分。
+   源图只有 480×690 预览版，4x 处理后为 1056×910 / 670×838，放进本槽位够用。
+   mask 只用 alpha 通道，所以 PNG 是黑字透明底即可，蓝/绿由 background-color 给。
+   想保留 PNG 原本颜色：把 background-color 换成 background-image:url(...)。 */
+.larry-cd-motif--louis{
+  background-color:var(--larry-blue-deep);
+  -webkit-mask:url(../images/gfx/larry-anniv-2026/motif-oops.png) center/contain no-repeat;
+          mask:url(../images/gfx/larry-anniv-2026/motif-oops.png) center/contain no-repeat;
+}
+.larry-cd-motif--harry{
+  background-color:var(--larry-green-deep);
+  -webkit-mask:url(../images/gfx/larry-anniv-2026/motif-hi.png) center/contain no-repeat;
+          mask:url(../images/gfx/larry-anniv-2026/motif-hi.png) center/contain no-repeat;
+}
+
+/* === 倒计时奶油牌（官方 .inline 的做法：外框 + 内金框）=== */
+.larry-cd-clock{
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:.35em;
+  /* 内边距用 rem，不用 em：em 跟的是 .panel 的字号阶梯（≤400px 官方降到 66.67%），
+     会让底边距缩到装不下单位标签 —— 实测移动端标签底边比牌底还低 6.8px。
+     rem 不随面板阶梯变，底边 2.4rem 恒定容下 16px 标签 + 金内框。 */
+  padding:1rem 1.5rem 2.4rem;
+  background:var(--larry-cream);
+  border:1px solid var(--larry-ink);
+}
+.larry-cd-clock::before{
+  content:'';
+  position:absolute;
+  inset:5px;
+  border:1px solid var(--larry-gold);
+  pointer-events:none;
+}
+/* 单位标签绝对定位挂到数字下方：这样 .larry-cd-unit 的盒子高度＝数字行高，
+   分隔冒号按整行居中时才会落在数字的垂直中心上（否则会掉到数字下沿）。 */
+.larry-cd-unit{
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+/* tabular-nums + min-width：每秒换数字时不抖、不跳位 */
+.larry-cd-num{
+  font-family:'Playfair Display',serif;
+  font-weight:700;
+  font-size:clamp(2.9rem,8.4vw,8.4rem);
+  line-height:1;
+  color:var(--larry-ink);
+  font-variant-numeric:tabular-nums;
+  min-width:2ch;
+  text-align:center;
+}
+.larry-cd-lab{
+  position:absolute;
+  top:100%;
+  left:50%;
+  transform:translateX(-50%);
+  margin-top:.45em;
+  white-space:nowrap;
+  font-family:'Source Code Pro';
+  font-size:clamp(.72rem,1.15vw,1rem);
+  text-transform:uppercase;
+  letter-spacing:.2em;
+  color:var(--larry-ink);
+  opacity:.6;
+}
+.larry-cd-sep{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(2rem,4.4vw,4.4rem);
+  color:var(--larry-gold);
+}
+
+/* === 底部 script === */
+.larry-cd-script{
+  margin:0;
+  max-width:min(78%,640px);
+  text-align:center;
+  font-family:'Times New Roman',Times,serif;
+  font-size:clamp(1rem,1.7vw,1.4rem);
+  line-height:1.5;
+  color:var(--larry-ink);
+  opacity:.85;
+}
+
+/* =================================================================
+   4. 移动端 1:1（390×390）：按作者草图重排 ——
+   两图案并排一行（中轴金线正好落在两者之间），倒计时换到下一行。
+   ================================================================= */
+@media (max-width:767px){
+  /* 1:1 更矮、字号阶梯更陡，金线按实测文字带（到 14.7%）下沿收紧；
+     18.5% 同时避开上方 gold 下划线（不接成 T 字）和下方图案行 */
+  .larry-cd-logo{display:none}
+  .panel.larry-cd::after{top:18.5%;bottom:22%}
+  .larry-cd-stage{padding:1.4em 5% 7%}
+  .larry-cd-main{flex-wrap:wrap;align-content:center;gap:4% 0}
+  .larry-cd-motif{width:38%}
+  .larry-cd-motif--louis{order:1}
+  .larry-cd-motif--harry{order:2}
+  .larry-cd-clock{order:3;width:100%;margin-top:6%;justify-content:center}
+  /* 移动端同步放大字号（作者反馈"每个字都特别小"） */
+  .panel.larry-cd .panel-header{font-size:clamp(.9rem,3.8vw,1.1rem)}
+  .larry-cd-num{font-size:clamp(2.6rem,12.5vw,3.6rem)}
+  .larry-cd-lab{font-size:clamp(.7rem,2.9vw,.95rem)}
+  .larry-cd-sep{font-size:clamp(1.6rem,7.5vw,2.4rem)}
+  .larry-cd-script{font-size:clamp(.92rem,3.9vw,1.15rem)}
+}
+
+/* =================================================================
+   5. 无障碍
+   ================================================================= */
+@media (prefers-reduced-motion:reduce){
+  .larry-cd-stripes{animation:none;opacity:1}
+}
+
+/* === 9/28 前主页节日化卡片 === */
+.home-section #nav #main > ul{
+  height:auto;
+  min-height:0;
+}
+.home-section #nav #main > ul > li{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  height:auto;
+  background:transparent!important;
+}
+.home-section #nav #main > ul > li > a{
+  color:#fff!important;
+}
+.home-section #nav #main > ul > li > a:hover,
+.home-section #nav #main > ul > li > a:focus-visible{
+  color:var(--larry-gold)!important;
+}
+@media (min-width:1024px){
+  .home-section header#sticky{
+    top:0!important;
+  }
+  .home-section header#sticky .button-holder{
+    margin-top:-.275em;
+  }
+  .home-section header#sticky button.menu{
+    z-index:1000;
+  }
+  .home-section #nav{
+    height:64px!important;
+    padding:0!important;
+    box-sizing:border-box;
+  }
+  .home-section #nav #main{
+    height:100%!important;
+    margin:0!important;
+  }
+  .home-section #nav #main > ul{
+    display:flex!important;
+    flex-direction:row;
+    align-items:stretch;
+    height:100%!important;
+    padding:0!important;
+  }
+  .home-section #nav #main > ul > li{
+    flex:1 1 0;
+    min-width:0;
+    height:100%!important;
+  }
+  .home-section header#nav.mobilised{
+    position:fixed;
+    top:0;
+    left:0;
+    z-index:998;
+    display:block;
+    width:100%;
+    height:100vh!important;
+    padding:60px 0 0!important;
+    box-sizing:border-box;
+    overflow-y:auto;
+  }
+  .home-section header#nav.mobilised #main{
+    height:auto!important;
+    margin:0 auto!important;
+    padding:1.5em 0 2.5em;
+    width:80%;
+  }
+  .home-section header#nav.mobilised #main > ul{
+    display:block!important;
+    height:auto!important;
+    padding:0!important;
+  }
+  .home-section header#nav.mobilised #main > ul > li{
+    display:block;
+    width:100%;
+    height:auto!important;
+    min-height:40px;
+  }
+  .home-section header#nav.mobilised #main > ul > li > a{
+    display:block;
+    padding:.75em 0;
+    text-align:center;
+  }
+}
+@media (max-width:1023px){
+  .home-section #nav #main > ul > li{
+    width:100%;
+    min-height:40px;
+  }
+}
+.larry-before-blue,
+.larry-before-green{
+  color:var(--larry-ink)!important;
+}
+.larry-before-blue{background-color:var(--larry-blue-card)!important}
+.larry-before-green{background-color:var(--larry-green-card)!important}
+.larry-before-logotype{
+  mix-blend-mode:multiply;
+}
+.larry-before-blue .panel-header,
+.larry-before-green .panel-header,
+.larry-before-blue h2,
+.larry-before-green h2,
+.larry-before-blue .text,
+.larry-before-green .text,
+.larry-before-blue p,
+.larry-before-green p,
+.larry-before-blue a:not(.more),
+.larry-before-green a:not(.more){
+  color:var(--larry-ink)!important;
+}
+.larry-before-blue .section-name,
+.larry-before-green .section-name,
+.larry-before-blue .section-name a,
+.larry-before-green .section-name a{
+  border-color:var(--larry-gold)!important;
+}
+.larry-before-photo-card{
+  position:relative;
+  isolation:isolate;
+  background-color:#777!important;
+}
+.larry-before-photo-card::before,
+.larry-before-photo-card::after{
+  content:'';
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+}
+.larry-before-photo-card::before{
+  z-index:0;
+  background:inherit;
+  filter:grayscale(1);
+}
+.larry-before-photo-card::after{
+  z-index:1;
+  opacity:.42;
+}
+.larry-before-photo-card.larry-before-blue::after{
+  background:var(--larry-blue-mid);
+  opacity:.34;
+}
+.larry-before-photo-card.larry-before-green::after{
+  background:var(--larry-green-mid);
+  opacity:.34;
+}
+.larry-before-photo-card > *{
+  position:relative;
+  z-index:2;
+}
+.larry-before-photo-card .panel-header,
+.larry-before-photo-card h2,
+.larry-before-photo-card .info,
+.larry-before-photo-card a{
+  color:#fff!important;
+}
+.larry-before-photo-card .panel-header .section-name,
+.larry-before-photo-card .panel-header .section-name a,
+.larry-before-photo-card .more{
+  border-color:#fff!important;
+}
+.larry-before-video-card{
+  position:relative;
+  isolation:isolate;
+  background-color:#777!important;
+}
+.larry-before-video-card::after{
+  content:'';
+  position:absolute;
+  inset:0;
+  z-index:1;
+  pointer-events:none;
+  opacity:.42;
+}
+.larry-before-video-card.larry-before-blue::after{background:var(--larry-blue-mid)}
+.larry-before-video-card.larry-before-green::after{background:var(--larry-green-mid)}
+.larry-before-video-card .bg{
+  filter:grayscale(1);
+}
+.larry-before-video-card > *{
+  position:relative;
+  z-index:2;
+}
+
+/* === DEMO ONLY — 合并前删除 ===
+   纯 CSS 语言切换：checkbox + label + :has()，不依赖任何 JS。
+   这样即使预览环境挡住脚本（沙箱 iframe），或 JS 加载失败，切换依然可用。
+   规则等价于站内 translate.js 的 html.lang-zh，只是驱动源换成了 checkbox。 */
+.larry-demo-bar{
+  position:fixed;
+  left:0;
+  top:0;
+  z-index:9999;
+}
+/* 视觉隐藏但保持可聚焦（不用 hidden，否则键盘无法切换） */
+.larry-demo-toggle{
+  position:absolute;
+  width:1px;
+  height:1px;
+  opacity:0;
+  pointer-events:none;
+}
+.larry-demo-lang{
+  display:inline-block;
+  font-family:'Source Code Pro';
+  font-size:13px;
+  letter-spacing:.08em;
+  padding:6px 12px;
+  color:var(--larry-ink);
+  background:var(--larry-cream);
+  border:1px solid var(--larry-ink);
+  cursor:pointer;
+  -webkit-user-select:none;
+  user-select:none;
+}
+.larry-demo-lang::after{content:'中文'}
+/* 切到中文时的明确反馈：按钮文字翻转 + 变金边金底 */
+html:has(#larry-demo-zh:checked) .larry-demo-lang::after{content:'EN'}
+html:has(#larry-demo-zh:checked) .larry-demo-lang{
+  background:var(--larry-gold);
+  border-color:var(--larry-ink);
+}
+html:has(#larry-demo-zh:focus-visible) .larry-demo-lang{
+  outline:2px solid var(--larry-gold);
+  outline-offset:2px;
+}
+/* 双语切换：与 html.lang-zh 同效 */
+html:has(#larry-demo-zh:checked) .zh{display:inline!important}
+html:has(#larry-demo-zh:checked) .en{display:none!important}
+
+/* 抬起量注册成可插值长度：未注册的自定义属性不能被 keyframes 平滑动画 */
+@property --lift { syntax:'<length>'; inherits:false; initial-value:0px; }
+@property --pop  { syntax:'<number>'; inherits:false; initial-value:1; }
+@property --over { syntax:'<angle>';  inherits:false; initial-value:0deg; }
+/* 跟手拖拽：位移与 3D 倾斜都必须注册成可插值，松手"弹回"才会是动画而不是瞬移 */
+@property --drag-x { syntax:'<length>'; inherits:false; initial-value:0px; }
+@property --ry     { syntax:'<angle>';  inherits:false; initial-value:0deg; }
+@property --rx     { syntax:'<angle>';  inherits:false; initial-value:0deg; }
+@property --depth  { syntax:'<number>'; inherits:false; initial-value:0; }
+/* 扇形：位置/角度/缩放也做成连续量，翻牌时每张牌"沿扇形移一格"而不是跳变 */
+@property --fan-x     { syntax:'<length>'; inherits:false; initial-value:0px; }
+@property --fan-y     { syntax:'<length>'; inherits:false; initial-value:0px; }
+@property --fan-rot   { syntax:'<angle>';  inherits:false; initial-value:0deg; }
+@property --fan-scale { syntax:'<number>'; inherits:false; initial-value:1; }
+@property --drag-y { syntax:'<length>'; inherits:false; initial-value:0px; }
+
+/* =================================================================
+   顶部导航：hero 处收起、往下滑之后才出现（原版语义，作者指正）
+   站内本来就是这样：.home-section header#sticky{top:-13.76666649%}（收起）
+   + .home-section header#sticky.scrolled{top:0}（出现），触发信号由 main.js 提供
+   （scrollTop 超过 header#nav 的高度+偏移时给 header 加 .scrolled —— 实测这个信号本来是好的）。
+   只是"收起"那半条失效了（实测 y=0 时 top 仍为 0，导航一直压在 hero 上）。
+   这里用 transform 代替 top:-13.76%，避开"fixed 元素的 top 百分比按包含块解析、
+   一旦祖先带了 transform/filter/will-change 就会解析错"的坑。
+   ================================================================= */
+body.home-section header#sticky{
+  transform:translateY(-100%);
+  transition:transform .33s ease;
+}
+body.home-section header#sticky.scrolled{
+  transform:none;
+}
+
+=========================================================
+   Larry 9-28 顶部套件 · 阶段 A：倒计时 panel
+   仅作用于 docs/demo/，不发布（.assetsignore 排除 /docs/）
+   合并进线上时：本文件内容追加到 css/styles.css 末尾 additions 区，
+   删掉 .larry-demo-* 段，并 bump 所有页面的 styles.css?v=
+   ================================================================= */
+
+/* === token（设计稿 §3.1，九枚） === */
+:root{
+  --larry-blue-deep:#1e4d6e;
+  --larry-blue-mid:#3a7ca5;
+  --larry-blue-wash:#e8f1f6;
+  --larry-green-deep:#2f5d4e;
+  --larry-green-mid:#57a787;
+  --larry-green-wash:#e9f4ef;
+  --larry-gold:#c9a86a;
+  --larry-cream:#faf6ef;
+  --larry-ink:#141b21;
+  /* 浅色场专用"清新"层（2026-09-21 新增，已登记进 DESIGN-SYSTEM 颜色表）：
+     deep/mid/wash 三档都是灰调色——mid 叠在偏黄的奶油底上会发脏（作者反馈"蓝绿好脏"）。
+     这两枚是高亮度 + 中高彩度的粉彩，只在**白底**上使用；蓝绿语义不变（蓝=Louis、绿=Harry）。 */
+  --larry-blue-fresh:#c8e6fb;
+  --larry-green-fresh:#cfefd7;
+  --larry-blue-card:#c9dfed;
+  --larry-green-card:#cbe4d3;
+}
+
+/* =================================================================
+   1. 面板本体
+   比例一个字都不覆盖：素 .panel 自带 padding:50% 0 0（桌面 2:1），
+   767 断点官方 .panel{padding-top:100%}（移动 1:1）。
+   不要套 .panel.journal-news.homepage-news —— 那条在 767 被官方改成
+   padding-top:0!important;height:auto!important，移动端会丢掉 1:1（METHODS M57）。
+   ================================================================= */
+.panel.larry-cd{
+  /* 白底，不用奶油底：奶油 #faf6ef 偏黄，会把上面的蓝绿条带拖脏。
+     清新粉彩必须落在中性白底上才干净。 */
+  background:#fff;
+  color:var(--larry-ink);
+  /* 手绘图案的宽高比，作者交付的 PNG 不是 4:3 时只改这一行 */
+  --larry-motif-ratio:4/3;
+}
+
+/* === 条纹场：每 1/24 面板宽一条，蓝绿交替 ===
+   百分比 stop 相对渐变线长度：0→4.1667% 蓝、4.1667%→8.3333% 绿，
+   一个周期 = 8.3333% = 面板宽的 1/12（即每条 1/24），共 24 条。
+   用两枚 deep/mid token 叠透明层都会发浑：wash 两色明度几乎相同（分不出蓝绿），
+   mid 是灰调色（叠上去发脏）。这里用新增的 fresh 两色，直接不透明上色，最干净。 */
+.larry-cd-stripes{
+  position:absolute;
+  inset:0;
+  z-index:0;
+  background:repeating-linear-gradient(90deg,
+    var(--larry-blue-fresh) 0 4.1667%,
+    var(--larry-green-fresh) 4.1667% 8.3333%);
+  /* 作者原话「柔和地淡入淡出」：单层 opacity 呼吸，只重绘一层。
+     想改成「只进场淡入一次」：把 infinite 换成 1 forwards。 */
+  animation:larry-cd-breathe 14s ease-in-out infinite;
+}
+@keyframes larry-cd-breathe{
+  0%,100%{opacity:.86}
+  50%{opacity:1}
+}
+
+/* === 中轴金线 ===
+   不贯穿到顶／底边：作者草图里的金线在文字带处是断开的（TITLE 上方、script 下方各留一段），
+   贯穿会实实在在把 "COUNTING DOWN" 与底部 script 割字。
+   上端 14% 让开元信息行（实测文字带下沿 12.7%），下端 22% 让开 script（实测其上沿在距底 16.7%），
+   中段正好压在倒计时奶油牌上（牌不透明，把线遮住，线只在牌的上下露出来）。移动端另行微调。 */
+.panel.larry-cd::after{
+  content:'';
+  position:absolute;
+  left:50%;
+  top:22%;
+  bottom:22%;
+  width:1px;
+  background:var(--larry-gold);
+  transform:translateX(-50%);
+  z-index:2;
+  pointer-events:none;
+}
+
+/* =================================================================
+   2. 舞台
+   .panel 的内容盒高度为 0（height:0 + padding-top 撑高），
+   所以内部一切必须由一层绝对定位的舞台承载。
+   z-index 3 > 金线 2：舞台内容压住金线，奶油牌把中间那段金线遮住，
+   金线只在牌的上下露出来。
+   ================================================================= */
+.larry-cd-stage{
+  position:absolute;
+  inset:0;
+  z-index:3;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  align-items:center;
+  padding:1.7em 4% 6%;
+}
+
+/* 倒计时取代 hero 后，黑色站点 logo 作为本 panel 的品牌锚点。 */
+.larry-cd-logo{
+  position:absolute;
+  top:.5%;
+  left:50%;
+  z-index:1;
+  width:min(12%,140px);
+  aspect-ratio:3000 / 548;
+  transform:translateX(-50%);
+  background:url(../images/gfx/5guys/logo-black.png) center/contain no-repeat;
+}
+
+/* === 元信息行：官方 .panel-header（Times 87.5%）转为流内居中 ===
+   display:block!important 专治 @media(max-width:767px) 里
+   .home-section .panel .panel-header{display:none}（官方面板在移动端隐藏元信息）。 */
+.panel.larry-cd .panel-header,
+.panel.larry-pola .panel-header{
+  position:static;
+  display:block!important;
+  width:auto;
+  padding:0;
+  text-align:center;
+  color:var(--larry-ink);
+  /* 官方 .panel-header 是 87.5%（1440 下约 16px），作者反馈"每个字都特别小"，
+     这里提升到 1.5vw 档（1440 下约 21px）。 */
+  font-size:clamp(.95rem,1.5vw,1.3rem);
+}
+.panel.larry-cd .panel-header .title,
+.panel.larry-pola .panel-header .title{
+  color:var(--larry-ink);
+}
+.panel.larry-cd .panel-header .section-name,
+.panel.larry-pola .panel-header .section-name{
+  font-family:'Source Code Pro';
+  color:var(--larry-ink);
+  margin-top:.35em;
+}
+.panel.larry-cd .panel-header .section-name span,
+.panel.larry-pola .panel-header .section-name span{
+  color:var(--larry-ink);
+  border-bottom:.1em solid var(--larry-gold);
+}
+/* 覆盖 body.home-section 强制给 .panel-header .zh 的 Smiley Sans，
+   回到设计稿 §3.2 的面板元信息中文族 */
+.panel.larry-cd .panel-header .zh,
+.panel.larry-pola .panel-header .zh{
+  font-family:'LXGW WenKai Mono','LXGW WenKai','Noto Sans SC',monospace;
+}
+
+/* =================================================================
+   3. 中央一行：图案 · 倒计时 · 图案
+   ================================================================= */
+.larry-cd-main{
+  flex:1;
+  /* width:100% 不能少：舞台是 flex column + align-items:center，
+     交叉轴上子项宽度收缩为内容宽，.larry-cd-motif 的百分比宽度会失去解析基准而塌成几像素。 */
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  /* 间距不能大：放大字号后 图案+倒计时牌 几乎占满行宽，
+     留 3% 会让 flex 把图案挤扁（靠 shrink 兜底很脆）。1.5% 留出余量。 */
+  gap:1.5%;
+}
+
+/* === 手绘图案槽位 ===
+   图案来自作者手写原图，已抠成透明 PNG（见下）。槽位只负责给位置与比例。 */
+.larry-cd-motif{
+  width:18%;
+  aspect-ratio:var(--larry-motif-ratio);
+  background-repeat:no-repeat;
+  background-position:center;
+  background-size:contain;
+}
+
+/* === 两张图案 ===
+   由作者原图（白底、手写 "OOPS!" 与 "Hi"）抠出，流水线：
+   alpha 提取 → 4x 重采样 → 二次收紧 → 3x3 形态学开运算去扫描残留 → 词间列投影切分。
+   源图只有 480×690 预览版，4x 处理后为 1056×910 / 670×838，放进本槽位够用。
+   mask 只用 alpha 通道，所以 PNG 是黑字透明底即可，蓝/绿由 background-color 给。
+   想保留 PNG 原本颜色：把 background-color 换成 background-image:url(...)。 */
+.larry-cd-motif--louis{
+  background-color:var(--larry-blue-deep);
+  -webkit-mask:url(../images/gfx/larry-anniv-2026/motif-oops.png) center/contain no-repeat;
+          mask:url(../images/gfx/larry-anniv-2026/motif-oops.png) center/contain no-repeat;
+}
+.larry-cd-motif--harry{
+  background-color:var(--larry-green-deep);
+  -webkit-mask:url(../images/gfx/larry-anniv-2026/motif-hi.png) center/contain no-repeat;
+          mask:url(../images/gfx/larry-anniv-2026/motif-hi.png) center/contain no-repeat;
+}
+
+/* === 倒计时奶油牌（官方 .inline 的做法：外框 + 内金框）=== */
+.larry-cd-clock{
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:.35em;
+  /* 内边距用 rem，不用 em：em 跟的是 .panel 的字号阶梯（≤400px 官方降到 66.67%），
+     会让底边距缩到装不下单位标签 —— 实测移动端标签底边比牌底还低 6.8px。
+     rem 不随面板阶梯变，底边 2.4rem 恒定容下 16px 标签 + 金内框。 */
+  padding:1rem 1.5rem 2.4rem;
+  background:var(--larry-cream);
+  border:1px solid var(--larry-ink);
+}
+.larry-cd-clock::before{
+  content:'';
+  position:absolute;
+  inset:5px;
+  border:1px solid var(--larry-gold);
+  pointer-events:none;
+}
+/* 单位标签绝对定位挂到数字下方：这样 .larry-cd-unit 的盒子高度＝数字行高，
+   分隔冒号按整行居中时才会落在数字的垂直中心上（否则会掉到数字下沿）。 */
+.larry-cd-unit{
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+/* tabular-nums + min-width：每秒换数字时不抖、不跳位 */
+.larry-cd-num{
+  font-family:'Playfair Display',serif;
+  font-weight:700;
+  font-size:clamp(2.9rem,8.4vw,8.4rem);
+  line-height:1;
+  color:var(--larry-ink);
+  font-variant-numeric:tabular-nums;
+  min-width:2ch;
+  text-align:center;
+}
+.larry-cd-lab{
+  position:absolute;
+  top:100%;
+  left:50%;
+  transform:translateX(-50%);
+  margin-top:.45em;
+  white-space:nowrap;
+  font-family:'Source Code Pro';
+  font-size:clamp(.72rem,1.15vw,1rem);
+  text-transform:uppercase;
+  letter-spacing:.2em;
+  color:var(--larry-ink);
+  opacity:.6;
+}
+.larry-cd-sep{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(2rem,4.4vw,4.4rem);
+  color:var(--larry-gold);
+}
+
+/* === 底部 script === */
+.larry-cd-script{
+  margin:0;
+  max-width:min(78%,640px);
+  text-align:center;
+  font-family:'Times New Roman',Times,serif;
+  font-size:clamp(1rem,1.7vw,1.4rem);
+  line-height:1.5;
+  color:var(--larry-ink);
+  opacity:.85;
+}
+
+/* =================================================================
+   4. 移动端 1:1（390×390）：按作者草图重排 ——
+   两图案并排一行（中轴金线正好落在两者之间），倒计时换到下一行。
+   ================================================================= */
+@media (max-width:767px){
+  /* 1:1 更矮、字号阶梯更陡，金线按实测文字带（到 14.7%）下沿收紧；
+     18.5% 同时避开上方 gold 下划线（不接成 T 字）和下方图案行 */
+  .larry-cd-logo{display:none}
+  .panel.larry-cd::after{top:18.5%;bottom:22%}
+  .larry-cd-stage{padding:1.4em 5% 7%}
+  .larry-cd-main{flex-wrap:wrap;align-content:center;gap:4% 0}
+  .larry-cd-motif{width:38%}
+  .larry-cd-motif--louis{order:1}
+  .larry-cd-motif--harry{order:2}
+  .larry-cd-clock{order:3;width:100%;margin-top:6%;justify-content:center}
+  /* 移动端同步放大字号（作者反馈"每个字都特别小"） */
+  .panel.larry-cd .panel-header{font-size:clamp(.9rem,3.8vw,1.1rem)}
+  .larry-cd-num{font-size:clamp(2.6rem,12.5vw,3.6rem)}
+  .larry-cd-lab{font-size:clamp(.7rem,2.9vw,.95rem)}
+  .larry-cd-sep{font-size:clamp(1.6rem,7.5vw,2.4rem)}
+  .larry-cd-script{font-size:clamp(.92rem,3.9vw,1.15rem)}
+}
+
+/* =================================================================
+   5. 无障碍
+   ================================================================= */
+@media (prefers-reduced-motion:reduce){
+  .larry-cd-stripes{animation:none;opacity:1}
+}
+
+/* === 9/28 前主页节日化卡片 === */
+.home-section #nav #main > ul{
+  height:auto;
+  min-height:0;
+}
+.home-section #nav #main > ul > li{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  height:auto;
+  background:transparent!important;
+}
+.home-section #nav #main > ul > li > a{
+  color:#fff!important;
+}
+.home-section #nav #main > ul > li > a:hover,
+.home-section #nav #main > ul > li > a:focus-visible{
+  color:var(--larry-gold)!important;
+}
+@media (min-width:1024px){
+  .home-section header#sticky{
+    top:0!important;
+  }
+  .home-section header#sticky .button-holder{
+    margin-top:-.275em;
+  }
+  .home-section header#sticky button.menu{
+    z-index:1000;
+  }
+  .home-section #nav{
+    height:64px!important;
+    padding:0!important;
+    box-sizing:border-box;
+  }
+  .home-section #nav #main{
+    height:100%!important;
+    margin:0!important;
+  }
+  .home-section #nav #main > ul{
+    display:flex!important;
+    flex-direction:row;
+    align-items:stretch;
+    height:100%!important;
+    padding:0!important;
+  }
+  .home-section #nav #main > ul > li{
+    flex:1 1 0;
+    min-width:0;
+    height:100%!important;
+  }
+  .home-section header#nav.mobilised{
+    position:fixed;
+    top:0;
+    left:0;
+    z-index:998;
+    display:block;
+    width:100%;
+    height:100vh!important;
+    padding:60px 0 0!important;
+    box-sizing:border-box;
+    overflow-y:auto;
+  }
+  .home-section header#nav.mobilised #main{
+    height:auto!important;
+    margin:0 auto!important;
+    padding:1.5em 0 2.5em;
+    width:80%;
+  }
+  .home-section header#nav.mobilised #main > ul{
+    display:block!important;
+    height:auto!important;
+    padding:0!important;
+  }
+  .home-section header#nav.mobilised #main > ul > li{
+    display:block;
+    width:100%;
+    height:auto!important;
+    min-height:40px;
+  }
+  .home-section header#nav.mobilised #main > ul > li > a{
+    display:block;
+    padding:.75em 0;
+    text-align:center;
+  }
+}
+@media (max-width:1023px){
+  .home-section #nav #main > ul > li{
+    width:100%;
+    min-height:40px;
+  }
+}
+.larry-before-blue,
+.larry-before-green{
+  color:var(--larry-ink)!important;
+}
+.larry-before-blue{background-color:var(--larry-blue-card)!important}
+.larry-before-green{background-color:var(--larry-green-card)!important}
+.larry-before-logotype{
+  mix-blend-mode:multiply;
+}
+.larry-before-blue .panel-header,
+.larry-before-green .panel-header,
+.larry-before-blue h2,
+.larry-before-green h2,
+.larry-before-blue .text,
+.larry-before-green .text,
+.larry-before-blue p,
+.larry-before-green p,
+.larry-before-blue a:not(.more),
+.larry-before-green a:not(.more){
+  color:var(--larry-ink)!important;
+}
+.larry-before-blue .section-name,
+.larry-before-green .section-name,
+.larry-before-blue .section-name a,
+.larry-before-green .section-name a{
+  border-color:var(--larry-gold)!important;
+}
+.larry-before-photo-card{
+  position:relative;
+  isolation:isolate;
+  background-color:#777!important;
+}
+.larry-before-photo-card::before,
+.larry-before-photo-card::after{
+  content:'';
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+}
+.larry-before-photo-card::before{
+  z-index:0;
+  background:inherit;
+  filter:grayscale(1);
+}
+.larry-before-photo-card::after{
+  z-index:1;
+  opacity:.42;
+}
+.larry-before-photo-card.larry-before-blue::after{
+  background:var(--larry-blue-mid);
+  opacity:.34;
+}
+.larry-before-photo-card.larry-before-green::after{
+  background:var(--larry-green-mid);
+  opacity:.34;
+}
+.larry-before-photo-card > *{
+  position:relative;
+  z-index:2;
+}
+.larry-before-photo-card .panel-header,
+.larry-before-photo-card h2,
+.larry-before-photo-card .info,
+.larry-before-photo-card a{
+  color:#fff!important;
+}
+.larry-before-photo-card .panel-header .section-name,
+.larry-before-photo-card .panel-header .section-name a,
+.larry-before-photo-card .more{
+  border-color:#fff!important;
+}
+.larry-before-video-card{
+  position:relative;
+  isolation:isolate;
+  background-color:#777!important;
+}
+.larry-before-video-card::after{
+  content:'';
+  position:absolute;
+  inset:0;
+  z-index:1;
+  pointer-events:none;
+  opacity:.42;
+}
+.larry-before-video-card.larry-before-blue::after{background:var(--larry-blue-mid)}
+.larry-before-video-card.larry-before-green::after{background:var(--larry-green-mid)}
+.larry-before-video-card .bg{
+  filter:grayscale(1);
+}
+.larry-before-video-card > *{
+  position:relative;
+  z-index:2;
+}
+
+/* === DEMO ONLY — 合并前删除 ===
+   纯 CSS 语言切换：checkbox + label + :has()，不依赖任何 JS。
+   这样即使预览环境挡住脚本（沙箱 iframe），或 JS 加载失败，切换依然可用。
+   规则等价于站内 translate.js 的 html.lang-zh，只是驱动源换成了 checkbox。 */
+.larry-demo-bar{
+  position:fixed;
+  left:0;
+  top:0;
+  z-index:9999;
+}
+/* 视觉隐藏但保持可聚焦（不用 hidden，否则键盘无法切换） */
+.larry-demo-toggle{
+  position:absolute;
+  width:1px;
+  height:1px;
+  opacity:0;
+  pointer-events:none;
+}
+.larry-demo-lang{
+  display:inline-block;
+  font-family:'Source Code Pro';
+  font-size:13px;
+  letter-spacing:.08em;
+  padding:6px 12px;
+  color:var(--larry-ink);
+  background:var(--larry-cream);
+  border:1px solid var(--larry-ink);
+  cursor:pointer;
+  -webkit-user-select:none;
+  user-select:none;
+}
+.larry-demo-lang::after{content:'中文'}
+/* 切到中文时的明确反馈：按钮文字翻转 + 变金边金底 */
+html:has(#larry-demo-zh:checked) .larry-demo-lang::after{content:'EN'}
+html:has(#larry-demo-zh:checked) .larry-demo-lang{
+  background:var(--larry-gold);
+  border-color:var(--larry-ink);
+}
+html:has(#larry-demo-zh:focus-visible) .larry-demo-lang{
+  outline:2px solid var(--larry-gold);
+  outline-offset:2px;
+}
+/* 双语切换：与 html.lang-zh 同效 */
+html:has(#larry-demo-zh:checked) .zh{display:inline!important}
+html:has(#larry-demo-zh:checked) .en{display:none!important}
+
+/* 抬起量注册成可插值长度：未注册的自定义属性不能被 keyframes 平滑动画 */
+@property --lift { syntax:'<length>'; inherits:false; initial-value:0px; }
+@property --pop  { syntax:'<number>'; inherits:false; initial-value:1; }
+@property --over { syntax:'<angle>';  inherits:false; initial-value:0deg; }
+/* 跟手拖拽：位移与 3D 倾斜都必须注册成可插值，松手"弹回"才会是动画而不是瞬移 */
+@property --drag-x { syntax:'<length>'; inherits:false; initial-value:0px; }
+@property --ry     { syntax:'<angle>';  inherits:false; initial-value:0deg; }
+@property --rx     { syntax:'<angle>';  inherits:false; initial-value:0deg; }
+@property --depth  { syntax:'<number>'; inherits:false; initial-value:0; }
+/* 扇形：位置/角度/缩放也做成连续量，翻牌时每张牌"沿扇形移一格"而不是跳变 */
+@property --fan-x     { syntax:'<length>'; inherits:false; initial-value:0px; }
+@property --fan-y     { syntax:'<length>'; inherits:false; initial-value:0px; }
+@property --fan-rot   { syntax:'<angle>';  inherits:false; initial-value:0deg; }
+@property --fan-scale { syntax:'<number>'; inherits:false; initial-value:1; }
+@property --drag-y { syntax:'<length>'; inherits:false; initial-value:0px; }
+
+/* =================================================================
+   顶部导航：hero 处收起、往下滑之后才出现（原版语义，作者指正）
+   站内本来就是这样：.home-section header#sticky{top:-13.76666649%}（收起）
+   + .home-section header#sticky.scrolled{top:0}（出现），触发信号由 main.js 提供
+   （scrollTop 超过 header#nav 的高度+偏移时给 header 加 .scrolled —— 实测这个信号本来是好的）。
+   只是"收起"那半条失效了（实测 y=0 时 top 仍为 0，导航一直压在 hero 上）。
+   这里用 transform 代替 top:-13.76%，避开"fixed 元素的 top 百分比按包含块解析、
+   一旦祖先带了 transform/filter/will-change 就会解析错"的坑。
+   ================================================================= */
+body.home-section header#sticky{
+  transform:translateY(-100%);
+  transition:transform .33s ease;
+}
+body.home-section header#sticky.scrolled{
+  transform:none;
+}
+
+
+/* =================================================================
+   小说卡（Read my latest novel）：桌面是 2:1 的横向窄条，手机上被站内全局
+   .panel{padding-top:100%} 拉成了 1:1 大方块（作者反馈"高度太高了"）。
+   这块单独在手机端保持和桌面一样的扁比例：50% 即 2:1。
+   注意用 padding-top 而不是 height —— .panel 的内容区高度为 0，
+   比例全靠 padding 撑（METHODS：panel 相关内容一律不要覆盖成 height）。
+   ================================================================= */
+@media only screen and (max-width:767px){
+  /* 加重选择器：站内那条把手机端设成 1:1 的规则选择器更具体，普通写法压不过 */
+  body.home-section .panel.journal-news.novel-feature-card,
+  body .panel.novel-feature-card{padding-top:50%!important}
+}
+
+/* =================================================================
+   小说卡的 hover 白框：本来和 gallery 卡同一套设计
+   （.panel.gallery-cover .inline{border:.2em solid #fff;display:none} + .hover .inline{display:block}），
+   但 js/main.js 里的 hover 切换只绑了 ".gallery-cover a.more"，
+   所以小说卡这块的响应丢了。按 gallery 的写法原样补回：
+   白框元素 .inline 已经在 HTML 里（和 gallery 卡一样），这里只补样式与 hover 状态。
+   ================================================================= */
+.panel.novel-feature-card .inline{
+  position:absolute;width:98%;height:96%;top:2%;left:1%;
+  border:.2em solid #fff;display:none;
+}
+.panel.novel-feature-card.hover .inline{display:block}
+
+
+/* =================================================================
+   底色改浅 + 同色系爱心点缀（作者方案）
+   原来 8 个卡刷的是特殊版自创的 --larry-blue-card(#c9dfed) / --larry-green-card(#cbe4d3)
+   —— 亮度不低、彩度很低，卡在"不够白也不够彩"的中间地带，8 块叠在一起就发闷（作者："堆满了"）。
+   现在改用**设计系统里已有的 wash**（近乎白）作底，并铺一层同色系爱心做点缀：
+   爱心用 SVG data-URI 平铺（不是 emoji 字形），颜色可控、跨设备一致；
+   放在 ::before 里 + 内容抬到 z-index:1，避免压住文字、也不与封面的 background-image 打架。
+   ================================================================= */
+.larry-before-blue{background-color:var(--larry-blue-wash)!important}
+.larry-before-green{background-color:var(--larry-green-wash)!important}
+
+
+/* =================================================================
+   爱心点缀：用**真的 emoji**（💙 💚），不是画的心形。
+   每张卡 5 个，蓝色卡以 💙 为主、绿色卡以 💚 为主，各掺 2 个另一色（作者：可以混着放）。
+   位置由 .larry-heart:nth-of-type() 给，散落不排队；爱心在内容之下（z-index:0）。
+   ================================================================= */
+.larry-heart{
+  position:absolute;
+  z-index:0;
+  pointer-events:none;
+  line-height:1;
+  font-size:2.1em;
+  opacity:.55;
+  -webkit-user-select:none;
+  user-select:none;
+}
+.larry-before-blue .larry-heart:nth-of-type(1){top:12%;left:8%}
+.larry-before-blue .larry-heart:nth-of-type(2){top:26%;right:11%;font-size:1.5em;opacity:.4}
+.larry-before-blue .larry-heart:nth-of-type(3){bottom:22%;left:14%;font-size:1.7em;opacity:.45}
+.larry-before-blue .larry-heart:nth-of-type(4){bottom:11%;right:18%;font-size:1.3em;opacity:.35}
+.larry-before-blue .larry-heart:nth-of-type(5){top:48%;right:38%;font-size:1.2em;opacity:.3}
+.larry-before-green .larry-heart:nth-of-type(1){top:15%;right:9%}
+.larry-before-green .larry-heart:nth-of-type(2){top:34%;left:10%;font-size:1.5em;opacity:.4}
+.larry-before-green .larry-heart:nth-of-type(3){bottom:26%;right:15%;font-size:1.7em;opacity:.45}
+.larry-before-green .larry-heart:nth-of-type(4){bottom:9%;left:16%;font-size:1.3em;opacity:.35}
+.larry-before-green .larry-heart:nth-of-type(5){top:52%;left:38%;font-size:1.2em;opacity:.3}
+
+
+/* =================================================================
+   ★ 封面层级修正（作者反馈"绿色卡片的纹身都不显示"）
+   实测这 8 张卡的封面根本不是画在卡片自身，而是画在伪元素上：
+     ::before → position:absolute / inset 铺满 / 有不透明底色 + 原封面 background-image
+     ::after  → z-index:1 / 一层不透明的蓝或绿中间色
+   而我把纹身写在**卡片自身**的 background 上 ⇒ 被上面两层完全盖住 ✗。
+   修法：让这两层透明，卡片自己的纹身背景直接露出来。
+   （不删别的属性，只把 background 置透明 —— 影响面最小。）
+   ================================================================= */
+.larry-before-photo-card::before,
+.larry-before-photo-card::after{
+  background:transparent!important;
+}
+
+
+/* =================================================================
+   按钮与框框改黑（作者要求）
+   浅 wash 底上，原来的白色描边按钮 + 白色外框几乎看不见 ✗。
+   统一改用设计系统的 ink（--larry-ink:#141b21，与标题同色），比纯黑更贴规范。
+   作用域限定在 .larry-before-* 这些卡上，不动站内其它页面。
+   ================================================================= */
+
+
+
+/* =================================================================
+   按钮与框框改黑（作者要求）· 第 2 版：加重选择器
+   第 1 版没生效 —— 站内 css/styles.css 里 .panel .info a.more 一类规则带 !important
+   且选择器更具体，压过了我的 .larry-before-x a.more；这里按"面板 .info 里的 a.more"
+   这一层写，并全部加 !important，同时覆盖行内 color/border-color。
+   ================================================================= */
+.panel.larry-before-blue .info a.more, .panel.larry-before-green .info a.more,
+.panel.larry-before-blue .info a.more:visited, .panel.larry-before-green .info a.more:visited,
+.panel.larry-before-blue .info a.more span, .panel.larry-before-green .info a.more span{
+  color:var(--larry-ink)!important;
+  border-color:var(--larry-ink)!important;
+}
+.panel.larry-before-blue .info a.more:hover, .panel.larry-before-green .info a.more:hover,
+.panel.larry-before-blue .info a.more:visited:hover, .panel.larry-before-green .info a.more:visited:hover{
+  background-color:var(--larry-ink)!important;
+  color:#fff!important;
+  border-color:var(--larry-ink)!important;
+}
+.panel.larry-before-blue .inline, .panel.larry-before-green .inline{
+  border-color:var(--larry-ink)!important;
+}
+
+
+/* ★ 第 3 版：按钮改黑 —— 行内 !important 锁死了文字/描边色（站内 CSS 带 !important
+   且选择器更具体，常规写法压不过），所以颜色写在行内。hover 反馈改为"浅底填充"，
+   因为文字色已被行内锁定，不能再用反色（否则黑底黑字）。 */
+.panel.larry-before-blue .info a.more:hover,
+.panel.larry-before-green .info a.more:hover,
+.panel.larry-before-blue .info a.more:visited:hover,
+.panel.larry-before-green .info a.more:visited:hover{
+  background-color:rgba(20,27,33,.10)!important;
+}
+
+
+/* =================================================================
+   History 视频卡：改成直接内嵌 Bilibili iframe（作者给的 src）
+   只用 src —— 不带 border/frameborder/framespacing/scrolling 那一套 ✗，
+   尺寸与定位交给下面这两条，铺满整卡且在文字层之下。
+   ================================================================= */
+/* 只占右半边那一块（左边留给文案），铺满该半区、无边框 */
+.larry-video-frame{position:absolute;top:0;right:0;bottom:0;width:50%;z-index:0;overflow:hidden}
+.larry-video-frame iframe{display:block;width:100%;height:100%;border:0}
+/* 播放后把三角形按钮淡出并让出点击（否则它会一直挡在播放器上） */
+.panel.homepage-video .play-button.is-playing{opacity:0!important;pointer-events:none!important}
+
+
+/* 播放时不要盖任何东西：视频卡原本有一层不透明的 --larry-green-mid/blue-mid ::after
+   压在播放器之上（截图里视频发绿就是它 ✗），封面 .bg 也没必要再留。
+   点击播放后由 JS 给面板加 .is-playing ⇒ 这两层透明。 */
+.panel.homepage-video.is-playing::after,
+.panel.homepage-video.is-playing::before{background:transparent!important}
+.panel.homepage-video.is-playing .bg{opacity:0!important}
+
+

@@ -1,6 +1,18 @@
 {
-  "generated_at": "2026-08-30T06:31:00.744585Z",
+  "generated_at": "2026-09-24T15:06:51.409851Z",
   "posts": [
+    {
+      "title": "What We Remember",
+      "title_zh": "我们记得的一切",
+      "slug": "what-we-remember",
+      "date": "2026-09-28",
+      "date_display": "28th September 2026",
+      "author": "Takion Kroslin",
+      "description": "A 928 essay on the Larry archive — the moments, the photographs, the videos, the tattoos, the fan art, and everything we imagined.",
+      "url": "pages/blog/2026-09-28/what-we-remember/index.html",
+      "header_img": "../../../../images/blog/what-we-remember-header.jpg",
+      "scaler": "70%"
+    },
     {
       "title": "More Than a Ship",
       "title_zh": "不只是嗑 CP",

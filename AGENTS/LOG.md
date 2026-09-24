@@ -1,5 +1,458 @@
 # 1D Fansite — 开发日志（LOG）
 
+> **9-28 总方案（作者定调，勿重复确认）**：after 版（新 header + Polaroid 墙 + 其余新板块）**尚未开发完**，
+> 所以现在先把**倒计时**上线顶着；开发完后会把 `index.html` 与 `docs/demo/index-demo-after-928.html`
+> **合并成一个 HTML，两套代码共存、但同一时刻只显示一套**：
+> **9/28 前只显示倒计时；9/28 后倒计时自动下线，只显示新 header + Polaroid + 其余新板块**（绝不能两套同时可见）。
+> 过渡期的两套 CSS/JS 并存与 `docs/demo/` 路径是刻意安排，**不要提议「消重」**。
+> 详见 `docs/larry-9-28-anniversary-design.md` 附录 A。
+
+## 2026-09-28 — 新建 928 专稿《What We Remember》+ 928 专庆横卡 + 正文金色
+
+- **模型**：deepseek-flash
+- **目的**（作者一次性给了 5 件事）：① 按 blog skill 走流程建新文章；② 封面要**灰度**；
+  ③ 主页要在 fanart 卡片下面建一张**横向大卡**作为 928 庆祝的一部分（延续风格但不能和上面一样）；
+  ④ 正文里可以加金色；⑤ **删掉所有小标题**；⑥ 并回答一个架构问题：9/28 之后是"自动化替换 index.html"还是"两个文件合成一个"更可行。
+- **结果**：
+  1. **文章**：`pages/blog/2026-09-28/what-we-remember/`（`article.md` + `article.zh.md`，中英全文照作者给的文本），
+     front-matter：title `What We Remember` / title_zh `我们记得的一切`、date `2026-09-28`、slug `what-we-remember`、scaler 70%。
+     跑 `.venv/bin/python tools/build/build_blog.py` → **Built 6 article(s) + posts.json + blog.html**（`posts.json` 里它排第一）。
+     ⚠️ 构建必须用**项目的 `.venv/bin/python`**：系统 `python3` 没有 `markdown` 模块，且 PATH 里没有 `python` 命令。
+  2. **封面灰度**：`images/blog/what-we-remember-cover.jpg`（1200×1200，`ImageOps.grayscale`）；头图
+     `what-we-remember-header.jpg`（1200×500 = 3 格 400×500 拼条，取自 `pola-01 / pola-13 / pola-22`，**保持彩色**）。
+     Hmm 注意：front-matter 里一开始误写成 `.png`，构建后 blog.html 里就是 404 路径；已改回 `.jpg` 并重建。
+  3. **删掉小标题**：中英各 8 个 `##` 全部删除（正文 `<h2>` 数 = 0），重建后生效。
+  4. **正文金色**：在 markdown 里插了一段 `<style>`（builder 原样保留），只作用于本页：
+     `.article-holder .text hr`（`---` 分隔线）→ 深金细线 42% 宽；正文链接下划线 → 深金。
+     实测 16 条 `<hr>` 的 computed 背景 = `rgb(156,117,48)` ✓。**没有动全局 styles.css**（那要 bump 全站 `?v=`）。
+  5. **928 专庆横卡**：新增 `.panel.larry-928-special`（放在 fanart 面板之后）——底用奶油→暖金渐变（不重复上面的纹身墙纸），
+     版式是一整张横向卡：左 = 灰度封面（金实框 + 内缩虚线框，hover 恢复彩色并轻微放大）/ 右 = `28 · 09 · 2026 · ESSAY`（金色下划线）
+     + Playfair 标题 + 摘要 + CTA（常态墨色、hover 整颗变金）；整卡是 `<a>` 指向新文章。header 并入浅底面板规则组（与上面同款）。
+     桌面 1440×720、移动 390×585（堆叠）。
+  6. **合并 vs 自动化（Laya 评估）**：`合并成一个文件+运行时日期开关` 胜出，置信度 **0.858**（有效信号）；
+     四选一的排序置信度仅 0.135（**无信号，不采信**）；并提示该输入含多个诉求（0.978）。
+- **验证**：文章页 `h2=0 / hr=16(金) / 头图 200 / 0 404`；demo 页 928 卡 `href` 正确、封面 `grayscale(1)`、
+     CTA 在面板内、桌面&移动 **0 error / 0 404**；四格 fanart 未受影响。
+     截图：`/tmp/s928-desktop.jpg`、`/tmp/article-body.jpg`（本轮未归档到 _qa_screenshots，需要的话补）。
+- **待办**：① `pages/blog/2026-09-28/`、`images/blog/what-we-remember-*.jpg`、重建后的 `pages/blog.html`/`posts.json`、
+     demo 页与 CSS 均为**未提交**；② 根目录 `index.html` 的 `.blog-section` **我没动**（作者说的是 demo 页 fanart 下面），要同步到根首页说一声；
+     ③ 文章头图仍是彩色，只有封面转了灰度，要一起灰说一声。
+
+## 2026-09-24 — 粉丝创作四格填满（另收 3 件作品）
+
+- **模型**：deepseek-flash
+- **目的**：作者又给 3 件作品，把 fan creation 四格填满。
+- **结果**：三件都按卡片 1:1.14 配好框，全部进入 `images/gfx/larry-anniv-2026/fanart/`：
+  | 作品 | 源 | 配框方式 |
+  |---|---|---|
+  | `fanart-02-stage-silhouettes.png` | IMG_4700.JPG 612×960 暗底 | 纵向**裁** 262px（居中）→ 612×698 |
+  | `fanart-03-harry-louis-chibi.png` | reelsvideo…105278.webp 1077×1063 米色纸底 | 纵向**延长**底色 `(202,184,167)` → 1077×1228 |
+  | `fanart-04-seated-portrait.jpg` | reelsvideo…471743.webp 1080×1440 照片 | 纵向**裁** 209px（上 52/下 157，偏下裁保头）→ 1080×1231 |
+  **判据**：先量四边颜色标准差 —— 底均匀（std<7）延长底色，不均匀（照片 std 53.6）就裁切；
+  裁切时照片 25% 上偏、插画居中。
+  随后统一降采样到**高 900px**（卡片 2× 显示约 616px）并转码：01/02/03 留 PNG、04 转 JPEG q88
+  → **合计 3.2 MB → 1.32 MB**。HTML 里 4 格都由占位 motif 换成 `<img class="larry-fan-img">`，无题注。
+- **验证**：桌面 1440 / 移动 390 实测四张图 `naturalRatio` 1.139~1.141（卡片 1.14）、全部 `complete`、
+  占卡片 84~85%（正好落在金色虚线框内）、**0 error / 0 404**（注意 04 换成 `.jpg` 后 HTML 已同步改名，否则会 404）。
+  截图 `tools/_qa_screenshots/larry-fanart/fanart-4-slots-{desktop,mobile}.jpg`。
+- **待办**：① `images/gfx/larry-anniv-2026/fanart/`（4 个文件）**未 git add**；
+  ② 图片上能看到作者签名（`Cypheart`、`-bsym-`），**要署名/标题就给我文字**，我加回题注（现在 4 格都是无题注的纯图）。
+
+## 2026-09-24 — 第一件粉丝创作上位；按钮 hover 全金；logo 实黑投影
+
+- **模型**：deepseek-flash
+- **目的**：作者三点：① 按钮"响应的时候也要改成金色"（金色改得不彻底）；② hero logo 要"下面垫一层黑色阴影"；
+  ③ 把收到的第一件粉丝创作放进 fan creation 第一个框，图是白底、比例与框不同，允许纵向延长白底。
+- **结果**：
+  1. **按钮 hover 改成整颗变金**：底 `--larry-gold-deep`、字 `#f5efe4`、描边同金；常态仍是墨色描边+墨字。
+     ⚠️ 为此**删掉了页面里 9 个 `.more` 的 inline `color:#141b21!important;border-color:#141b21!important`**
+     —— `inline !important` 优先级高于样式表 `!important`，留着它按钮的 hover 永远改不动（METHODS 里记过这条坑）。
+     **只删 after 页**；根目录 index.html 的按钮保持原样（它加载的是 before.css，没有这套金色规则）。
+  2. **hero logo 投影改成"实黑一层"**：`drop-shadow(0 3px 3px rgba(0,0,0,.92)) drop-shadow(0 1px 1px rgba(0,0,0,.8))`
+     （原来是柔和的大半径 .78，小尺寸下像一圈灰雾，不"立"）。
+  3. **第一件粉丝创作入库**：`~/Downloads/179001035100526.WEBP`（1080×1080，白底 chibi Louis 钓青蛙）
+     → `images/gfx/larry-anniv-2026/fanart/fanart-01-louis-frog.png`。
+     卡片是 1:1.14 的竖版，所以**纵向延长白底**：取上下边带中位数 (253,253,253) 作底，上下各补 75px → **1080×1231（1:1.1398）**，
+     与卡片比例一致，`object-fit:cover` 后严丝合缝、接缝不可见。
+     该格 HTML 由 `<span class="larry-fan-mark">` 换成 `<img class="larry-fan-img">`，并去掉占位题注（其余 3 格保留占位）。
+     `.larry-fan-img` 改为 85%×85%（正好落在金色虚线框内、留 1% 缝）。
+  4. 图片引用带 `?v=20260929a`；CSS 版本 `?v=20260929c → d`。
+- **验证**：按钮 常态 `{color:ink, border:ink, bg:transparent}` → hover `{bg:rgb(156,117,48), color:rgb(245,239,228), border:rgb(156,117,48)}`；
+  第一格 `img 1080x1231 / complete / object-fit:cover / 占卡片 84~85% / 无题注`；logo filter 为两层实阴影；
+  **0 error / 0 404**。截图 `tools/_qa_screenshots/larry-fanart/fanart-slot1-real-artwork.jpg`、
+  `tools/_qa_screenshots/larry-928-hero/blogcard-button-gold-hover.jpg`。
+- **待办**：`images/gfx/larry-anniv-2026/fanart/` 是**新增未 git add**（上线前必须加，否则线上 404）；
+  其余 3 格的占位题注我拟的，若要改成真实作品标题，说一声。
+
+## 2026-09-24 — hero 改金 + 挪位；博客卡描边改金；修浅底卡 header 白字
+
+- **模型**：deepseek-flash
+- **目的**：作者定稿三件事：① hero 的 logo/题词改金（用 CSS mask，不新增资源）；
+  ② logo 原先压住 Louis 搂 Harry 腰的手，要挪位；③ 博客卡"描边改金"。
+  先用 **laya** 评估提案（结果：hero 改金 0.88、博客卡改金 0.89 均为正信号；
+  范围排序置信度仅 0.42 < 0.6 视为无信号；并提示该输入含多个诉求）。
+- **结果**：
+  1. **hero logo 改金**：不改资源、不加新图 —— `.panel.hero h1 .bg{background-image:none!important;
+     background-color:var(--larry-gold); mask:url(logo-white.png) center/contain}`，
+     白 logo 位图被 mask 直接"涂"成金色；`retinafy` 因为读到 `background-image:none` 也不再做无谓替换。
+  2. **挪位**：作者先要求"别压手"→ 试过右下角；再定稿为「**缩得很小放顶端**（学根目录 index.html：那边根本没有 hero logo 叠图，
+     品牌只在顶部黑导航条里），**移动端直接不显示**」。桌面 16% 宽 / top 2.5%，移动端 `display:none`。
+  3. **题词**：改金（暗底金字成立：3.94:1）；并**紧跟 logo 下方**（`top:9.5%`，原来 12.5% 会压到人物头顶 ~20% 处）。
+  4. **logo 投影加重**：作者反馈"不够突出"→ 两层 `drop-shadow`（`0 2px 9px rgba(0,0,0,.78)` + `0 1px 2px rgba(0,0,0,.62)`）。
+  5. **博客卡描边改金**：⚠️ 作者澄清「**不是新加一道金框，而是把原来那道黑框改成金色**」——
+     撤掉我先前加的 `.inline::after` 金细线，改为 `.panel.larry-before-{blue,green} .inline{border-color:var(--larry-gold-deep)!important}`。
+  6. **新 token `--larry-gold-deep:#9c7530`**：浅底上 `#c9a86a` 只有 **1.74:1**（看不见），深金在
+     `#c8e6fb / #cfefd7 / #f5efe4` 上是 **3.2 / 3.4 / 3.7:1**，刚好过 WCAG 非文本 3:1，专用于**细线/hover 点缀**。
+  7. **按钮 hover**：底色换成 `rgba(156,117,48,.20)`（墨色文字/描边不动）。
+     ⚠️ 选择器必须写满 **8 个 class** —— 官方 `.panel.journal-news.homepage-news.homepage-blog-card.hover .info a.more`
+     是 7 个 class，原先把 before.css 的墨色 hover 全部压掉（实测 hover 底色是纯白）。
+  8. **顺带修掉的可见性 bug**：8 张浅底"图片卡"的 header 是**白字**（`larry-anniv-before.css` 的
+     `.larry-before-photo-card .panel-header{color:#fff!important}` 是深色封面时代遗留；官方还有一条 7 个 class 的白字规则），
+     白底白字 **1.09:1** 等于看不见。已改回墨色，下划线改深金。选择器要 **6 个 class** 才压得住官方那条 5 class 的规则。
+  9. CSS 版本 `?v=20260928m → 20260929c`。
+- **验证**：桌面 1440 / 移动 390 实测 logo 位置（桌面 16% 宽、x 42~58%、y 2.5~8.5%；移动 0×0 = 已隐藏）、
+  题词金色 `rgb(201,168,106)`、投影两层、`.inline` hover 边框 `rgb(156,117,48)`、`::after` 已移除、
+  白字 header **0 张**、按钮 hover 金色淡染；**0 error / 0 404**。
+  截图归档 `tools/_qa_screenshots/larry-928-hero/hero-gold-final-desktop.jpg`、`blogcard-goldframe-hover.jpg`。
+
+## 2026-09-24 — 新增「粉丝创作」panel（Polaroid 墙下面）
+
+- **模型**：deepseek-flash
+- **目的**：作者要在 Polaroid 墙下面加一块放 Larry 粉丝画作的板块，"颜色样式自主设计，但要符合 928 节日设计"。
+- **结果**：新增 `.panel.larry-fanart`（HTML 在 `index-demo-after-928.html`，CSS 追加在 `larry-anniv-after.css` 末尾）：
+  - **档位**：底 `#f5efe4`（与 Polaroid 墙同一块淡金底）+ 金色纹身单元图墙纸（opacity .18）；
+  - **格子**：4 格，`--larry-blue-fresh` / `--larry-green-fresh`，节奏 **蓝·绿·绿·蓝**（首页节日卡同款棋盘）；
+  - **框**：金色实框 + 内缩 7% 金色**虚线**框（与主卡右格的手绘虚线同一语言）；
+  - **占位符号**：中间一枚墨色纹身 motif（`.larry-fan-mark--rose/anchor/compass/ship`，`mask-image` 重涂）；
+  - **题注**：`.larry-fan-cap` = 硬笔行书 + Caveat（与 Polaroid 题注同族）；**并且显式写了 `.larry-fan-cap .zh/.en`**——
+    `styles.css` 的 `html .zh{font-family:'LXGW WenKai'…}` 直接落在 span 上，只写父级无效（第二次踩同一个坑）。
+  - **CTA**：墨色描边按钮（浅底黑按钮，页面既定）hover 反白；下面一行 mailto 投稿提示。
+  - **image**: header 并入 `.panel.larry-pola .panel-header` 那一组规则 ⇒ 与 Polaroid 墙**规则级同款**（墨字 + 金色下划线）。
+- **作者反馈修正（同轮）**：第一版做成了**近黑墨底 #10161a 的"黑金画廊墙"**，作者指出"深蓝配色跟我的浅蓝绿+金整体不符" ⇒ 全部改回浅蓝绿 + 金。
+  同时发现 header 变成白字 Times（`styles.css` 有 `.panel .panel-header{color:#fff;font-family:'Times New Roman'}`），已并入浅底 header 规则组修正。
+- **字体子集扩展**：硬笔字体子集从 102 字 → **284 字**（38.4 KB → 89.7 KB），
+  子集脚本现在同时收 `POLAROIDS` 与页面**所有 `.zh` 文本**，新题注才不会回退成霞鹜文楷；`@font-face` URL 加 `?v=20260924b`。
+- **验证**：桌面 1440 / 移动 390 × en/zh 四组实测：面板底 `rgb(245,239,228)`、格子 `rgb(200,230,251)`、
+  题注 `.en`=Caveat / `.zh`=Hardpen Xingshu、**无溢出、无省略号截断、CTA 在面板内、0 error / 0 404**；
+  截图归档 `tools/_qa_screenshots/larry-fanart/`。
+- **遗留**：面板高度移动端 138%（2×2 格需要）、桌面用 `.panel` 默认 50%。换成真图只需把 `.larry-fan-mark` 换成 `<img class="larry-fan-img">`。
+
+## 2026-09-24 — 9-28 主卡右格重做：从 PSD 重抠图 + 黑金双色调 + 沿轮廓手绘虚线 + 补齐标题/文字
+
+- **模型**：deepseek-flash
+- **目的**：作者判定上一版右格"太丑"并提出四条硬要求：
+  ① 从 `larry-main-panel.psd` 重新取图；② 加**黑金效果**跟页面匹配；③ 人物**外面隔一段距离**加**虚线描边**；
+  ④ 顶部补**标题和文字**，且必须与左格**同一种风格**。
+- **取图（关键）**：`~/Downloads/larry-main-panel.psd` 只有 3 个图层，其中 **「图层 1」就是干净的抠图**
+  （1200×1200 RGBA，alpha 覆盖 27.9%，无任何描边）——上一版那把"斜排线"是后来加的，不是原图问题。
+  用 `psd_tools` 直接 `layer.composite(viewport=psd.viewbox)` 取出，**不再靠 alpha 猜**。
+- **结果**：
+  1. **黑金双色调**：灰阶做 S 曲线（对比 ×1.5）后映射 暗部 `#0e1216` → 亮部 `--larry-gold #c9a86a`。
+  2. **手绘虚线描边**（这次做法与上一版**本质不同**）：掩膜**膨胀 22px** → 取该膨胀体的**边界**（≈ 沿轮廓的 2px 带）
+     → 把边界像素按 **8 邻域跟踪成有序路径**（3 条，最长 3684 点）→ 按**弧长**切「划 17 / 隙 13」（划长与位置带随机抖动）
+     → 线粗 6px。
+     上一版是沿轮廓铺 **45° 斜排条纹**（所以像贴了排线图案）；这次是**沿轮廓走的短划**，才像手绘虚线。
+  3. **标题/文字**：右格复用左格同一套 `.panel-header`（`.title` + `.section-name`）→ 自动同款风格：
+     `Harry × Louis` / `TWO PORTRAITS`（金色下划线），下面加 `.larry-leader-caption`（与左格副文案同族同色）：
+     `One knee, one question, one answer.` / 一次单膝，一个问题，一个回答。
+  4. **右格排版**：⚠️ 踩坑——第一版把右格改成 `display:flex + aspect-ratio` 想让内容自动排布，
+     结果**整个右格变黑**：官方 `.panel` 是用 `padding-top` 撑方形的，`padding-top:0` 后 box 高度塌成 0，
+     `flex:1` 拿不到空间、图片高度 0。改回**绝对定位 + 百分比锚点**并把四个块排开：
+     header(顶) → caption(13.6%) → 人像(20% 起、宽 68%) → 信物(底部 3.5%)。移动端同理（54% / top 27%）。
+     另：移动端覆盖必须写成 `.panel.larry-leader--green .larry-leader-slot`（同 4 个 class 特异性），
+     否则会被桌面那条按特异性压掉——第一次写成 `.larry-leader-slot` 就是**没生效**。
+  5. 左格字号微调（作者"位置和大小"）：副文案 17→20px、大字 `13` 96→64px、标题 40%→37%、底部组 8%→10%。
+  6. **描边被裁 + 图偏大（作者追加反馈）**：原 PSD 里人物顶到画布上沿（实测**顶行有 21 个描边像素贴边**），
+     描边外扩 22px 会直接跑到画布外被丢掉 ⇒ 看起来"上下被裁掉一丢丢"。
+     修法：出图前四周各补 **60px** 空白再算描边 ⇒ 成图 1320×1320、**四边 0 贴边像素**（描边完整），
+     同时人物只占画布高度 93% ⇒ 面板里等比缩小约 9%。图片引用加 `?v=20260924a` 破缓存。
+  7. CSS 版本 `?v=20260928m → s`。
+- **验证**：桌面 1377×761 与移动 390×844 两档实测 **caption↔人像、人像↔信物 均无重叠**（几何断言），
+  **0 error、0 404**；截图归档 `tools/_qa_screenshots/larry-928-leader/`；
+  出图脚本入库 `tools/build/build_leader_figures.py`（4 秒跑完，可复现）。
+- **未做/待确认**：右格题注那句英文/中文是我拟的（作者只说"加标题和文字"），要改直接说；
+  旧的 `larry-leader-portrait-gold.png` / `-clean.png` 已不被页面引用，可删。
+
+## 2026-09-24 — Polaroid 题注换字体（张清平硬笔行书 + Caveat）并放大字号
+
+- **模型**：deepseek-flash
+- **目的**：作者定稿——中文题注用**瑞美加张清平硬笔行书**、英文用 **Caveat**；随后追加"字号大一些"。
+- **选型过程**：先把站点在用的 15 款字体 + 12 款候选中文手写体渲染成对照表（`tools/_qa_screenshots/polaroid-caption-fonts/cjk-handwriting-sheet.png`，用**真实的 40 条题注**），
+  并逐条 `curl` 验证 CDN 可用性；同时把每款字体的 **name table 许可字段**拉出来核对——据此排除了「演示佛系体/演示悠然小楷」（名表 `All rights reserved`）。
+  作者最终选定的「瑞美加张清平硬笔行书」名表声明 `LicenseDescription: Free for commercial used`（免费商用，非 OFL）。
+- **结果**：
+  1. **自托管子集**：`assets/fonts/zhangqingping-hyx/ZQP-Hardpen-Xingshu-Subset.woff2`（**38.4 KB**，103 字形 / cmap 102 条，覆盖 40 条题注的 **102/102** 个汉字）。
+     原 CDN 包把它切成 142 个子集，这 102 个字**横跨 53 个子集 / 1.9 MB**；故合并成一个 TTF（2104 字形）后用 `fontTools.subset` 重切。
+     复现脚本已入库：`tools/fonts/subset_hardpen_xingshu.py`（需 `brotli`，用 `/tmp/fontvenv`）；授权与来源记在 `assets/fonts/zhangqingping-hyx/README.txt`。
+  2. **Caveat** 加进页头 Google Fonts 的 v1 合并链接（`…|Vampiro+One|Six+Caps|Caveat:400,700&display=swap`）。
+  3. CSS：`@font-face` 族名取英文 `'Hardpen Xingshu'`；`.larry-pola-cap` 字体栈 = `'Hardpen Xingshu','Caveat','LXGW WenKai','LXGW WenKai Mono',cursive`
+     —— **两种语言字形互补，中文走硬笔行书、英文自动落 Caveat，不需要给题注拆 `.en`/`.zh` 换个字体**（题注本身已经是 `<span class="en">/<span class="zh">` 两个 span）。
+     ⚠️ 另补了两条 `.larry-pola-cap .zh{…}` / `.larry-pola-cap .en{…}`：**只在父级写字体栈对中文完全无效**，
+     因为 `styles.css` 有 `html .zh{font-family:'LXGW WenKai'…}` **直接落在 span 上**，子元素自身规则永远赢过继承。
+  4. **字号**（作者"字号大一些"）：给 `.larry-pola-card` 加 `container-type:inline-size`，题注改
+     `font-size:min(clamp(.95rem,1.8vw,1.55rem),13.5cqw)`（移动端 `min(clamp(1rem,4.3vw,1.15rem),13.5cqw)`），前面各留一条纯 clamp 作旧浏览器回退。
+  5. **题注垂直居中**（作者追加"字儿不在下面那个 bar 的正中间，有点靠下"）：卡片从普通流改成
+     `display:flex; flex-direction:column`，题注 `margin:auto 0` + `flex:none`，图片也 `flex:none`
+     （卡高由 aspect-ratio 定死，不加 flex:none 会把图片挤扁）。
+     实测墨迹上下留白：桌面 **17.1 / 12.7 → 15.1 / 14.7**（偏下 2.2px → **0.2px**）、
+     移动 **10.2 / 2.0 → 5.2 / 6.0**（偏下 4.1px → **−0.4px**）—— 原来移动端文字下方只剩 2px，视觉上贴着卡底。
+  6. CSS 版本 `?v=20260928i → m`（中途 j/k/l 亦为本次 bump）。
+- **验证**：
+  - **本地子集 vs CDN 原字体：像素级 0 差异**（同尺寸渲染同一串题注，`diff>16` 像素 **0**）；对照组 `vs serif` 72240、`vs 霞鹜文楷` 70154 —— 证明"合并 53 个子集"没有串字。
+  - 复现脚本重跑一遍产物规格一致（103 字形 / cmap 102 / 38.4 KB / 覆盖 102/102）。
+  - 字号：**不裁切的上限 = `0.96 × 内宽 ÷ 最长题注(7 字) ≈ 13.7% 内宽`**，五档断点实测 13.6%~13.7% 高度一致；
+    改后 1440 **18.72 → 24.8px（+32%）**、1280 **16.64 → 23.04（+38%）**、390 **14.4 → 15.85（+10%）**、
+    768 **13.76 → 13.27（原先已在被省略号截，现在收住不截）**。
+  - 居中改法**零副作用**：view(1325×490)/track(1257)/卡片(266×381) 与卡片 x 位置 `[63,406,733,1057,1384,1727]` 与改前完全一致。
+  - `scrollWidth > clientWidth` 的题注数：**en / zh × 桌面 / 移动 四组全部 0/40**；页面 0 error、0 404。
+  - 截图归档 `tools/_qa_screenshots/polaroid-caption-fonts/`（选型对比图 + 桌面/移动 × en/zh 四张 + 本目录 README）。
+- **经验**：**METHODS M82**（`cqw` 相对的是容器**内容盒**；组件尺寸与视口脱钩时字号也该用容器单位；
+  改字号前用 `scrollWidth > clientWidth` 判有没有被省略号吃掉）。
+  另：**"文字在某个条带里没居中"要先量"墨迹"而不是"盒子"** —— 用 canvas `measureText` 的
+  `actualBoundingBoxAscent/Descent` 拿真实墨迹框，再和条带的上下边界比；本次真正的偏差就是
+  `.55em` 的 `margin-top` 把整块推下去，而不是字体基线问题。
+- **未做（等作者点头）**：移动端题注上限被卡宽锁死（117px 内宽 ÷ 7 字），想再大只能 ① 把移动端 `--pola-w` 从 38% 加宽，
+  ② 或把最长的两条题注（"同款条纹同款赞""T 恤上写着答案"，7 字）压到 5 字内 —— 两者都会动到已定稿的牌堆几何/文案。
+
+## 2026-09-24 — 阶段 A 主卡 larry-anniv-leader：从 Niall 面板结构迁过来，落到 Polaroid 墙之上
+
+- **模型**：deepseek-flash
+- **目的**：作者要把奶儿生日那块（`history/2026-09-14-niall-birthday-panel/`，左文右图
+  `panel-group` 结构）搬到 `docs/demo/index-demo-after-928.html` 的 Polaroid 墙之上，按
+  设计稿 §4.1 改成 Larry 主卡。
+- **匹配判断**：设计稿 §4.1 明文"复用奶儿 `niall-bday-group` 的左文右图结构"，**1:1 对应**：
+  左深蓝 + 右深松绿、中央金竖线。§4.3 The Day 是 `.panel.journal-article`（单格长文），
+  §4.4 Two Colours 是单张渐变卡、§4.5 From the Fans 是白底落款 —— 都不接 panel-group 结构。
+  Niall → §4.1 是唯一解。
+- **结果**：
+  - **HTML**（`docs/demo/index-demo-after-928.html`，插入到 `.panel.larry-pola` 之前）：
+    复用 Niall 的 `panel-group.niall-bday-group > 2× .panel` 框架，类名全部 `niall-*` →
+    `larry-*`（AGENTS.md 新类必须 `larry-` 前缀）。左格 `.larry-leader--blue` 深蓝、右格
+    `.larry-leader--green` 深松绿；中央金竖线走 `.panel-group::after`（`pointer-events:none`）。
+    文案按设计稿 §4.1：
+    - section: Anniversary / 周年纪念
+    - date 抬头: 28 · 09 · 2013 / 2013年9月28日
+    - 大标题: The day you said forever. / 你们说好永远的那一天。（**Playfair Display 700 italic**）
+    - 副文案: Thirteen years. Still the same two colours, meeting in the middle. / 十三年。还是那两种颜色，在中间相拥。
+    - 大字尾: 13（金色 `#c9a86a`，加金线收口）
+  - **右格人像占位**：`.larry-leader-slot` 一块虚线金框 + `::after` 写
+    `Harry × Louis · portrait pending`，**严格按设计稿 §4.1"图后补"要求**，不引任何 PNG。
+  - **三个信物图标**：`.larry-leader-icons` 三个 emoji `⚓ 🕊 🪢`（设计稿明文"或后补两组 emoji"），
+    `aria-hidden`，emoji 不参与语义。
+  - **CSS**（`docs/demo/css/larry-anniv-after.css` 末尾新增 ~130 行）：完全沿用 Niall 的设计哲学
+    —— 不用 `padding-top` 算比例（M60）、不重写 `.panel` 阶梯（M57）、`.panel-group` 保留
+    `display:block` 不破坏 BFC（M56）。新加：token 全用 §3.1 设计稿里的
+    `--larry-blue-deep / --larry-green-deep / --larry-gold`（已在文件开头 :root 定义）。
+  - **移动端断点**：`@media (max-width:767px)` 两格叠成两行，**金竖线改为水平线**
+    （不是"消失"，是同样的线转 90°），标题字号从 `clamp(1.6rem,3.6vw,3.4rem)` 抬到
+    `clamp(1.8rem,9vw,3.6rem)` 让手机更醒目；占位框从 74% 收到 60% 避免挤满。
+  - **CSS 版本 bump**：`larry-anniv-after.css?v=20260928j` → **`?v=20260928m`**（中间两版被 square 切图占用）。
+- **验证**：4 档视口（1440/1024/768/390）：
+  - desktop 1440：两格各 720×720 完美对开，金竖线 `.18em` 干净穿过；
+  - tablet 1024 / mobile 768：同 desktop 布局（>767 时维持两列）；
+  - mobile 390：上下两行、水平金线居中分隔、占位框缩到 60%、3 个 emoji 等比缩到 ~24px；
+  - Playfair Display italic 标题在四档无 fallback；
+  - 上文位置：hero → nav → **leader** → polaroid → journal-article → ...（截图 `leader-context-above-pola-1440.png`
+    可见整段衔接）。
+  - 0 console error / 0 个 404。
+- **截图归档**：`tools/_qa_screenshots/larry-928-hero/leader/`
+  - `leader-desktop-1440.png`（单板）、`leader-tablet-1024.png`、`leader-mobile-768.png`、`leader-mobile-390.png`
+  - `leader-context-above-pola-1440.png`（与 Polaroid 墙衔接关系）
+- **经验**：① **Niall → Larry 是结构平移 + 文案配色换皮**，不是从零写。M57 / M56 / M60 的坑
+  （不要用 padding-top 算比例、保留 BFC、float 元素百分比 padding 错基准）已在 Niall 验证过，
+  这次直接复用 —— 类目层"看起来一模一样的两个 panel"是最稳的迁移前提。② **中央金线在桌面竖
+  / 移动横的切换** 是最容易漏掉的细节：不是简单 `display:none`，要在断点里把 `width/height` 互换。
+  ③ **emoji 信物比 SVG 线条快得多**，但要 `aria-hidden` 防屏幕阅读器念出"锚 / 和平鸽 / 绳"。
+- **遗留**：① 右边 `.larry-leader-slot` 是占位 —— 等作者 PS 出 Harry×Louis 双人像或剪影后再引。
+  ② 三个 emoji 暂为占位（设计稿明文"或后补两组"，待作者选定的视觉方案后再换 SVG / PNG）。
+  ③ 主卡的金币色横线在 mobile 端只是 `.06em` 高 —— 若嫌细可加到 `.1em`，但要保证不被 emoji 挡住。
+
+## 2026-09-24 — Hero 换作者新出的 v2 图（cyan T 恤版），人物/背景自然融合
+
+- **模型**：deepseek-flash
+- **目的**：作者在 PS 里重出了两张 hero 图（`/Downloads/928-larry-hero-{rect,squarre}.png`，
+  18:21 时间戳），要求换过去，并把 `*.psd` 一起存。
+- **结果**：
+  - **PNG 入库**：`cp` 自 `/Downloads/928-larry-hero-{rect,squarre}.png` →
+    `images/gfx/larry-anniv-2026/hero/larry-928-hero-{rect,square}.png`（**保留 `square` 的拼写修正**，
+    Downloads 里仍叫 `squarre` 不要跟回去）。尺寸未变（rect 2400×1200、square 1200×1200）；
+    md5 与旧版不同，内容是新版（**最显眼变化：两人 T 恤色从 cream 改成偏 cyan/teal**，
+    与 928 拼图的青绿色背景同调，抠出感几乎没了）。CRC 校验通过。
+  - **PSD 落档**：`cp` 自 `/Downloads/928-larry-hero-{rect,squarre}.psd` →
+    `images/psd/larry-928-hero-{rect,square}.psd`。**`images/psd/` 已被 `.gitignore` 与 `.assetsignore`
+    双排除**（与站内既有约定一致；`dinnertable-*.psd` 等也是同样路径），不部署也不进 git，
+    仅作为本地设计母本存档。`.assetsignore` 注释里点名 hero-rect.psd 25.5 MiB / 超出 Cloudflare
+    25 MiB 单体上限，所以**根本不可能走线上**。
+  - **CSS 版本 bump**：`larry-anniv-after.css?v=20260928g` → **`?v=20260928h`**（图换了
+    cache 必须 bust；CSS 本身一行未动，PNG 是同 URL 同尺寸，浏览器会按 `?v=` 重新抓）。
+- **验证**：桌面 1440 + 移动 390 重拍：
+  - 新图直接打开就能看到 —— cyan T 恤和青绿背景基本一体，过渡带的抠图硬边**肉眼不可见**，
+    比上一轮的 cream radial-gradient 效果更好（因为那是 PNG 端就修好了）；
+  - **cream 渐变是否还需要？** 现在效果是 cream + cyan = 偏淡粉的中间色，过渡还在但**功用减半**。
+    留着无害（只是给中心更亮一点点），拿掉也行（让 cyan 直接显出来更冷更"青"）。
+    **等作者一句话决定**（保留 / 减半 / 拿掉）。
+  - logo 位置不动、tagline 字体 / 位置不动；0 个 404。
+  - 截图归档 `tools/_qa_screenshots/larry-928-hero/hero-928e-{desktop-1440,mobile-390}.jpg`。
+- **经验**：① **修图从源头修比 CSS 补偿便宜得多** —— 上一轮堆了 cream 径向 + soft-light 才
+  把抠图感磨掉，这一轮作者直接在 PSD 里把 T 恤调成同色相，CSS 一行不动，效果更好。
+  CSS 渐变留作"中心高亮"用，而不再是"修融合 bug"用。② **`squarre` → `square` 的命名修正
+  不能在反复覆盖中回滚** —— 容易在脚本里把 typo "保留"下来变成惯例，得手动改。
+- **遗留**：① cream blend overlay 待作者决定（保留/减半/拿掉）。② `images/gfx/larry-anniv-2026/hero/`
+  整目录仍未 `git add`（PNGs 已就位、PSD 已存档本地）。③ 题词中文版、demo 合并上线、9/28
+  自动切换 —— 三条旧账继续滚。
+
+## 2026-09-24 — Hero 第三轮精进：换 Noto Serif SC 700 italic 题词 + 人物/背景 cream 径向渐变融合
+
+- **模型**：deepseek-flash
+- **目的**：作者两轮返工后对 hero 仍有三点不满：（1）LXGW WenKai 题词"有点丑"；
+  （2）题词在顶部"有点突兀"；（3）抠出来的人物和 928 拼图背景"有点不融合，都有 点丑"。
+  要求"仪式感一点"；字体"换网站里已有的"。
+- **结果**：
+  - **题词字体**：`LXGW WenKai 400` → **`Noto Serif SC 700 italic`**。
+    站点早已为 `styles.css:803-833` 的 Playfair 拉丁类装载过 Noto Serif SC 的 Latin 400/700（与
+    Chinese Simplified 同名同一 `@font-face`，落在 `assets/fonts/source-han-serif/files/`），
+    本次不需要新增字体资源。Noto Serif 的 Latin 面是 transitional serif（Songti/Mincho 同脉），
+    比 Playfair 的 Didone 路子更稳重、更"立碑"；italic 切到经典碑文/题献体感，
+    配「We don't need a paper from the city hall...」这条歌词，仪式感到位。
+    `font-size` 从 290% → **260%**（italic 多占横向，留余量）；
+    `letter-spacing` 从 .02em → **.04em**（ceremonial 间距）。
+  - **位置**：保持顶部（按作者要求）。desktop 仍是 `top:6%`，
+    mobile 仍是 `top:11%` 让开左上角「中文」按钮。
+  - **人物/背景融合**：HTML 在 `.bg` 之后插入 `<div class="larry-hero-blend" aria-hidden>`；
+    CSS 给它 `position:absolute;inset:0;z-index:2;pointer-events:none`（不挡交互），
+    `background:radial-gradient(ellipse 42% 38% at 50% 64%,
+       rgba(250,246,239,.42) 0%, …, 0 72%)`（cream = `--larry-cream`，约等于人物 T 恤色），
+    `mix-blend-mode:soft-light`（让 cream 与底下 928 拼图自然混合，不出硬色块）。
+    方图版渐变中心 `at 50% 60%`，让 cream 落在两人胸口而非脸。
+    —— 不动 PNG，靠 CSS 在抠图边缘抹一层暖底，让"贴上去"的感觉松开。
+  - **mobile clamp 微调**：从 `clamp(14,4.4vw,30)` → **`clamp(14,3.9vw,26)`** + `text-wrap:balance`。
+    旧版在 390px 处 17.16px + italic 多占横向 ⇒ 折成两行但断词不利落（"hall..." 单独成行）；
+    新版单行 15.21px，`text-wrap:balance` 只在必须换行的更窄视口才生效，分行也更匀。
+  - **CSS 版本 bump**：`larry-anniv-after.css?v=20260928d` → **`?v=20260928f`**（d=Noto Serif、e=再加 balance clamp）。
+- **验证**：桌面 1440 + 移动 390 重拍：
+  - **desktop tagline**：单行、占宽约 77%、Noto Serif italic 700 落地无回退；
+  - **mobile tagline**：单行 15.21px、不撞「中文」按钮；
+  - **cream 渐变**：人物脚周最浓（约 .42 alpha），过渡带约 35% 宽，向四周退到 0，
+    **抠图硬边被柔化**（close-up 裁切可见人物 T 恤和背景 cream 色调合一，没有突然的边缘）；
+  - **logo 位置不动**（hover 不验，QA 视觉确认无变化）；
+  - **0 个 404**、**无 console error**。
+  - 截图归档 `tools/_qa_screenshots/larry-928-hero/hero-928d-{desktop-1440,mobile-390}.jpg`、
+    `hero-928d-tagline-noto-serif-crop.png`、`hero-928d-mobile-tagline-crop.png`、
+    `hero-928d-figures-blend-crop.png`。
+- **经验**：① **"立碑感" = transitional serif + italic + 略大的 letter-spacing**；不是字重越大越好，
+  italic 自带仪式感，但要靠字族支撑（不能 LXGW WenKai + italic，那只是普通手写）。② **抠图背景融合
+  用径向 cream 渐变 + soft-light** 比"重出一张 PSD 重切人"便宜得多 —— cream 是 T 恤色所以天然同源，
+  `soft-light` 让它不去强行加亮而是把"绿调的硬切"色调往暖里压一压，过渡带够宽就不抢画面。
+  已作为 **METHODS M82** 草稿待编。③ **`text-wrap:balance` 不强制换行** —— 单行宽度够时它退化为无影响，
+  只在必须换行时让两行字宽接近（断词不孤立），可以放心地与 clamp 同用。
+- **遗留**：① 题词中文版仍未补（仍按 LOG §46 旧账保留）。② hero PNG 仍未 `git add`。
+  ③ 这版 demo 仍未合并到线上 `index.html`（按设计稿附录 A，9/28 自动切换仍未实现）。
+
+## 2026-09-24 — 用作者 PS 出的两张图换掉 after 版的正式节日 hero，并加一行题词
+
+- **模型**：deepseek-flash
+- **目的**：作者在 PS 里拿"Polaroid 拼图 + 28 水印"底图做出了正式节日 hero（横图 + 方图），
+  要求接到 `docs/demo/index-demo-after-928.html`（928 当天显示的那一版）；
+  **logo 位置不动**，logo 上方加一行题词「We don't need a paper from the city hall...」，字体由我定。
+- **结果**：
+  - 两张图入库为 `images/gfx/larry-anniv-2026/hero/larry-928-hero-rect.png`（2400×1200）与
+    `larry-928-hero-square.png`（1200×1200），文件名去掉了作者原件里的拼写笔误 `squarre`。
+  - `docs/demo/css/larry-anniv-after.css` 末尾新增一段：`.panel.hero > .bg` 覆盖成新图，
+    `@media (max-width:767px)` 换成方图（断点与 `js/main.js` 的 `mono_col_breakpoint=767` 对齐，
+    用 `!important` 压过官方 `.panel.hero .bg` / `.mono .panel.hero .bg`，不依赖 JS 切 mono/duo 的时机）。
+  - `index-demo-after-928.html` 的 `.panel.hero` 里新增 `<p class="larry-hero-tagline">`，
+    位于 `.bg` 之后、`h1` 之前。
+  - 题词初始用 Playfair Display 700，放 logo 上方（`bottom:31%`）；**经作者两轮返工后改为**：
+    移到**人物头顶上方的空白带**（`top:6%` / 手机 `top:11%` 让开左上角「中文」按钮），
+    字体换成自托管的 **LXGW WenKai 霞鹜文楷 400**（作者原话 Playfair "有点丑"），
+    字号连放大两次到 **290%**（手机段用 `clamp(14px,4.4vw,30px)`，避开 `.panel` 阶梯与 hero 宽度不同步导致的换行）。
+    换字体前把同一句在**站点全部 15 款字体**下渲染成对照表做了比选（存 `tools/_qa_screenshots/larry-928-hero/tagline-font-comparison-15fonts.png`）。
+  - logo 保持白色 `logo-white.png`（中途试过黑色版 `logo-black.png`，作者反馈"有点土"已回滚），
+    改为加一层**淡黑 drop-shadow**：`.panel.hero h1 .bg{filter:drop-shadow(0 2px 6px rgba(0,0,0,.42))}`
+    —— drop-shadow 跟随 PNG alpha 轮廓，只在笔画外侧压暗边，不会出现矩形阴影底。
+  - CSS 版本 bump：`larry-anniv-after.css?v=20260927a` → `?v=20260928d`（返工期间 a→b→c→d 逐次 bump）。
+- **验证**：11 档视口（2400/1440/1024/768/700/600/500/430/390/360/320）逐一实测：
+  - 底图 desktop 全为 rect、≤767px 为 square；**0 个 404**；**无横向溢出**；
+  - **logo 位置逐像素不变**：1440 下 `{t511 l144 1152×130}`、390 下相对面板顶 `t277`，与改前完全一致；
+  - 题词**全部 11 档都是单行**，占宽 74%（桌面）~87%（手机），与左上角「中文」按钮**无重叠**；
+  - 手机段字号 14.1→30px 随视口连续变化，桌面段随 `.panel` 阶梯 30.9→92.8px。
+  - 截图归档 `tools/_qa_screenshots/larry-928-hero/hero-928-{desktop-1440,mobile-390}.jpg`、`hero-928-logo-shadow-crop.png`。
+- **中途踩坑（已修）**：第一版选择器写成后代 `.panel.hero .bg{…!important}`，**把 `h1` 里那个装 logo 的
+  `<div class="bg">` 一起命中**，而 author `!important` 又高过 inline 非 important ⇒ logo 的 inline 背景被顶掉，
+  logo 框里显示成"被 contain 缩小的 hero 图"（两人中间多出一小块）。改成**子选择器 `.panel.hero > .bg`** 即解决。
+  已记入 **METHODS M81**（含"author important > inline normal"与"面团类名要数一遍"两条预防）。
+- **备注**：两张 hero PNG 合计 4.5 MB（作者原件直出，未压缩）；未 `git add`，
+  正式上线前必须 `git add images/gfx/larry-anniv-2026/hero/`，否则线上 404。
+- **未做（等作者定）**：题词只给了英文，故按纯文本写入（任何语言下都显示），没加 `.zh` 对照；
+  若要中文版需补一句译文再拆 `<span class="en">/<span class="zh">`。
+
+## 2026-09-24 — QA 截图归位：收拢散落在 /tmp 与 docs/qa 的 93 张到 tools/_qa_screenshots/
+
+- **模型**：deepseek-flash
+- **目的**：作者指出「每一次检测的截图都要放 `tools/_qa_screenshots/`，你有些放错了、有些留在 temp 没存，我都要作为存档」。
+- **查证**：该规则**其实早就写在 `AGENTS/RULES.md` §3 第 3 层**（截图归档到 `tools/_qa_screenshots/`、按任务建子文件夹、根目录只放任务文件夹）——是我的违规，不是规则缺失。
+  同时在 RULES.md 同一处补了作者这次的补充口径（三条硬约束：不许只留 `/tmp`；不许另开 `docs/qa/` 之类目录；截图脚本必须带 `path` 落盘）。
+- **收拢结果**（`sha256` 逐个校验后才删源，共 93 个文件）：
+  | 目标文件夹 | 数量 | 内容 |
+  |---|---|---|
+  | `tools/_qa_screenshots/larry-928/` | 56 | 节日主页改造（卡片/封面/导航/小说卡/视频卡）+ 邮件长图 + 板块导出 + `history` 存档补齐验证 |
+  | `tools/_qa_screenshots/larry-pola/` | 26 + `photos/` 6 | Polaroid 墙交互迭代（牌堆/扇形/翻卡连拍）+ 照片筛选联络表 |
+  | `tools/_qa_screenshots/larry-gallery-album/` | 5 | Larry 相册页（Harry/Louis 副本、contain 封面） |
+  - 三个文件夹各写了 `README.md` 逐图对照表；`docs/qa/`（我建错的目录）已删除，`/tmp/*.png|jpg` 已清零。
+- **验证**：`git status` 里只剩本次真正的内容改动，不再有 `?? docs/qa/`；`find docs -name '*.png' -o -name '*.jpg'` 为空；`ls /tmp/*.png /tmp/*.jpg | wc -l` = 0；重复文件名已用 sha256 核过（倒计时 PNG 逐字节相同，Polaroid 是 PNG↔JPEG 同像素两种编码，README 已写明）。
+- **备注**：`tools/_qa_screenshots/` 被 `.gitignore` 排除（**本地存档，不入 Git**，也不部署），
+  所以这批截图不会随仓库走。**作者 2026-09-24 已拍板：保持本地存档，不纳入 Git**
+  （理由「别人看这个玩意儿没有用」，且目录已达 ~300 MB）——已写进 `RULES.md` §3 标注"不要再提议"。
+  代价：只存在于本机磁盘，靠系统备份保命，因此**更不允许只丢 `/tmp`**。
+- **经验**：Playwright 脚本的 `screenshot({path})` 应当**直接写归档路径**，不要写 `/tmp` 再"回头再搬"——
+  临时目录会被系统清掉，这次就是靠当次会话没重启才捞回来。已作为 **METHODS M80** 记入踩坑档。
+
+## 2026-09-24 — 补齐 history/2026-09-23-before-928-root 存档（只有 HTML，没有样式/脚本）
+
+- **模型**：deepseek-flash
+- **目的**：该存档文件夹原先只有一个 `index.html`，既没有样式也没脚本，`css/` `js/` `images/`
+  全是相对仓库根的路径，单独打开＝裸 HTML。作者要求从 Git 里把对应提交的相关内容取回来补齐。
+- **先厘清"这是哪一版"**（作者原话称之为"倒计时改造前的根 index.html"，实测不符）：
+  存档现有 `index.html` 与 `d6aebe1`（2026-09-22「Larry 9-28 倒计时 panel 上线」）的
+  `index.html` **逐行相同**，即它是**倒计时版**（含 `.panel.larry-cd`），不是倒计时之前的
+  Niall 版；真正的 Niall 版早已另行存档在 `history/2026-09-14-niall-birthday-panel/`。
+  故资产按"内容决定出处"取 `d6aebe1`。
+- **结果**：
+  - `index.html` 引用前缀改为 `../../`（`images/` 26 处、`pages/` 36 处、jquery/main/translate 3 个脚本、logo 回链、og:image），
+    倒计时脚本与样式表改为**存档本地冻结**（`js/larry-anniv.js`、`css/styles.css`，去掉只对线上有意义的 `?v=`）。
+  - 新增 `css/styles.css`（取自 `d6aebe1`，内部 111 处 `url(../` → `url(../../../`）、
+    `js/larry-anniv.js`（取自 `d6aebe1`）、`README.md`（沿用 liam/niall 存档的文档体例）。
+- **刻意偏离已有约定**：liam/niall 两个存档是"存一份 CSS 快照、但页面链活的 `../../css/styles.css`"；
+  本存档改写为**链冻结快照**。理由：`.larry-cd` 规则在 9-28 合并时会被重写/删除，链活的那份迟早变成"有 HTML 没样式"。
+- **验证**：
+  - 反向还原前缀后与 `d6aebe1:index.html` 逐行 diff = **0 处实质差异**（仅多一个原有行尾空行）。
+  - Playwright 打开 `/history/2026-09-23-before-928-root/index.html`：**仓库内 404 = 0**；
+    `jQuery` 为 function；`window.__5GUYS_LARRY_ANNIV__ === true`；倒计时在走（`…21sec` → `…19sec`）；
+    `.panel.larry-cd` 高 720px、条纹渐变生效、motif `mask` 解析到 `/images/gfx/larry-anniv-2026/motif-oops.png`；
+    加载的样式表确为存档本地那份；`document.fonts.status === "loaded"`。
+    唯一失败请求是 `fonts.googleapis.com` 502（外网抖动，与主站同源问题）。截图 `docs/qa/archive-928-before-restored-2026-09-24.jpg`。
+  - 补资产脚本 `/tmp/build-archive.py` 幂等：二次 `--check` 运行 index.html 替换命中 `{}`。
+- **备注**：`history/` 未被 `.assetsignore` 排除（整个仓库会部署），故线上也能访问该存档；
+  新增的 `README.md` 被 `**/README.md` 规则排除，不对外托管。
+
+## 2026-09-24 — 导出主页整页长图（邮件分享用）
+
+- **模型**：deepseek-flash
+- **目的**：给当前根首页（Before 928 倒计时版）导出一张整页长图，便于塞进邮件分享给朋友。
+- **结果**：产出 `docs/qa/home-full-2026-09-24.png`（1440×6382，673 KB）、同名 `.jpg`、以及 `home-full-2026-09-24@2x.jpg`（2880×12764，1.66 MB）；截图前强制滚动触发懒加载、等待图片 complete、并暂停 CSS 动画。
+- **验证**：Playwright 全页截图 `docW=1440 / docH=6382`，0 console error、0 个 ≥400 响应；图片内容人工复核（倒计时条纹面板 / hero / 8 张节日卡片与 tattoo 图案 / 视频面板 / 页脚均完整）。
+- **备注**：三个文件位于 `docs/qa/`，该目录被 `.assetsignore` 排除，不会被部署；也未被任何页面引用，不影响线上。目前仍未 `git add`。
+- **经验**：`docs/*` 被 `.assetsignore` 排除（只放行 `docs/demo/`），所以 QA 截图放 `docs/qa/` 是安全的兜底位置。
+
+## 2026-09-24 — 导出倒计时 / Polaroid 两个板块的桌面与移动截图
+
+- **模型**：deepseek-flash
+- **目的**：分别给「倒计时板块」（`index.html` 的 `.panel.larry-cd`）与「Polaroid wall 板块」（`docs/demo/index-demo-after-928.html` 的 `.panel.larry-pola`）各出桌面端 + 移动端两张图，共 4 张。
+- **结果**：`docs/qa/sec-countdown-desktop-2026-09-24.png`（2880×1440，140 KB）、`sec-countdown-mobile-2026-09-24.png`（780×782，66 KB）、`sec-polaroid-desktop-2026-09-24.jpg`（2880×1440，590 KB）、`sec-polaroid-mobile-2026-09-24.jpg`（780×782，124 KB）。桌面视口 1440×900、移动视口 390×844，均为 `deviceScaleFactor=2`；用元素级 `locator.screenshot()` 精确裁切板块，`animations:'disabled'` 冻结动画。
+- **验证**：两页均 0 个 ≥400 响应（仅 `fonts.googleapis.com` 偶发 502/连接重置，属外网抖动、字体已回退）；面板尺寸 desktop 1440×720、mobile 390×391；倒计数位移动端 390×391 为设计值（`larry-cd-logo` 在移动断点 `display:none` 属既定设计，见 `larry-anniv-before.css:272/830`）。
+- **观察（未改动）**：Polaroid 卡题注下沿留白桌面 20px、移动仅 2px（`--pola-w:266` 时下白边 53px vs 移动 26px 中含 `.55em` 题注外边距）——移动端题注几乎贴到卡片下边缘，若嫌紧后续可单独调 `.larry-pola-cap` 的 `margin` 或移动端 `aspect-ratio`。
+- **备注**：与上一条同属本地导出物，存放 `docs/qa/`（不部署、无页面引用），仍未 `git add`。
+
 ## 2026-09-23 — Before 928：修复桌面右上角导航展开
 
 - **模型**：gpt-5.6-luna
