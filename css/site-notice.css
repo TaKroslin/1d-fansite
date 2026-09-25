@@ -1,0 +1,245 @@
+/* =================================================================
+   FIVE GUYS ONE DIRECTION — 站点公告条（site notice bar）
+   -----------------------------------------------------------------
+   用途：站主高三学业公告。用户进入页面后从下方滑入一条 cookie 式提示。
+   三种交互（见 js/site-notice.js）：
+     · I know          → 收下，7 天不再出现（localStorage 时间戳）
+     · Dismiss         → 只这次关掉，刷新/再次进入仍会出现（sessionStorage）
+     · Don't show anymore → 永久关闭（localStorage 标记）
+   配色取自 DESIGN-SYSTEM §2：larry-blue-deep / larry-cream / larry-gold / larry-ink。
+   移动端 767px 以下改为纵向堆叠，按钮等宽。
+   ================================================================= */
+
+#site-notice {
+	position: fixed;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	z-index: 9999;
+	/* 初始沉在视口下方；.is-in 时归位 —— 靠 transform 滑入，不用 display 切换 */
+	transform: translateY(115%);
+	transition: transform .5s cubic-bezier(.22, 1, .28, 1);
+	will-change: transform;
+}
+
+#site-notice.is-in {
+	transform: translateY(0);
+}
+
+#site-notice[hidden] {
+	display: none;
+}
+
+/* -----------------------------------------------------------------
+   让位：横条是 fixed，会永久压住页脚最后一段（尤其是 Credits 和
+   Back to top）。给 body 补一块下边距，高度由 JS 实测写入
+   --sn-h，关掉后 --sn-h 归零，页面自然收回去。
+   移动端横条更高，用 130px 兜底（:has 已生效时用实测值）。
+   ----------------------------------------------------------------- */
+body:has(#site-notice) {
+	padding-bottom: var(--sn-h, 0px);
+}
+
+@media only screen and (max-width: 767px) {
+	body:has(#site-notice) {
+		padding-bottom: max(var(--sn-h, 0px), 104px);
+	}
+}
+
+#site-notice .sn-inner {
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 28px;
+	padding: 26px 40px 24px;
+	background: #faf6ef;
+	color: #141b21;
+	border-top: 3px solid #c9a86a;
+	box-shadow: 0 -18px 44px rgba(20, 27, 33, .30);
+}
+
+/* 金色顶部细线：与 9·28 套件的"约定线"呼应 */
+#site-notice .sn-inner::before {
+	content: "";
+	position: absolute;
+	top: -3px;
+	left: 0;
+	width: 34%;
+	height: 3px;
+	background: #1e4d6e;
+}
+
+#site-notice .sn-copy {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+#site-notice .sn-kicker {
+	font-family: 'Source Code Pro', 'LXGW WenKai Mono', Menlo, monospace;
+	font-size: 11px;
+	letter-spacing: .18em;
+	text-transform: uppercase;
+	color: #1e4d6e;
+	margin-bottom: 8px;
+}
+
+#site-notice .sn-text {
+	font-family: 'Source Sans Pro', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+	font-size: 15.5px;
+	line-height: 1.65;
+	margin: 0;
+	max-width: 1020px;
+}
+
+#site-notice .sn-text strong {
+	color: #1e4d6e;
+	font-weight: 700;
+}
+
+#site-notice .sn-text a {
+	color: #1e4d6e;
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
+
+/* -----------------------------------------------------------------
+   中英双语**同时**显示（不跟随 translate.js 的语言开关）。
+   styles.css 里有 `html.lang-zh .en{display:none}`（特异性 0,1,2,0），
+   这里用 `html #site-notice .sn-en`（0,1,3,1）在特异性上直接压过它，
+   不必用 !important。中英各占一行，中文在下、字号略小。
+   ----------------------------------------------------------------- */
+html #site-notice .sn-en {
+	display: block;
+}
+
+html #site-notice .sn-zh {
+	display: block;
+	margin-top: 6px;
+	font-size: 15px;
+	color: #3c3c3c;
+}
+
+#site-notice .sn-actions {
+	flex: 0 0 auto;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+#site-notice .sn-btn {
+	-webkit-appearance: none;
+	appearance: none;
+	cursor: pointer;
+	font-family: 'Source Code Pro', 'LXGW WenKai Mono', Menlo, monospace;
+	font-size: 11.5px;
+	font-weight: 600;
+	letter-spacing: .12em;
+	text-transform: uppercase;
+	line-height: 1;
+	white-space: nowrap;
+	padding: 14px 22px;
+	border: 2px solid #141b21;
+	background: transparent;
+	color: #141b21;
+	transition: background-color .2s ease, color .2s ease, border-color .2s ease;
+}
+
+#site-notice .sn-btn:hover,
+#site-notice .sn-btn:focus-visible {
+	background: #141b21;
+	color: #faf6ef;
+}
+
+#site-notice .sn-btn--primary {
+	background: #1e4d6e;
+	border-color: #1e4d6e;
+	color: #faf6ef;
+}
+
+#site-notice .sn-btn--primary:hover,
+#site-notice .sn-btn--primary:focus-visible {
+	background: #2f5d4e;
+	border-color: #2f5d4e;
+	color: #faf6ef;
+}
+
+#site-notice .sn-btn--ghost {
+	border-color: #c9a86a;
+	color: #8a6f3c;
+}
+
+#site-notice .sn-btn--ghost:hover,
+#site-notice .sn-btn--ghost:focus-visible {
+	background: #c9a86a;
+	border-color: #c9a86a;
+	color: #141b21;
+}
+
+/* "Send an email" 是链接不是按钮：样式与按钮一致，颜色用 Louis 蓝区分 */
+#site-notice .sn-btn--mail {
+	text-decoration: none;
+	border-color: #1e4d6e;
+	color: #1e4d6e;
+}
+
+#site-notice .sn-btn--mail:hover,
+#site-notice .sn-btn--mail:focus-visible {
+	background: #1e4d6e;
+	border-color: #1e4d6e;
+	color: #faf6ef;
+}
+
+/* 用户要求减少动效时，不做滑入，直接出现 */
+@media (prefers-reduced-motion: reduce) {
+	#site-notice {
+		transition: none;
+	}
+}
+
+@media only screen and (max-width: 767px) {
+	#site-notice .sn-inner {
+		flex-direction: column;
+		align-items: stretch;
+		gap: 14px;
+		padding: 18px 20px 16px;
+	}
+
+	#site-notice .sn-kicker {
+		font-size: 10px;
+		margin-bottom: 6px;
+	}
+
+	#site-notice .sn-text {
+		font-size: 13px;
+		line-height: 1.5;
+	}
+
+	html #site-notice .sn-zh {
+		margin-top: 5px;
+		font-size: 12.5px;
+	}
+
+	/* 三个按钮排一行：手机上高度最贵，折两行要多花 50px */
+	#site-notice .sn-actions {
+		flex-wrap: nowrap;
+		gap: 6px;
+	}
+
+	/* 允许折行：`Don't show anymore` 在 390px 下单行放不下（scrollWidth 119 > 109），
+	   硬挤会被裁字。折行 + 统一 min-height，三个按钮仍然一样高。 */
+	#site-notice .sn-btn {
+		flex: 1 1 0;
+		min-width: 0;
+		text-align: center;
+		white-space: normal;
+		line-height: 1.25;
+		min-height: 46px;
+		padding: 8px 6px;
+		font-size: 9.5px;
+		letter-spacing: .06em;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+}
