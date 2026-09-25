@@ -7,6 +7,25 @@
 > 过渡期的两套 CSS/JS 并存与 `docs/demo/` 路径是刻意安排，**不要提议「消重」**。
 > 详见 `docs/larry-9-28-anniversary-design.md` 附录 A。
 
+## 2026-09-25 — 运维：push 从 HTTPS/钥匙串切成 SSH deploy key（以后不要再走 HTTPS）
+
+- **现象**：每次 `git push`（以及任何要读 `github.com` 凭据的命令）都弹 macOS 钥匙串授权，
+  作者得手动点一次；沙箱里还会直接报 `fatal: failed to get: 100001`。
+- **根因**：**不是 GitHub 没登录**。钥匙串里凭据是好的（`osxkeychain` helper、账号 `TaKroslin`），
+  但 `git-credential-osxkeychain` 每次都是新进程去读密码，条目 ACL 不信任它 →
+  非交互环境拿不到授权就返回 `100001`，git 再回退去问用户名密码。
+  实测 `security find-internet-password -s github.com -w` 要 **8.27s** 才返回（=在等人点确认）。
+  这是**系统钥匙串**的弹窗，DSH 侧的 approval 策略关掉也管不到。
+- **处理**：改用仓库已有的免口令 deploy key（`~/.ssh/github_1d`，`ssh-ed25519 … 1d-fansite-deploy`）：
+  1. GitHub → 仓库 Settings → Deploy keys 加该公钥，**勾 Allow write access**（作者已加）；
+  2. `git config core.sshCommand "ssh -i ~/.ssh/github_1d -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"`
+     —— 用**仓库局部**配置，不动全局 `~/.ssh/config`（deploy key 只对本站有效，写全局会干扰以后用账号 key 的操作）；
+  3. `git remote set-url origin git@github.com:TaKroslin/1d-fansite.git`。
+- **验证**：`ssh -T git@github.com` → `Hi TaKroslin/1d-fansite! You've successfully authenticated`；
+  `git fetch` exit 0；本条日志的 commit 就是通过 SSH push 上去的（写权限实测）。
+- **给后来的 agent**：**不要**把 remote 改回 HTTPS，也**不要**去碰 `git-credential-osxkeychain`
+  —— 只要走 SSH 就永远不碰钥匙串。公钥/私钥路径见 `~/.ssh/github_1d`。
+
 ## 2026-09-25（第六轮）— 粉丝创作换图 + fanart/928 移动端正方形修复 + Larry Celebration 相册
 
 - **模型**：deepseek-flash
