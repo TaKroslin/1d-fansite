@@ -7,6 +7,81 @@
 > 过渡期的两套 CSS/JS 并存与 `docs/demo/` 路径是刻意安排，**不要提议「消重」**。
 > 详见 `docs/larry-9-28-anniversary-design.md` 附录 A。
 
+## 2026-09-25（第六轮）— 粉丝创作换图 + fanart/928 移动端正方形修复 + Larry Celebration 相册
+
+- **模型**：deepseek-flash
+- **目的**（作者三条）：
+  1. 首页 `larry-fanart` 第 4 张换成新投稿（Larry 庆祝拼贴，`179032782500548.WEBP`）；
+  2. 修 `larry-fanart` 与 `larry-928-special` 的**移动端**显示：元素遮挡 + 面板不是严格正方形；
+  3. 928 专庆的 Larry 粉丝创作**没有相册**，按 `gallery-page` skill 建一个。
+  追加要求：`larry-928-special` **桌面端**上面留空太多，一并修。
+- **结果**：
+  1. **换图**：源 1080×1691 WEBP → 按卡片比例 1:1.14 居中裁成 1080×1231 JPEG，
+     存 `images/gfx/larry-anniv-2026/fanart/fanart-04-larry-celebration.jpg`（`?v=20260929b`）。
+     新旧图宽高比一致，`.larry-fan-img` 的 `object-fit:cover` 不会二次裁切。
+     旧文件 `fanart-04-seated-portrait.jpg` **保留未删**（已不被引用，作者如需可自行清理）。
+  2. **移动端正方形**（`css/larry-anniv-after.css`，≤767px）：两块面板从 `padding-top:138%/150%`
+     回到 `.panel` 默认 **1:1**；928 卡改竖排：封面 `flex:0 0 40%` + 正文 `justify-content:center`，
+     并收紧 meta/标题/摘要/CTA 字号。
+  2b. **fanart 移动端定稿＝水平铺排 + 左右滑动**（作者当日第二轮反馈）。四步演进：
+     ① 旧版（拉高到 138% 硬塞 2×2）卡片 bottom 470.8 压住 CTA top 455.5；
+     ② 改成"1:1 + 2×2 自适应网格"后不遮挡了，但每张卡只有 **108px** 宽、两侧各留 30px 空白，
+       作者判定"还是很丑"；
+     ③ 横向 flex 滚动条：卡片 `flex:1` 吃满剩余高度 → 220×251 @390px，作者再指出
+       **"卡片太大、上下间距太小"**（当时 grid 与 header / CTA 之间实测就是 0）；
+     ④ **最终**：给 grid **定高 `height:52%`**（`flex:0 1 auto`），把腾出来的空间交给 stage 原有的
+       `justify-content:space-between` 平分到上下 → 卡片收小到 **166.6×190 @390px**，
+       header↔卡片、卡片↔CTA 各留 **31.6px**。`align-self:stretch` + `aspect-ratio:1/1.14`
+       由高度反推宽度，`overflow-x:auto` + `scroll-snap-type:x mandatory`
+       （`scroll-snap-align:center`）左右滑动吸附，两端 `padding-inline:5%`，
+       滚动条隐藏（`scrollbar-width:none` + `::-webkit-scrollbar`）。面板仍严格 1:1。
+       纯 CSS，无新增 JS。
+  3. **桌面 928 留空**：`.larry-928-card` 加 `flex:1 1 auto;min-height:0`，封面由
+     `flex:0 0 32%` 改为 `height:100%;width:auto`（等比放大到 480×480），
+     header→卡片之间那 **103px** 空白带消失（实测 card top 由 212 → 108.7）。
+  4. **相册**（作者确认：4 张全收 / `pages/gallery/fan-art/larry-celebration.html` / 沿用默认灰度）：
+     新建 slideshow 页 + `pages/gallery/fan-art/index.html` 加 `.panel.gallery-cover.larrycelebration-cover`
+     卡片（count 4）；4 张 slide 存 `images/media/gallery-images/rect-lrg/larry-celebration/`；
+     6 张封面存 `images/gfx/gallery-fan-art-larry-celebration-cover-{rect,square}-{sml,med,lrg}.png`，
+     **尺寸按规范** 600×300/1200×600/2400×1200 + 300²/600²/1200²（未复制 liam33 那套 rect-sml=300×600 的异常尺寸）。
+     生成脚本 `tools/build/_build_larry_celebration_album.py`（幂等）。
+     新相册页 `body class="duo gallery-section"`：桌面 `contain` 不裁原图，移动端走站点既有的
+     "整页竖排照片列表"行为（与 `happy-liams-33rd-birthday.html` 完全一致，非本次引入）。
+  5. **封面为什么不直接用原图**：`.panel.gallery-cover` 的白色标题/菱形计数/按钮几乎铺满整张卡
+     （实测桌面 h2 x5%–60%、count x63.5%–90%、按钮 y76%–86%；移动 h2 x5%–95% y13.5%–86.5%）。
+     作品本身是白底手绘，直接铺会把白字压在白底上（对比度 1.09:1 看不见）。所以封面按**深色海报**制作：
+     作品转灰后把明度压进 [0.10, 0.42]，放在 `--larry-ink` 底 + 浅色细框里，白字处处 ≥4.5:1。
+     另加一条本卡专属规则：移动端标题 546.875% 时 "Celebration" 单行放不下会溢出卡片，收到 340%。
+  6. **顺带修掉模板里的死链**：`happy-liams-33rd-birthday.html` 页脚两处
+     `../../../about.html` → `../../about.html`（`/about.html` 不存在，是 404）；新页面复制该模板后一并修正。
+- **验证**：
+  · Playwright 宽度扫描 320/360/390/430/540/767 → 两块面板 `h/w = 1.000`（严格正方形），
+    fanart `gridFootGap` 由 0 变成 16.2/31.6/… 的**正间距**，
+    `footBottomVsPanel` 均 < 面板高（CTA 不越界不贴底）；768/1024 仍为桌面 2:1。
+    修复前实测：fanart 卡片 bottom 470.8 > CTA top 455.5（遮挡 15.3px）、928 CTA bottom 584.7 / 面板 585（贴底被裁）。
+  · 横向滑动实测（390px）：`display:flex`、`overflow-x:auto`、`scrollSnapType=x mandatory`，
+    `scrollWidth 758 > clientWidth 390` → 确实可滑；卡片 **166.6×190**（4 张等宽，比上一版 222×253 收小约 25%），
+    静止时露出 2.3 张、滑到最右完整显示第 4 张且右侧仍留 5% 内边距（截图
+    `fanart-mobile390-v2.png` / `-v2-end.png`）。
+  · `python tools/audit/_audit_site_images.py` → **Broken: 0**（860 条引用）。
+  · `python tools/audit/_audit_element_inventory.py` exit 0，新类 `larrycelebration-cover` 已出现在清单。
+  · 端到端：`pages/gallery.html` → `gallery/fan-art/index.html` → 新卡片 → `larry-celebration.html`
+    全链路链接 200（`gallery.html` / `index.html` / 相册页各 0 条非 200）。
+  · HTML div 配对 22/22，`slideshow-nav.js` 每页 1 次，`.en/.zh` 5/5 配对。
+  · `grep -c larrycelebration-cover css/styles.css` 先查占用（改动前 0），避免与既有 `liam-cover` 等撞类名。
+  · CSS 版本：`styles.css?v=20260926b`（fan-art/index 与新相册页），
+    `larry-anniv-after.css?v=20260929h`（index.html）。
+    `docs/demo/index-demo-after-928.html` 保持 `?v=20260929e` —— 它指向 `docs/demo/css/` 下那份
+    **已分叉的旧快照**（1425 行 vs 主文件 1445 行），内容没动就不该 bump，否则版本号与文件内容不符。
+- **经验**：`.panel.gallery-cover` 的文字覆盖区是测量出来的、不是估的——换封面图前先量 h2/count/info
+  的百分比包围盒，否则白字压白底这类问题只有截图才看得到。fanart 那类"内容比正方形装不下"的面板，
+  正确解法是让网格吃掉剩余高度（flex + 1fr + aspect-ratio 反推宽度），而不是把面板拉长。
+  但"塞得下"不等于"好看"：正方形里 2×2 的四张卡必然缩到 ~110px，与其在正方形里硬排四格，
+  不如承认手机是一次只看一张的媒介——横向滚动条（高度定宽、宽度反推 + scroll-snap）才既满足
+  作者的"严格正方形"又让作品够大。**改视觉方案前先把两版都截图给作者看，别只在数字上论证不遮挡。**
+- **Token 消耗**：约 22 万（主会话）
+- **用时**：约 60 分钟
+
 ## 2026-09-25（第五轮）— 首页新增站点公告条（cookie 式，双语同显 + 两档关闭 + 邮件入口）
 
 - **模型**：deepseek-flash

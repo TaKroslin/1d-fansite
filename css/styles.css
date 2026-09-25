@@ -1371,3 +1371,22 @@ font-size:clamp(2.1rem,3.75vw,3.8rem);line-height:1.02;letter-spacing:.01em;colo
     background-image:url(../images/gfx/gallery-members-larry-photos-cover-square-sml.png)!important;
   }
 }
+
+/* =================================================================
+   Larry Celebration 粉丝创作相册封面（2026-09-25）
+   -----------------------------------------------------------------
+   桌面 2:1 用 rect、移动端 1:1 切 square —— 与上面既有策展封面同一套做法。
+   作者 2026-09-25 明确选择**沿用网站默认灰度**，所以这里不追加 filter:none 例外；
+   封面图本身按"深色海报"制作（作品明度压到 0.42 以下），保证白色标题/菱形计数/
+   按钮在任何位置都还有 ≥4.5:1 对比度，不会白字压白底。
+   ================================================================= */
+@media (max-width: 767px){
+  .panel.gallery-cover.larrycelebration-cover .bg{
+    background-image:url(../images/gfx/gallery-fan-art-larry-celebration-cover-square-sml.png)!important;
+  }
+  /* 移动端标题 546.875%，"Celebration" 这个单词单独一行放不下、会溢出卡片两侧。
+     本卡专属：收到 340%（≈41px @390px），两行正好放下 "Larry / Celebration"。 */
+  .panel.gallery-cover.larrycelebration-cover .panel-content h2{
+    font-size:340%;
+  }
+}

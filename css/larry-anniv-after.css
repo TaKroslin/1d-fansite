@@ -1192,10 +1192,42 @@ html:has(#larry-demo-zh:checked) .en{display:none!important}
 .larry-fanart-note a:hover{border-color:var(--larry-ink)}
 
 @media only screen and (max-width:767px){
-  /* 2×2 格 + header + CTA：方形装不下，单独把面板拉高 */
-  .panel.larry-fanart{padding-top:138%}
-  .larry-fanart-stage{padding:2.6em 5% 5%}
-  .larry-fan-grid{grid-template-columns:repeat(2,1fr);gap:4%}
+  /* 作者 2026-09-25 第二轮定稿：移动端**严格正方形** + **水平铺排左右滑动**。
+     第一版把面板拉高到 138% 硬塞 2×2 → 第二排卡片 bottom 470.8 压住 CTA top 455.5（遮挡）。
+     第二版改成"1:1 + 2×2 自适应网格"：不再遮挡，但每张卡只有 ~108px 宽、两侧各留 30px 空白，
+     作者判定"还是很丑"，要求改成横向滑动。
+     第三版（当前）：横向 flex 滚动条 + scroll-snap 吸附，但卡片 `flex:1` 吃满剩余高度会让
+     **卡片过大（220×251 @390px）、header/CTA 与卡片之间间距为 0**，作者再次指出。
+     现在给 grid 定高 `52%`（@390px ≈ 165.8×189），剩下的空间交给 stage 的
+     `justify-content:space-between` 平分到上下 → 卡片收小、上下各留 ~31px 呼吸位，
+     同时面板仍是严格 1:1、滚动吸附与两端 5% 内边距不变。 */
+  .panel.larry-fanart{padding-top:100%}
+  .larry-fanart-stage{padding:1.4em 0 2.5%}
+  .larry-fan-grid{
+    display:flex;
+    flex:0 1 auto;
+    height:52%;
+    min-height:0;
+    width:100%;
+    gap:5%;
+    overflow-x:auto;
+    overflow-y:hidden;
+    padding:0 5%;
+    scroll-padding-inline:5%;
+    scroll-snap-type:x mandatory;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior-x:contain;
+    scrollbar-width:none;
+  }
+  .larry-fan-grid::-webkit-scrollbar{display:none}
+  .larry-fan-card{
+    flex:0 0 auto;
+    align-self:stretch;
+    height:auto;
+    aspect-ratio:1 / 1.14;
+    scroll-snap-align:center;
+    scroll-snap-stop:always;
+  }
   .larry-fan-cap{font-size:clamp(.7rem,3.1vw,.95rem)}
   .larry-fan-mark{width:34%}
   .larry-fanart-note{font-size:clamp(.72rem,3vw,.9rem)}
@@ -1332,11 +1364,17 @@ html:has(#larry-demo-zh:checked) .en{display:none!important}
   align-items:center;
   gap:4%;
   width:100%;
+  /* 作者 2026-09-25：桌面端 header 与卡片之间空出 103px 空白带。
+     让卡片吃掉 stage 的剩余高度，封面按高度等比放大，整块上下就填满了。 */
+  flex:1 1 auto;
+  min-height:0;
   color:inherit;
   text-decoration:none;
 }
 .larry-928-thumb{
-  flex:0 0 32%;
+  flex:0 0 auto;
+  height:100%;
+  width:auto;
   position:relative;
   aspect-ratio:1 / 1;
   border:1px solid rgba(201,168,106,.85);
@@ -1414,14 +1452,17 @@ html:has(#larry-demo-zh:checked) .en{display:none!important}
 }
 
 @media only screen and (max-width:767px){
-  /* 横向卡在窄屏堆成竖版：封面在上、文字在下 */
-  .panel.larry-928-special{padding-top:150%}
-  .larry-928-special-stage{padding:2.6em 5% 5%}
-  .larry-928-card{flex-direction:column;gap:5%;text-align:center}
-  .larry-928-thumb{flex:0 0 auto;width:62%}
-  .larry-928-body{align-items:center;text-align:center}
-  .larry-928-excerpt{font-size:clamp(.8rem,3.1vw,.95rem)}
-  .larry-928-cta{margin-top:1.1em}
+  /* 同 fanart：严格正方形（旧版 150% 把 CTA 底边顶到面板底 584.7/585，等于贴着下沿被裁）。
+     卡片竖排，封面占 40% 高度，正文吃掉剩余高度并整体居中。 */
+  .panel.larry-928-special{padding-top:100%}
+  .larry-928-special-stage{padding:1.4em 5% 2.5%}
+  .larry-928-card{flex:1 1 auto;min-height:0;flex-direction:column;gap:3.5%;text-align:center;overflow:hidden}
+  .larry-928-thumb{flex:0 0 40%;height:auto;width:auto;min-height:0}
+  .larry-928-body{flex:1 1 auto;min-height:0;align-items:center;text-align:center;justify-content:center}
+  .larry-928-meta{font-size:clamp(.54rem,2.5vw,.7rem);margin-bottom:.7em;padding-bottom:.35em}
+  .larry-928-title{font-size:clamp(1.05rem,4.8vw,1.5rem);margin-bottom:.3em}
+  .larry-928-excerpt{font-size:clamp(.72rem,2.9vw,.88rem);line-height:1.5}
+  .larry-928-cta{margin-top:.9em;padding:.55em 1.6em;font-size:clamp(.56rem,2.6vw,.72rem)}
 }
 
 /* =================================================================
