@@ -34,6 +34,11 @@
      脚本不读该字段，无副作用）；线上 `index.html` 的 `.zh` 比 demo 多 7 处（含 before 阶段文案），
      子集**只会多覆盖几个字**，不会缺字（脚本注释本就要求收全 `.zh`，避免新字回退霞鹜文楷）。
   3. **顶部状态条改造**：原长说明 → `> **9-28 总方案 ✅ 已完成**…` 三行，指向本条正文与附录 A。
+- **⚠️ 注意：`docs/demo/` 此前是"公开部署"的**：`.assetsignore` 里有刻意写的例外
+  `/docs/*` + `!/docs/demo/`（注释：「作者需要在其他设备上直接输地址测试，站内没有任何入口指向它」），
+  即 **`https://www.5guys1direction.asia/docs/demo/index-demo-after-928.html` 曾经线上可直接访问**。
+  本次 push 触发 Workers 构建后，该 URL 及其兄弟页面**已全部 404**（实测确认）。
+  若作者曾把这个地址分享到过别处（聊天/微博/小红书），那边的链接现在会失效。
 - **验证**：
   · `git status` → 11 项删除全部 stage；`docs/` 下已无 `demo/`；
   · `grep -rn "docs/demo/"` 全仓复查：**线上代码 0 命中**；剩余命中全部是无副作用的历史文本——
@@ -41,8 +46,20 @@
     `docs/*.md` 设计文档（历史设计留档）、`css/larry-anniv-*.css` 与 `css/styles.css` 的注释文字；
   · `python3 tools/fonts/subset_hardpen_xingshu.py` 已能正常走到 `fontTools` 导入阶段
     （本机未装 fontTools/brotli 才停下，属环境依赖，非路径错误——**证明路径修复生效**）；
-  · 线上首屏不受影响：`index.html` 引用的 `css/larry-anniv-before.css` / `css/larry-anniv-after.css`
-    与对应 JS 均在 `css/`、`js/` 下，与 `docs/demo/` 无关。
+  · **推送后线上实测**（Workers git 集成自动部署，等待约 2 分钟构建完成）：
+    `https://www.5guys1direction.asia/` **200**；`css/larry-anniv-before.css` / `-after.css` /
+    `js/larry-anniv-after.js` / `js/site-notice.js` 全部 **200**；
+    `docs/demo/index-demo-after-928` / `-before-928` / `TASK-TO-DEEPSEEK.md` 全部 **404**（删除生效）；
+  · 线上 `js/site-notice.js` 复查文案已是去清华版（`college entrance exams and enrollment cycle` /
+    `高考和招生录取结束之后`），无 `Tsinghua` 残留——顺带验证了上一条 commit 的部署。
+- **遗留（作者定，本次按"不动其他东西"未处理）**：
+  1. `.assetsignore` 的 `!/docs/demo/` 例外已成**指向不存在目录的死规则**（wrangler 不报错、无副作用），
+     可删；同时其上方注释「demo 预览页要发布」也已过时。
+  2. `css/larry-anniv-before.css`（第 3 行 + 第 561 行）、`css/larry-anniv-after.css`（第 3 行）、
+     `css/styles.css`（第 1079 行）的注释仍写「仅作用于 docs/demo/，不发布」——与"早已上线"的事实相反，
+     属误导性注释，可择机清理。
+  3. `tools/_qa_screenshots/demo-928/`（未跟踪的 Playwright 遗留：`shot.js` 仍指向已删的 demo URL，
+     `demo-after-928-full.png` 3.8 MB）——已无用途，可删。
 - **Token 消耗**：约 3 万
 - **用时**：约 20 分钟
 - **经验总结**：
