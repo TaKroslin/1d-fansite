@@ -1,11 +1,56 @@
 # 1D Fansite — 开发日志（LOG）
 
-> **9-28 总方案（作者定调，勿重复确认）**：after 版（新 header + Polaroid 墙 + 其余新板块）**尚未开发完**，
-> 所以现在先把**倒计时**上线顶着；开发完后会把 `index.html` 与 `docs/demo/index-demo-after-928.html`
-> **合并成一个 HTML，两套代码共存、但同一时刻只显示一套**：
-> **9/28 前只显示倒计时；9/28 后倒计时自动下线，只显示新 header + Polaroid + 其余新板块**（绝不能两套同时可见）。
-> 过渡期的两套 CSS/JS 并存与 `docs/demo/` 路径是刻意安排，**不要提议「消重」**。
+> **9-28 总方案 ✅ 已完成**（合并于 2026-09-24 commit `187a132`；方案原文与归档说明见下方 2026-09-26 条目）：
+> `index.html` 已用 `lr-phase-before` / `lr-phase-after` 类承载 before/after 两套板块，
+> 日期开关自动切换；过渡期的 `docs/demo/` 目录已完成历史使命，作者决定删除。
 > 详见 `docs/larry-9-28-anniversary-design.md` 附录 A。
+
+## 2026-09-26 — 9-28 总方案归档（原文留档于此）+ 删除过渡期 `docs/demo/` 目录
+
+- **模型**：deepseek-flash
+- **目的**：作者确认 9-28 合并**已完成**（commit `187a132`），`docs/demo/` 过渡目录已完成历史使命，
+  决定整体删除。原挂在 LOG **顶部的"9-28 总方案"长说明**按作者要求从顶部撤下、原文留档于本条正文，
+  顶部只保留一行"✅ 已完成"状态条（避免未来 agent 误读为"待执行指令"）。
+- **9-28 总方案（原文留档，作者定调）**：
+  > after 版（新 header + Polaroid 墙 + 其余新板块）**尚未开发完**，
+  > 所以现在先把**倒计时**上线顶着；开发完后会把 `index.html` 与 `docs/demo/index-demo-after-928.html`
+  > **合并成一个 HTML，两套代码共存、但同一时刻只显示一套**：
+  > **9/28 前只显示倒计时；9/28 后倒计时自动下线，只显示新 header + Polaroid + 其余新板块**（绝不能两套同时可见）。
+  > 过渡期的两套 CSS/JS 并存与 `docs/demo/` 路径是刻意安排，**不要提议「消重」**。
+  > 详见 `docs/larry-9-28-anniversary-design.md` 附录 A。
+  >
+  > ——**该方案已于 2026-09-24（commit `187a132`）完成**：`index.html` 用 `lr-phase-before` / `lr-phase-after` 同时承载
+  > 两套板块，日期开关自动切换，`docs/demo/` 不再是"刻意安排"，而是可删的过渡产物。
+- **结果**：
+  1. **删除 `docs/demo/` 全目录**（10 个跟踪文件 + 1 个未跟踪临时文件 `_font-test.html`）：
+     `TASK-TO-DEEPSEEK.md`、`index-demo-before-928.html`、`index-demo-after-928.html`、
+     `css/larry-anniv{,-before,-after}.css`、`js/larry-anniv{,-before,-after}.js`、
+     `prompts/figure-illustration-prompt.md`。
+  2. **修 `tools/fonts/subset_hardpen_xingshu.py` 的死路径**（删目录的直接后果，必修）：
+     该脚本原本从 `docs/demo/js/larry-anniv-after.js` 抽 `POLAROIDS` 题注、
+     从 `docs/demo/index-demo-after-928.html` 抽 `.zh` 文案来重建硬笔行书子集字体——
+     删目录后会直接 `FileNotFoundError`。路径改指线上 [`js/larry-anniv-after.js`](js/larry-anniv-after.js)
+     与 [`index.html`](index.html)。两文件 `POLAROIDS` 数组内容一致（唯一差异是 `IMG_PREFIX` 的 `../../` 前缀，
+     脚本不读该字段，无副作用）；线上 `index.html` 的 `.zh` 比 demo 多 7 处（含 before 阶段文案），
+     子集**只会多覆盖几个字**，不会缺字（脚本注释本就要求收全 `.zh`，避免新字回退霞鹜文楷）。
+  3. **顶部状态条改造**：原长说明 → `> **9-28 总方案 ✅ 已完成**…` 三行，指向本条正文与附录 A。
+- **验证**：
+  · `git status` → 11 项删除全部 stage；`docs/` 下已无 `demo/`；
+  · `grep -rn "docs/demo/"` 全仓复查：**线上代码 0 命中**；剩余命中全部是无副作用的历史文本——
+    `AGENTS/LOG.md` / `AGENTS/METHODS.md` 历史条目、`history/2026-*` 历史快照（按约定不动）、
+    `docs/*.md` 设计文档（历史设计留档）、`css/larry-anniv-*.css` 与 `css/styles.css` 的注释文字；
+  · `python3 tools/fonts/subset_hardpen_xingshu.py` 已能正常走到 `fontTools` 导入阶段
+    （本机未装 fontTools/brotli 才停下，属环境依赖，非路径错误——**证明路径修复生效**）；
+  · 线上首屏不受影响：`index.html` 引用的 `css/larry-anniv-before.css` / `css/larry-anniv-after.css`
+    与对应 JS 均在 `css/`、`js/` 下，与 `docs/demo/` 无关。
+- **Token 消耗**：约 3 万
+- **用时**：约 20 分钟
+- **经验总结**：
+  1. **删除"过渡产物"前先回头查有没有工具脚本硬编码它的路径**——本次 `subset_hardpen_xingshu.py`
+     就是漏网之鱼：它是那批 demo 文件唯一的**代码级**依赖，其他的都只是注释/文档文字。
+  2. **LOG 顶部的"待办式"长说明要及时随事实更新**：合并完成后那句"不要提议消重"已与事实相反，
+     留着会让后续 agent 误判。改成"✅ 已完成"状态条、原文移入正文，是最小代价的止损。
+  3. 作者判断"删不删"的依据是**事实是否已合并**，不是文件新旧——所以先核实 commit `187a132` 再动手。
 
 ## 2026-09-25 — 站点公告条：去掉"清华大学"指向（作者反馈："感觉有点装，万一去北大呢"）
 

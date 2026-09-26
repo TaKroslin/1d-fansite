@@ -33,8 +33,8 @@ import tempfile
 import urllib.parse
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-JS = os.path.join(ROOT, "docs/demo/js/larry-anniv-after.js")
-HTML = os.path.join(ROOT, "docs/demo/index-demo-after-928.html")
+JS = os.path.join(ROOT, "js/larry-anniv-after.js")
+HTML = os.path.join(ROOT, "index.html")
 OUT = os.path.join(ROOT, "assets/fonts/zhangqingping-hyx/ZQP-Hardpen-Xingshu-Subset.woff2")
 CDN = ("https://cdn.jsdelivr.net/npm/@chinese-fonts/rmjzqpybxs/dist/"
        + urllib.parse.quote("瑞美加张清平硬笔行书") + "/")
