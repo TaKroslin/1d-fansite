@@ -1088,20 +1088,36 @@ html:has(#larry-demo-zh:checked) .en{display:none!important}
   align-items:center;
   padding:3.2em 4% 4%;
 }
+/* 2026-09-26：作品从 4 件增至 5 件 → 桌面端也改成横向滚动。
+   与移动端同一套 flex 轨道；卡片按「4.3 列」定宽
+   （`(100% - 4×1.8%) / 4.3` ≈ 21.6%），一屏仍然是**完整 4 张**，
+   第 5 张露出约 30%（~86px @1440）作为可横滑的提示 ——
+   若按原 4 列宽度定死，第 5 张会整张落在视口外，看起来还是 4 件作品。
+   卡片是等比缩小的，面板高度与 4 件时一致，不牵动上下留白。 */
 .larry-fan-grid{
   list-style:none;
   margin:0;
-  padding:0;
+  padding:0 0 12px;
   width:100%;
-  display:grid;
-  grid-template-columns:repeat(4,1fr);
+  display:flex;
+  flex-wrap:nowrap;
   gap:1.8%;
+  overflow-x:auto;
+  overflow-y:hidden;
+  overscroll-behavior-x:contain;
+  -webkit-overflow-scrolling:touch;
+  scroll-snap-type:x proximity;
+  scrollbar-width:none;
 }
+.larry-fan-grid::-webkit-scrollbar{display:none}
 /* 每格 = 蓝/绿清新色块（跟首页节日卡同一个棋盘节奏：蓝·绿·绿·蓝）
    + 金色实框 + 内缩 7% 的金色虚线框（与主卡右格那圈手绘虚线同一语言） */
 .larry-fan-card{
   position:relative;
+  flex:0 0 auto;
+  width:calc((100% - 7.2%) / 4.3);
   aspect-ratio:1 / 1.14;
+  scroll-snap-align:start;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -1222,6 +1238,7 @@ html:has(#larry-demo-zh:checked) .en{display:none!important}
   .larry-fan-grid::-webkit-scrollbar{display:none}
   .larry-fan-card{
     flex:0 0 auto;
+    width:auto;                    /* 覆盖桌面端的定宽：移动端卡宽由 height + aspect-ratio 推出 */
     align-self:stretch;
     height:auto;
     aspect-ratio:1 / 1.14;
