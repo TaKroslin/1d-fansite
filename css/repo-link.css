@@ -1,0 +1,89 @@
+/* =================================================================
+   FIVE GUYS ONE DIRECTION — GitHub 仓库图标链接（共用）
+   -----------------------------------------------------------------
+   用在三处：
+     · 首页公告条（那个另有 site-notice.css 的 .sn-btn--icon）
+     · 公告页 pages/notice.html 的**首尾**
+     · 信件页 pages/letter.html 的**每一页页脚**
+   图标是 inline SVG（fill 用 currentColor），不新增图标字体或图片资源。
+
+   为什么单独一个文件而不是写进 styles.css：
+     styles.css 是 91KB 单行 minified，改它要 bump 全站所有页面的 ?v=
+     （RULES §2.2 / M12）。这里只是几个图标规则，独立成文件更省事、
+     也不会误伤官方克隆样式。
+   ================================================================= */
+
+.gh-icon {
+	display: block;
+	width: 18px;
+	height: 18px;
+	flex: 0 0 auto;
+}
+
+/* 图标 + 文字的一行（信件页脚用）：图标是 currentColor，跟着文字颜色走 */
+.gh-link {
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+	text-decoration: none;
+	color: inherit;
+	border-bottom: 1px solid transparent;
+	transition: color .2s ease, border-color .2s ease;
+}
+
+.gh-link:hover,
+.gh-link:focus-visible {
+	border-bottom-color: currentColor;
+}
+
+/* 方框图标按钮（公告页首尾用）：只有图标，做成一个可点的小方块 */
+.gh-icon-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 46px;
+	height: 46px;
+	border: 2px solid #1e4d6e;
+	color: #1e4d6e;
+	background: transparent;
+	text-decoration: none;
+	transition: background-color .2s ease, color .2s ease, border-color .2s ease;
+}
+
+.gh-icon-btn:hover,
+.gh-icon-btn:focus-visible {
+	background: #1e4d6e;
+	border-color: #1e4d6e;
+	color: #fff;
+}
+
+.gh-icon-btn .gh-icon {
+	width: 22px;
+	height: 22px;
+}
+
+/* 公告页的"首/尾"图标行：居中摆一个按钮，上下留白 */
+.gh-strip {
+	text-align: center;
+}
+
+.gh-strip--top {
+	margin: 0 0 2.4em;
+}
+
+.gh-strip--bottom {
+	margin: 3em 0 0;
+}
+
+@media only screen and (max-width: 767px) {
+	.gh-icon-btn {
+		width: 42px;
+		height: 42px;
+	}
+	.gh-strip--top {
+		margin-bottom: 1.8em;
+	}
+	.gh-strip--bottom {
+		margin-top: 2.2em;
+	}
+}

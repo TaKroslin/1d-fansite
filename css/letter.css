@@ -1,0 +1,628 @@
+/* =================================================================
+   FIVE GUYS ONE DIRECTION — 站主信件页（A Letter From Webmaster）
+   -----------------------------------------------------------------
+   形态参照 taylorswift.com/read-my-letter 的「一叠信」布局：
+     · 黑底 + 居中信纸，纸面叠放（后面的纸张轻微旋转偏移，形成一叠）；
+     · 翻页 = 当前那张向右侧滑走（translateX + 轻微旋转，1s ease-in-out），
+       下面的纸顺势升到顶层；这是该参考页的核心动效，本页照此实现；
+     · 点击纸面任意处 = 下一页（同参考页的整页 overlay），
+       另配大号"上一页/下一页"按钮与 ← → 键。
+
+   版式：正文区 .letter-body 用 padding-bottom 预留签名栏的高度，
+   因此**每页底部留白一致**，末页签名正好落进那块留白，
+   JS 不需要事后"挪段落腾地方"（也让每页看起来不像塞满到边）。
+
+   ⚠️ 本页**不引用 css/styles.css**：那份样式是给官方克隆页用的，
+      里面有多条全局 `p{width:60%}` / `p{margin:0!important}` /
+      `.zh{display:none!important}`，会把信纸正文的宽度、段距、中文全打乱。
+      所以本文件自包含：自带 @font-face、自带 reset。
+
+   字体：硬笔行书 'Hardpen Xingshu'（自托管子集，已含本信全部用字，
+        见 tools/fonts/subset_hardpen_xingshu.py 与 assets/fonts/.../README.txt）。
+   ================================================================= */
+
+/* ---------- 字体 ----------
+   本页**完全不依赖外部字体 CDN**（原字体是给国内访问的，jsdelivr/Google Fonts
+   都不稳）。界面字用仓库里已有的自托管字体，手写体用硬笔行书子集。 */
+@font-face {
+	font-family: 'Hardpen Xingshu';
+	src: url(../assets/fonts/zhangqingping-hyx/ZQP-Hardpen-Xingshu-Subset.woff2?v=20260930a) format('woff2');
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+}
+/* 界面/等宽字：LXGW WenKai Mono（自托管子集，站内已在用） */
+@font-face {
+	font-family: 'LXGW WenKai Mono';
+	src: url(../assets/fonts/lxgw-wenkai-mono/LXGWWenKaiMono-Subset.woff2) format('woff2');
+	font-weight: 400;
+	font-display: swap;
+}
+/* 正文字体族里的第二档（硬笔缺字时兜底），同样自托管 */
+@font-face {
+	font-family: 'LXGW WenKai';
+	src: url(../assets/fonts/lxgw-wenkai/LXGWWenKaiSubset.woff2) format('woff2');
+	font-weight: 400;
+	font-display: swap;
+}
+
+/* ---------- 最小 reset（替代 styles.css） ----------
+   ⚠️ 必须用 `:where()` 包起来：`:where()` 的特异性恒为 0，整个选择器因此是 0 特异性，
+   后面的组件规则（.letter-page-sheet / .letter-btn 等，特异性 0,1,0）才能正常覆盖。
+   写成 `body.letter-page *` 的话特异性是 (0,1,1)，会**反过来压掉**组件自己的
+   `padding` —— 实测后果就是纸的页边距全变成 0（文字贴着纸边）、按钮 padding 归零
+   （15px 的字挤成 17px 高的小按钮），正是"页边距不好看 + 按钮太小"的根因。 */
+:where(body.letter-page, body.letter-page *) {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+body.letter-page {
+	background: #0a0c0f;
+	overflow: hidden;
+	-webkit-font-smoothing: antialiased;
+	text-rendering: optimizeLegibility;
+}
+
+/* ---------- 舞台：黑底 + 中心柔光 ---------- */
+.letter-stage {
+	position: fixed;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	overflow: hidden;
+	font-family: 'LXGW WenKai', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+	color: #f2ece1;
+}
+
+.letter-vignette {
+	position: absolute;
+	inset: -10%;
+	pointer-events: none;
+	background:
+		radial-gradient(62% 56% at 50% 44%, rgba(201, 168, 106, .16) 0%, rgba(201, 168, 106, 0) 64%),
+		radial-gradient(125% 105% at 50% 50%, rgba(0, 0, 0, 0) 38%, rgba(0, 0, 0, .82) 100%);
+}
+
+/* ---------- 纸堆 ---------- */
+.letter-stack {
+	position: relative;
+	width: min(93vw, 700px);
+	/* 高度刻意留出下方黑带（约 10vh）给控制条，上方也要留出右上角
+	   "关闭信件"按钮的位置：按钮占 top ~23..68px，纸顶必须低于它。
+	   之前纸占到 90vh 时，按钮正好压在黄纸下沿 —— 浅黄按钮文字压在浅黄纸面上
+	   = 完全看不清。 */
+	height: min(78vh, 860px);
+	/* 往上顶一点，让下方黑带更宽 */
+	margin-bottom: 6vh;
+	/* 透视：让"离场那张纸抬起来再被抽走"有真实的 3D 纵深感。
+	   只对带 translateZ 的纸生效，静止的纸 translateZ(0) 视觉不变。 */
+	perspective: 1900px;
+	perspective-origin: 50% 44%;
+}
+
+/* 单页信纸：黄色纸面 */
+.letter-page-sheet {
+	/* 页边距做成变量：签名栏/页码要绝对定位到同一套边距上 */
+	--lp-pad-x: clamp(28px, 5vw, 62px);
+	--lp-pad-y: clamp(30px, 4.6vh, 52px);
+	--lp-pad-b: clamp(20px, 3vh, 30px);
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+	/* 页边距：四周留白充足 */
+	padding: var(--lp-pad-y) var(--lp-pad-x) var(--lp-pad-b);
+	overflow: hidden;
+	border-radius: 2px;
+	color: #23201a;
+	background:
+		/* 纸纤维颗粒（多层极淡渐变，纯 CSS，不引外部图） */
+		radial-gradient(circle at 12% 22%, rgba(255, 255, 255, .5) 0%, rgba(255, 255, 255, 0) 34%),
+		radial-gradient(circle at 78% 68%, rgba(180, 148, 84, .16) 0%, rgba(180, 148, 84, 0) 30%),
+		radial-gradient(circle at 46% 92%, rgba(255, 250, 232, .4) 0%, rgba(255, 250, 232, 0) 26%),
+		/* 纸面主色：暖黄 */
+		linear-gradient(176deg, #f8ecc2 0%, #f2de9f 48%, #ead188 100%);
+	box-shadow:
+		0 1px 0 rgba(255, 255, 255, .6) inset,
+		-1px 0 0 rgba(120, 92, 40, .12) inset,
+		0 -1px 0 rgba(120, 92, 40, .16) inset,
+		0 24px 58px rgba(0, 0, 0, .62);
+	transform-origin: 50% 50%;
+	backface-visibility: hidden;
+	z-index: 1;
+	/* 纸本身不吃点击：整页 overlay（.letter-overlay）负责翻页。
+	   否则离场那张（z-index 50）在飞行途中会盖住 overlay，
+	   用户连点"下一页"会有一瞬间点不动。 */
+	pointer-events: none;
+	/* 翻页动效：**物理感**的三条原则
+	     ① 迅捷：0.5s 上下，不是原来那种 1s 的匀速平移；
+	     ② 有阻尼：用收尾减速的贝塞尔（不是对称的 ease-in-out），
+	        落定时带一点点过冲（1.06），像纸落在桌上弹一下；
+	     ③ 有连带：越靠下的纸越晚跟上（transition-delay 逐层 +35ms），
+	        读起来是"一叠纸被连着带动"，而不是整块一起平移。
+	   离场那张纸单独覆盖（见下），用"快速抽走"的曲线。 */
+	transition:
+		transform .46s cubic-bezier(.2, .92, .28, 1.06),
+		opacity .3s ease-out,
+		filter .4s ease;
+	will-change: transform, opacity;
+}
+
+/* ---------- 纸叠分层：显式 z-index，保证"越深越靠下" ----------
+   （只靠 DOM 顺序会让后面的页盖在更靠前的页上，纸堆层次会反） */
+.letter-page-sheet[data-depth="1"] {
+	transform: rotate(-4.2deg) translate(-7px, 8px) translateZ(-16px);
+	filter: brightness(.9) saturate(.94);
+	z-index: 35;
+	transition-delay: .035s;
+}
+.letter-page-sheet[data-depth="2"] {
+	transform: rotate(-2.4deg) translate(-4px, 5px) translateZ(-28px);
+	filter: brightness(.94) saturate(.97);
+	z-index: 30;
+	transition-delay: .07s;
+}
+.letter-page-sheet[data-depth="3"] {
+	transform: rotate(-1.1deg) translate(-2px, 2px) translateZ(-38px);
+	filter: brightness(.97);
+	z-index: 25;
+	transition-delay: .1s;
+}
+/* 更深的纸：贴在 depth 3 背后（同一位置），不参与可见层。
+   放同一个 transform 是为了它升到 depth 3 时不用再动一下。 */
+.letter-page-sheet[data-depth="hid"] {
+	transform: rotate(-1.1deg) translate(-2px, 2px) translateZ(-46px);
+	opacity: 0;
+	z-index: 20;
+	transition-delay: .1s;
+}
+
+/* 顶层：不旋转、最亮、最高 */
+.letter-page-sheet[data-depth="0"] {
+	transform: none;
+	/* 45 > 点击 overlay 的 40：顶层纸里那个"每页仓库链接"才点得到。
+	   纸身是 pointer-events:none，点纸面仍然落到 overlay 上翻页。 */
+	z-index: 45;
+	/* 落定到顶层多给一点时间，收尾更"稳" */
+	transition-duration: .5s, .3s, .4s;
+	transition-delay: 0s;
+}
+
+/* ---------- 离场：整张纸向右抽走 + 朝观众抬起 + 一点回旋 ----------
+   ⚠️ 这里**不能**再写 opacity:0 / visibility:hidden：
+     原实现给离场纸写了 `visibility:hidden`，而 visibility 不在 transition 列表里，
+      于是它**第一帧就变 hidden** —— transform 一直在动（实测 tx 657→406），
+      但整张纸根本看不见，翻页动画等于白做（实测首帧 vis=hidden / op=0）。
+      现在改成"真实地滑出画面"：位移 170%（桌面/手机都够滑出视口），
+      由 .letter-stage 的 overflow:hidden 裁掉，动画全程可见。 */
+.letter-page-sheet[data-depth="-1"] {
+	transform: translateX(170%) translateZ(110px) rotate(2.2deg);
+	z-index: 60;            /* 抽走时压在所有纸之上 */
+	opacity: 1;
+	/* 抽走：起步果断、过程顺、出手干脆 */
+	transition:
+		transform .46s cubic-bezier(.3, .55, .3, 1),
+		opacity .2s linear,
+		filter .3s ease;
+	transition-delay: 0s;
+}
+/* 更早翻过的纸：与 -1 同位置（已在画面外），无需再动 */
+.letter-page-sheet[data-depth="-2"] {
+	transform: translateX(170%) translateZ(110px) rotate(2.2deg);
+	z-index: 55;
+	opacity: 1;
+	transition-delay: 0s;
+}
+
+/* ---------- 纸面内容 ---------- */
+.letter-sheet-inner {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	min-height: 0;
+}
+
+.letter-kicker {
+	flex: 0 0 auto;
+	font-family: 'LXGW WenKai Mono', Menlo, monospace;
+	font-size: 10.5px;
+	letter-spacing: .34em;
+	text-transform: uppercase;
+	color: #8a6f3c;
+	margin-bottom: 12px;
+}
+
+.letter-title {
+	flex: 0 0 auto;
+	font-family: 'Hardpen Xingshu', 'LXGW WenKai', serif;
+	font-size: clamp(20px, 2.3vw, 26px);
+	line-height: 1.44;
+	color: #1f1b14;
+	margin-bottom: 6px;
+}
+
+.letter-date {
+	flex: 0 0 auto;
+	font-family: 'LXGW WenKai Mono', Menlo, monospace;
+	font-size: 11.5px;
+	letter-spacing: .12em;
+	color: #8a6f3c;
+	/* 抬头与正文之间用一条细金线隔开，正文从这里开始 */
+	padding-bottom: 16px;
+	margin-bottom: 18px;
+	border-bottom: 1px solid rgba(138, 111, 60, .3);
+}
+
+/* 正文：手写体。
+   flex:1 + min-height:0 让它成为"可测量高度"的容器 ——
+   JS 靠 body.scrollHeight > clientHeight 判断这一页写满了没有。
+   padding-bottom 给**每页页脚**（仓库链接 + 页码）预留一条；
+   末页再加高，给签名栏腾位置。footer 元素都是绝对定位，
+   不参与 flex 计算，所以预留只能靠这里的 padding。 */
+.letter-body {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow: hidden;
+	/* 页脚一条：仓库链接 + 页码 */
+	padding-bottom: 34px;
+	font-family: 'Hardpen Xingshu', 'Caveat', 'LXGW WenKai', cursive;
+	font-size: clamp(15.5px, 1.18vw, 17.5px);
+	line-height: 1.98;
+	letter-spacing: .015em;
+	color: #262117;
+	text-align: justify;
+}
+
+/* 末页：页脚之上再放签名栏 */
+.letter-page-sheet.has-sign .letter-body {
+	padding-bottom: 78px;
+}
+
+.letter-body p {
+	width: auto;
+	margin: 0 0 .95em;
+	text-indent: 2em;
+	font-size: inherit;
+	line-height: inherit;
+	font-family: inherit;
+	color: inherit;
+	letter-spacing: inherit;
+	text-align: inherit;
+}
+
+.letter-body p:last-child {
+	margin-bottom: 0;
+}
+
+/* 跨页续排段：一个段落被切到下一页时，续段不缩进
+   （首行缩进只属于段落真正的开头，续段缩进会被读成新段落） */
+.letter-body p.is-cont {
+	text-indent: 0;
+}
+
+/* 正文里的仓库地址：跟正文同色（手写信里不该跳出一块蓝色链接），
+   只用一条细下划线说明"这里能点"。 */
+.letter-body-link {
+	color: inherit;
+	text-decoration: none;
+	border-bottom: 1px solid rgba(138, 111, 60, .55);
+	pointer-events: auto;   /* 纸身 pointer-events:none，这里收回 */
+	transition: color .2s ease, border-color .2s ease;
+}
+
+.letter-body-link:hover,
+.letter-body-link:focus-visible {
+	color: #6d5525;
+	border-bottom-color: #6d5525;
+}
+
+/* 结尾三行单独加重、不缩进 */
+.letter-body p.is-closing {
+	text-indent: 0;
+	font-size: 1.16em;
+	margin-bottom: .5em;
+}
+
+/* 签名栏：**绝对定位**在末页底部（仓库链接那一条的上面）。
+   早先写成 flex 子项（在 .letter-body 之后），会去挤 .letter-body 的高度 ——
+   而正文是按"写满"排的，签名一挤就溢出，结果末页只剩一两个字（实测末页只有 11 字），
+   页数还会随加载时序在 11/12 之间跳。改成绝对定位后它落在正文预留的 padding 里，
+   不参与 flex 计算 ⇒ 页数稳定、末页也不会被挤空。 */
+.letter-sheet-sign {
+	position: absolute;
+	left: var(--lp-pad-x);
+	right: var(--lp-pad-x);
+	bottom: calc(var(--lp-pad-b) + 30px);
+	padding-top: 10px;
+	border-top: 1px solid rgba(138, 111, 60, .34);
+	font-family: 'LXGW WenKai Mono', Menlo, monospace;
+	font-size: 11.5px;
+	letter-spacing: .16em;
+	text-transform: uppercase;
+	color: #8a6f3c;
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	gap: 12px;
+}
+
+/* 每页页脚左侧：GitHub 图标 + 仓库地址（每一页都显示，站点的开源入口之一）。
+   低调到像信纸的印刷落款，但整条可点。 */
+.letter-sheet-repo {
+	position: absolute;
+	left: var(--lp-pad-x);
+	bottom: clamp(7px, 1.2vh, 12px);
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+	font-family: 'LXGW WenKai Mono', Menlo, monospace;
+	font-size: 10px;
+	letter-spacing: .06em;
+	color: rgba(138, 111, 60, .68);
+	text-decoration: none;
+	pointer-events: auto;   /* 纸本身 pointer-events:none，这里要单独收回 */
+	transition: color .2s ease;
+}
+
+/* 图标比文字略大一点，保证一眼认得出是 GitHub */
+.letter-sheet-repo .gh-icon {
+	width: 13px;
+	height: 13px;
+}
+
+.letter-sheet-repo-label {
+	border-bottom: 1px solid rgba(138, 111, 60, .28);
+	padding-bottom: 1px;
+	transition: border-color .2s ease;
+}
+
+.letter-sheet-repo:hover,
+.letter-sheet-repo:focus-visible {
+	color: #6d5525;
+}
+
+.letter-sheet-repo:hover .letter-sheet-repo-label,
+.letter-sheet-repo:focus-visible .letter-sheet-repo-label {
+	border-bottom-color: rgba(138, 111, 60, .75);
+}
+
+/* 纸角页码（很淡，只在纸自己身上，不抢控制条） */
+.letter-sheet-num {
+	position: absolute;
+	right: var(--lp-pad-x);
+	bottom: clamp(7px, 1.2vh, 12px);
+	font-family: 'LXGW WenKai Mono', Menlo, monospace;
+	font-size: 10px;
+	letter-spacing: .18em;
+	color: rgba(138, 111, 60, .5);
+	font-variant-numeric: tabular-nums;
+	pointer-events: none;
+}
+
+/* ---------- 点击前进用的整页 overlay（同参考页） ---------- */
+.letter-overlay {
+	position: absolute;
+	inset: 0;
+	z-index: 40;
+	cursor: pointer;
+	background: transparent;
+}
+
+/* ---------- 底部：提示 + 控制条（整块放在纸下方的黑带上，z-index 高于纸） ---------- */
+.letter-bottom {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: clamp(14px, 2.6vh, 26px);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 12px;
+	z-index: 60;
+	pointer-events: none;
+}
+
+.letter-bottom .letter-btn,
+.letter-bottom .letter-overlay {
+	pointer-events: auto;
+}
+
+.letter-controls {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 14px;
+	pointer-events: auto;
+}
+
+.letter-btn {
+	-webkit-appearance: none;
+	appearance: none;
+	cursor: pointer;
+	font-family: 'LXGW WenKai Mono', Menlo, monospace;
+	/* 从 11px 提到 15px：原按钮在 1440 下只有 11px，确实看不清 */
+	font-size: 15px;
+	font-weight: 500;
+	letter-spacing: .12em;
+	text-transform: uppercase;
+	text-decoration: none;
+	color: #f2e6c2;
+	background: rgba(255, 255, 255, .08);
+	border: 1px solid rgba(201, 168, 106, .68);
+	border-radius: 2px;
+	padding: 14px 24px;
+	line-height: 1;
+	transition: background-color .2s ease, color .2s ease, border-color .2s ease, opacity .2s ease;
+}
+
+.letter-btn:hover:not(:disabled),
+.letter-btn:focus-visible:not(:disabled) {
+	background: #c9a86a;
+	border-color: #c9a86a;
+	color: #141b21;
+}
+
+.letter-btn:disabled {
+	opacity: .28;
+	cursor: default;
+}
+
+.letter-counter {
+	font-family: 'LXGW WenKai Mono', Menlo, monospace;
+	font-size: 15px;
+	letter-spacing: .18em;
+	color: #c9a86a;
+	min-width: 96px;
+	text-align: center;
+	font-variant-numeric: tabular-nums;
+}
+
+/* 右上角：关闭信件回首页 */
+.letter-exit {
+	position: absolute;
+	top: clamp(14px, 2.6vh, 26px);
+	right: clamp(14px, 2.6vw, 28px);
+	z-index: 70;
+	font-size: 14px;
+	padding: 13px 20px;
+	text-transform: none;
+	letter-spacing: .06em;
+}
+
+/* 右下角：GitHub 仓库链接。比退出按钮更低调、不抢主角（信件是告别信） */
+.letter-github {
+	position: absolute;
+	right: clamp(14px, 2.6vw, 28px);
+	bottom: clamp(70px, 10vh, 92px);
+	z-index: 70;
+	font-size: 12px;
+	padding: 10px 16px;
+	text-transform: none;
+	letter-spacing: .04em;
+	color: rgba(242, 230, 194, .75);
+	background: transparent;
+	border-color: rgba(201, 168, 106, .4);
+}
+
+.letter-github:hover,
+.letter-github:focus-visible {
+	background: rgba(201, 168, 106, .18);
+	border-color: rgba(201, 168, 106, .85);
+	color: #faf6ef;
+}
+
+/* 提示：点纸前进。落在纸下方那条黑带上（控制条上方） */
+.letter-hint {
+	font-family: 'LXGW WenKai Mono', Menlo, monospace;
+	font-size: 12px;
+	letter-spacing: .2em;
+	text-transform: uppercase;
+	color: rgba(232, 217, 176, .6);
+	transition: opacity .4s ease;
+}
+
+.letter-hint.is-off {
+	opacity: 0;
+}
+
+/* 加载失败兜底 */
+.letter-fallback {
+	position: fixed;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: #e8d9b0;
+	font-family: 'LXGW WenKai', sans-serif;
+	text-align: center;
+	padding: 8vw;
+	line-height: 2;
+}
+
+.letter-fallback a {
+	color: #c9a86a;
+}
+
+/* 构建期间先藏起来，避免看到分页重排 */
+.letter-stack.is-building {
+	opacity: 0;
+}
+
+/* ---------- 移动端 ---------- */
+@media only screen and (max-width: 767px) {
+	/* 手机上同样要避开：顶部"关闭信件"按钮（top 22px 高约 40px）
+	   与底部控制条，纸只能占中间 74vh。 */
+	.letter-stack {
+		width: 93vw;
+		height: min(74vh, 680px);
+		margin-bottom: 2vh;
+	}
+
+	.letter-page-sheet {
+		padding: 22px 20px 16px;
+	}
+
+	.letter-body {
+		/* 手机上按钮占位更宽，底部多留一点 */
+		padding-bottom: 40px;
+		font-size: 15.5px;
+		line-height: 1.96;
+	}
+
+	.letter-kicker {
+		font-size: 9.5px;
+		margin-bottom: 9px;
+	}
+
+	.letter-title {
+		font-size: 19px;
+	}
+
+	.letter-date {
+		padding-bottom: 12px;
+		margin-bottom: 14px;
+	}
+
+	.letter-sheet-num {
+		right: 20px;
+		bottom: 8px;
+	}
+
+	/* 移动端按钮仍然要够大够看清 */
+	.letter-btn {
+		font-size: 13.5px;
+		padding: 12px 16px;
+		letter-spacing: .08em;
+	}
+
+	.letter-counter {
+		font-size: 13.5px;
+		min-width: 76px;
+	}
+
+	.letter-controls {
+		gap: 8px;
+	}
+
+	.letter-exit {
+		font-size: 13px;
+		padding: 11px 14px;
+	}
+
+	.letter-hint {
+		font-size: 11px;
+	}
+}
+
+/* 减少动效：不做 1s 滑动 */
+@media (prefers-reduced-motion: reduce) {
+	.letter-page-sheet {
+		transition: none;
+	}
+}

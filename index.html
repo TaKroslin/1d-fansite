@@ -86,7 +86,11 @@
 	<link href="css/styles.css?v=20260922a" rel="stylesheet" type="text/css" />
 	<link href="css/larry-anniv-before.css?v=20260928f" rel="stylesheet" type="text/css" />
 	<link href="css/larry-anniv-after.css?v=20260929i" rel="stylesheet" type="text/css" />
-	<link href="css/site-notice.css?v=20260925g" rel="stylesheet" type="text/css" />
+	<link href="css/site-notice.css?v=20261001a" rel="stylesheet" type="text/css" />
+
+<!-- 信件闸门：必须在所有资源之前、首次绘制前执行，否则会先闪一下首页再跳信件。
+     首次访问直接 replace 到 pages/letter.html；加 ?skipletter=1 可跳过。 -->
+<script src="js/letter-gate.js?v=20261001a"></script>
 
 <script>/* 9/28 相位开关：必须在 <head> 里、首次绘制前执行，避免闪一下错版本 */
 (function(){try{var t=Date.parse("2026-09-28T00:00:00+08:00");if(t&&Date.now()>=t){document.documentElement.className+=" is-928";}}catch(e){}})();
@@ -787,7 +791,7 @@
 
 <script src="js/larry-anniv-before.js?v=20260928b"></script>
 	<script src="js/larry-anniv-after.js?v=20260928a"></script>
-	<script src="js/site-notice.js?v=20260925g"></script>
+	<script src="js/site-notice.js?v=20261001a"></script>
 
 
 

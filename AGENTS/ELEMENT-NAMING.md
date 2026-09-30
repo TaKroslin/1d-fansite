@@ -217,8 +217,57 @@ Slideshow 的独立预览见 `ELEMENT-PREVIEWS.md` 中的 Gallery / Slideshow / 
 | `body.duo.shop-section` | Shop Page |
 | `body.duo.this-is-us-section` | This Is Us Page |
 | `body.duo.about-section` | About Page |
+| `body.notice-section` | Notice Page（`pages/notice.html`，停更 + 开源公告） |
 
 `shop.html` 为禁止修改页面；其元素只用于识别和 QA，不作为普通修改目标。
+
+## 7b. 信件页（`pages/letter.html`）— 独立全屏体验
+
+该页**不引用 `css/styles.css`**（那份的全局 `p{width:60%}` / `p{margin:0!important}` /
+`.zh{display:none!important}` 会打乱信纸正文），样式自包含于 `css/letter.css`。
+元素由 `js/letter.js` 注入，不是手写 HTML。
+
+| 真实元素名 | 含义 |
+|---|---|
+| `body.letter-page` | Letter Page（信件页；也是闸门的"已在信件中"判据） |
+| `div.letter-stage` | 全屏舞台（黑底、居中、`overflow:hidden` 裁掉滑出的纸） |
+| `div.letter-vignette` | 黑底柔光/四角压暗层 |
+| `div.letter-stack` | 纸堆容器（`perspective` 在这里，供纸张抬起的 3D 感） |
+| `article.letter-page-sheet` | 单张信纸 |
+| `div.letter-sheet-inner` | 纸内竖向布局容器（抬头 + 正文） |
+| `div.letter-kicker` / `h1.letter-title` / `div.letter-date` | 抬头三件套（只在第 1 页） |
+| `div.letter-body` | 正文区（分页的测量容器：`scrollHeight > clientHeight` 判满） |
+| `p.is-cont` | 跨页续排段（不首行缩进） |
+| `p.is-closing` | 结尾三行（加粗放大、不缩进） |
+| `div.letter-sheet-sign` | 签名栏（绝对定位，只在末页；`.has-sign` 给末页留位） |
+| `div.letter-sheet-num` | 纸角页码 |
+| `div.letter-overlay` | 整页点击层（点纸面 = 下一页，同参考页） |
+| `div.letter-bottom` / `div.letter-controls` | 纸下方黑带：提示 + 翻页控制条 |
+| `div.letter-hint` | "点击纸面继续"提示（末页淡出） |
+| `button.letter-btn` / `a.letter-exit` | 翻页按钮 / 右上角"关闭信件" |
+| `span.letter-counter` | `当前页 / 总页数` |
+| `a.letter-sheet-repo` + `.letter-sheet-repo-label` | 每页页脚的 GitHub 图标 + 仓库地址 |
+| `a.letter-body-link` | 正文里被 linkify 成可点链接的仓库地址 |
+
+**数据源**：`js/letter-data.js`（`window.__5GUYS_LETTER__`，全文按段落存 `paragraphs`）。
+**闸门**：`js/letter-gate.js`（首页 `<head>` 里最先加载）——**常驻**：每次进
+`/index.html` 都先显示信件；信件页关闭/Esc 回 `index.html?skipletter=1` 才不拦。
+
+## 7c. GitHub 仓库入口（`css/repo-link.css`）
+
+图标一律是 **inline SVG**（`path[fill=currentColor]`），不新增图标字体或图片资源。
+三处入口共用这套类名；颜色跟着所在容器走，hover 反色零成本。
+
+| 真实元素名 | 含义 |
+|---|---|
+| `svg.gh-icon` | GitHub 图标本体 |
+| `a.gh-link` | 图标 + 文字的一行 |
+| `a.gh-icon-btn` | 方框图标按钮（公告页首尾） |
+| `div.gh-strip.gh-strip--top` / `--bottom` | 公告页"首 / 尾"的居中图标行 |
+| `a.sn-btn--icon` | 首页公告条里的方框图标按钮（样式在 `site-notice.css`） |
+
+**为什么单独一个 CSS 文件**：`styles.css` 是 91KB 单行 minified，改它要 bump 全站所有页面的
+`?v=`（RULES §2.2 / M12）。这几个图标规则独立成 `css/repo-link.css` 更省事、也不误伤官方样式。
 
 ## 8. Bilingual and state tokens
 

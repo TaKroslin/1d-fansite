@@ -1,19 +1,21 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""重建 Polaroid 题注中文子集字体（瑞美加张清平硬笔行书）。
+"""重建 硬笔行书（瑞美加张清平）中文子集字体。
 
 背景
 ----
 站点自托管 CJK 字体，不用外部 CDN（jsdelivr 在国内不稳）。
-`@chinese-fonts/rmjzqpybxs` 把这款字体切成了 142 个子集；Polaroid 题注只用到
-102 个汉字，却横跨 53 个子集 —— 直接引 CDN 要拉 53 个文件 / 1.9 MB。
-本脚本把 53 个子集合并成一个 TTF，再按题注文本重切成**一个 38.4 KB 的 woff2**。
+`@chinese-fonts/rmjzqpybxs` 把这款字体切成了 142 个子集；手写体用字
+（Polaroid 题注 + 首页 .zh 文案 + 停更公告页 + 站主信件全文）横跨几乎全部
+子集 —— 直接引 CDN 要拉上百个文件。
+本脚本把需要的子集合并成一个 TTF，再按全部用字重切成**一个 woff2**。
 
 依赖
 ----
     python3 -m venv --system-site-packages /tmp/fontvenv
     /tmp/fontvenv/bin/pip install brotli        # fontTools 读/写 woff2 需要 brotli
     /tmp/fontvenv/bin/python tools/fonts/subset_hardpen_xingshu.py --apply
+    （本仓库的 .venv 里已装好 fontTools + brotli，可直接用 .venv/bin/python）
 
 输出
 ----
@@ -22,10 +24,9 @@
 注意
 ----
 * 字体授权见 assets/fonts/zhangqingping-hyx/README.txt（免费商用，非 OFL）。
-* 题注文本变了（新增汉字）就要重跑本脚本，否则新字会回退到 LXGW WenKai。
+* 用字文本变了（新增汉字）就要重跑本脚本，否则新字会回退到 LXGW WenKai。
 """
 import argparse
-import glob
 import os
 import re
 import subprocess
@@ -33,24 +34,48 @@ import tempfile
 import urllib.parse
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-JS = os.path.join(ROOT, "js/larry-anniv-after.js")
-HTML = os.path.join(ROOT, "index.html")
 OUT = os.path.join(ROOT, "assets/fonts/zhangqingping-hyx/ZQP-Hardpen-Xingshu-Subset.woff2")
 CDN = ("https://cdn.jsdelivr.net/npm/@chinese-fonts/rmjzqpybxs/dist/"
        + urllib.parse.quote("瑞美加张清平硬笔行书") + "/")
 
+# 所有手写体用字来源：(绝对路径, 抽文本的方式)
+SOURCES = [
+    (os.path.join(ROOT, "js/larry-anniv-after.js"), "polaroid"),   # Polaroid 题注
+    (os.path.join(ROOT, "index.html"), "zh-span"),                # 首页中文文案
+    (os.path.join(ROOT, "pages/notice.html"), "zh-span"),         # 停更公告页
+    (os.path.join(ROOT, "js/letter-data.js"), "js-string"),       # 信件全文（最大来源）
+    (os.path.join(ROOT, "pages/letter.html"), "zh-span"),         # 信件页静态中文
+]
+
+
+def _read(path):
+    if not os.path.exists(path):
+        return ""
+    return open(path, encoding="utf-8").read()
+
 
 def caption_text():
-    """Polaroid 题注（JS 渲染）+ 页面上所有 .zh 文案（粉丝创作面板的题注/按钮等）。
-    后者也要收进来，否则新加的中文会回退到霞鹜文楷，与硬笔题注混字体。"""
-    js = open(JS, encoding="utf-8").read()
-    blk = re.search(r"POLAROIDS\s*=\s*\[(.*?)\];", js, re.S).group(1)
-    zh = re.findall(r"zh\s*:\s*['\"]([^'\"]+)", blk)
-    if not zh:
-        raise SystemExit("没从 %s 抽到 zh 题注" % JS)
-    html = open(HTML, encoding="utf-8").read()
-    zh += re.findall(r'<span class="zh">([^<]*)</span>', html)
-    return "".join(zh)
+    """收集全部手写体用字（只收真正会被手写体渲染的文本）。"""
+    parts = []
+    for path, kind in SOURCES:
+        s = _read(path)
+        if not s:
+            continue
+        if kind == "polaroid":
+            m = re.search(r"POLAROIDS\s*=\s*\[(.*?)\];", s, re.S)
+            if not m:
+                continue
+            parts += re.findall(r"zh\s*:\s*['\"]([^'\"]+)", m.group(1))
+            parts += re.findall(r"title\s*:\s*['\"]([^'\"]+)", m.group(1))
+        elif kind == "zh-span":
+            parts += re.findall(r'<span class="zh"[^>]*>([^<]*)</span>', s)
+            parts += re.findall(r'class="title"[^>]*>\s*([^<]*[一-鿿][^<]*)\s*<', s)
+        elif kind == "js-string":
+            for a, b in re.findall(r"'([^'\\]*)'|\"([^\"\\]*)\"", s):
+                v = a or b
+                if re.search(r"[一-鿿]", v):
+                    parts.append(v)
+    return "".join(parts)
 
 
 def curl(url, out=None):

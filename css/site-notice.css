@@ -1,10 +1,11 @@
 /* =================================================================
    FIVE GUYS ONE DIRECTION — 站点公告条（site notice bar）
    -----------------------------------------------------------------
-   用途：站主高三学业公告。用户进入页面后从下方滑入一条 cookie 式提示。
+   用途：站主停更 / 开源公告。用户进入页面后从下方滑入一条 cookie 式提示。
+   当前公告：2026-10-01 起完全停更 + 源码 MIT 开源，完整版在 pages/notice.html。
    三种交互（见 js/site-notice.js）：
      · I know          → 收下，7 天不再出现（localStorage 时间戳）
-     · Dismiss         → 只这次关掉，刷新/再次进入仍会出现（sessionStorage）
+     · Read the full announcement → 跳 pages/notice.html（纯链接，不关横条）
      · Don't show anymore → 永久关闭（localStorage 标记）
    配色取自 DESIGN-SYSTEM §2：larry-blue-deep / larry-cream / larry-gold / larry-ink。
    移动端 767px 以下改为纵向堆叠，按钮等宽。
@@ -123,7 +124,9 @@ html #site-notice .sn-zh {
 #site-notice .sn-actions {
 	flex: 0 0 auto;
 	display: flex;
-	align-items: center;
+	/* stretch 而非 center：链接按钮里是两行（中英同显），比两个单行按钮高。
+	   stretch 让三个按钮统一取最高那个，视觉上是一条齐平的按钮行。 */
+	align-items: stretch;
 	gap: 10px;
 }
 
@@ -176,18 +179,65 @@ html #site-notice .sn-zh {
 	color: #141b21;
 }
 
-/* "Send an email" 是链接不是按钮：样式与按钮一致，颜色用 Louis 蓝区分 */
-#site-notice .sn-btn--mail {
+/* GitHub 图标按钮：只有一个图标，做成方形；颜色跟着 .sn-btn 的 currentColor。
+   放在最左，作为"源码在这"的入口，不抢 I know / Read the announcement 的主位。 */
+#site-notice .sn-btn--icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 12px;
+	border-color: #141b21;
+	color: #141b21;
+	flex: 0 0 auto;
+}
+
+#site-notice .sn-btn--icon svg {
+	display: block;
+}
+
+#site-notice .sn-btn--icon:hover,
+#site-notice .sn-btn--icon:focus-visible {
+	background: #141b21;
+	border-color: #141b21;
+	color: #faf6ef;
+}
+
+/* "Read the full announcement" 是链接不是按钮：样式与按钮一致，颜色用 Louis 蓝区分。
+   按钮里中英两行都排 `sn-link-en` / `sn-link-zh`（不用裸 .en/.zh）：
+   styles.css 的翻译开关有 `.zh{display:none!important}` 与 `html.lang-zh .en{display:none!important}`
+   两条 !important 规则，裸 class 会被它们吃掉；自定义 class 不在任何开关选择器里，
+   横条文案因此永远中英同显（本来就不该跟随 translate.js 的语言开关）。 */
+#site-notice .sn-btn--link {
 	text-decoration: none;
 	border-color: #1e4d6e;
 	color: #1e4d6e;
 }
 
-#site-notice .sn-btn--mail:hover,
-#site-notice .sn-btn--mail:focus-visible {
+#site-notice .sn-btn--link:hover,
+#site-notice .sn-btn--link:focus-visible {
 	background: #1e4d6e;
 	border-color: #1e4d6e;
 	color: #faf6ef;
+}
+
+html #site-notice .sn-link-en {
+	display: block;
+	line-height: 1.25;
+}
+
+html #site-notice .sn-link-zh {
+	display: block;
+	font-size: .95em;
+	letter-spacing: .08em;
+	line-height: 1.25;
+}
+
+/* 链接按钮两行，用 flex 居中（其余两个按钮是单行，靠 padding 居中即可） */
+#site-notice .sn-btn--link {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
 }
 
 /* 用户要求减少动效时，不做滑入，直接出现 */
@@ -241,5 +291,24 @@ html #site-notice .sn-zh {
 		display: flex;
 		align-items: center;
 		justify-content: center;
+	}
+
+	/* "Read the full announcement" 按钮里是两行（中英同显），比另外两个单行按钮高。
+	   给同样的 min-height 会把它按内容撑高、破坏"三个按钮一样高"。
+	   这里让它在 46px 里垂直居中两行，行距压紧，中英间不留 gap。 */
+	#site-notice .sn-btn--link {
+		min-height: 46px;
+		padding: 6px 4px;
+	}
+
+	html #site-notice .sn-link-en,
+	html #site-notice .sn-link-zh {
+		line-height: 1.15;
+	}
+
+	html #site-notice .sn-link-zh {
+		margin-top: 2px;
+		font-size: .92em;
+		letter-spacing: .04em;
 	}
 }

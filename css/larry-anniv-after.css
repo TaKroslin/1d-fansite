@@ -519,19 +519,24 @@ html:has(#larry-demo-zh:checked) .en{display:none!important}
 /* =================================================================
    Polaroid 题注字体（2026-09-24 作者定：中文 硬笔行书 / 英文 Caveat）
    -----------------------------------------------------------------
-   中文 = 瑞美加张清平硬笔行书（Ramega），**自托管子集 38.4 KB**：
-     只含 40 条短题注用到的 102 个汉字，从 CDN 那 142 个子集里合并重切而来
-     （详见 assets/fonts/zhangqingping-hyx/README.txt）。
-     替作者排掉了「演示*」系列：名表写 All rights reserved；这款名表写的是
-     "Free for commercial used"。仍是免费商用字体，**不是 OFL**。
+   中文 = 瑞美加张清平硬笔行书（Ramega），**自托管子集**：
+     2026-09-30 扩过一次 —— 原为 102 字 / 38.4 KB（只够 Polaroid 题注）；
+     站主信件页（pages/letter.html）要用手写体写一整封约 6000 字的信，
+     于是把用字来源扩到「题注 + 首页 .zh + 停更公告页 + 信件全文」，
+     重切成 779 字 / 258.7 KB。重建脚本与来源清单见
+     tools/fonts/subset_hardpen_xingshu.py（改文案就要重跑）。
+     授权说明见 assets/fonts/zhangqingping-hyx/README.txt：
+     名表写 "Free for commercial used"，是免费商用字体，**不是 OFL**。
    英文 = Caveat，走 Google Fonts（页头 <link> 里已带 Caveat:400,700）。
    族名用英文 'Hardpen Xingshu'，原字体族名是中文，写起来不方便。
    中文排在前、英文排在后：两边字形互补，中文题注走中文字体，
    纯英文题注自动落到 Caveat，不用给 .en/.zh 拆 span。
+   注意：pages/letter.html 自带同名字体声明（该页不加载本文件），
+   两处 URL 的 ?v= 要一起改。
    ================================================================= */
 @font-face{
   font-family:'Hardpen Xingshu';
-  src:url(../assets/fonts/zhangqingping-hyx/ZQP-Hardpen-Xingshu-Subset.woff2?v=20260924b) format('woff2');
+  src:url(../assets/fonts/zhangqingping-hyx/ZQP-Hardpen-Xingshu-Subset.woff2?v=20260930a) format('woff2');
   font-style:normal;
   font-weight:400;
   font-display:swap;

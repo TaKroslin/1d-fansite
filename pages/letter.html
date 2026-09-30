@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html class="no-js" lang="zh">
+<script>document.documentElement.className=document.documentElement.className.replace("no-js","js");</script>
+<head>
+    <title>A Letter From Webmaster — FIVE GUYS ONE DIRECTION</title>
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=2.0, user-scalable=0" name="viewport" />
+	<meta charset="utf-8" />
+    <link rel="icon" type="image/png" href="../images/gfx/1d-badge.png" />
+
+    <meta property="og:title" content="A Letter From Webmaster — FIVE GUYS ONE DIRECTION" />
+    <meta property="og:site_name" content="FIVE GUYS ONE DIRECTION" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="../images/gfx/hero-2026-rect-lrg.jpg" />
+    <meta property="og:url" content="https://www.5guys1direction.asia/pages/letter.html" />
+    <meta property="og:description" content="站主的最后一封信：告别 One Direction，关于喜欢、信任与互联网圈子的最后思考。" />
+    <meta name="description" content="站主的最后一封信：告别 One Direction，关于喜欢、信任与互联网圈子的最后思考。" />
+    <meta name="keywords" content="One Direction, fan archive, FIVE GUYS ONE DIRECTION, letter, 告别" />
+    <meta name="author" content="Takion Kroslin &amp; FIVE GUYS ONE DIRECTION" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@5guys1direction" />
+    <meta name="twitter:creator" content="@takionkroslin" />
+
+	<!-- 字体全部自托管（硬笔行书 + LXGW WenKai / WenKai Mono）。
+	     本页**刻意不引任何外部字体 CDN**：站点面向国内访问，Google Fonts / jsdelivr
+	     都不稳，而且挂住会拖慢 load 事件。见 css/letter.css 顶部的 @font-face。 -->
+	<!-- ⚠️ 本页也刻意**不引用 css/styles.css**：那是给官方克隆页用的，
+	     里面的全局 p{width:60%} / p{margin:0!important} / .zh{display:none!important}
+	     会把信纸正文的宽度、段距和中文全部打乱。所以本页样式自包含于 letter.css。 -->
+	<link href="../css/letter.css?v=20261001b" rel="stylesheet" type="text/css" />
+	<!-- 每页页脚的 GitHub 图标（与公告页共用，见 css/repo-link.css） -->
+	<link href="../css/repo-link.css?v=20261001a" rel="stylesheet" type="text/css" />
+
+</head>
+
+<body class="letter-page">
+
+<!-- 全屏信箱。内容与纸面结构由 js/letter.js 注入 -->
+<div class="letter-stage" id="letterStage" role="region" aria-label="A letter from the webmaster">
+
+	<div class="letter-vignette" aria-hidden="true"></div>
+
+	<div class="letter-stack" id="letterStack">
+		<!-- 纸页由 JS 注入 -->
+	</div>
+
+</div>
+
+<script src="../js/letter-data.js?v=20260930d"></script>
+<script src="../js/letter.js?v=20261001c"></script>
+
+</body>
+
+</html>

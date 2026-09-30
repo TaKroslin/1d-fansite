@@ -584,3 +584,33 @@
 - **处理**：给 `.larry-pola-card` 加 `container-type:inline-size`，题注写 `font-size:min(clamp(...),13.5cqw)`（前面留一条纯 `clamp` 给旧浏览器回退）。`cqw` 相对的是**卡片内容盒**（已扣掉左右 6% 白边）＝题注真正能用的内宽，所以这个比例是"物理上限"，一次就覆盖面所有断点。
 - **验证**：上限实测 = `0.96 × 内宽 ÷ 最长题注(7 汉字 = 7em) ≈ 13.7% 内宽`，1440/1280/768/390/360 五档全部落在 13.6%~13.7%（惊人地整齐）。改后：1440 **18.72 → 24.8px（+32%）**、1280 **16.64 → 23.04（+38%）**、390 **14.4 → 15.85（+10%）**、768 **13.76 → 13.27（不再被截）**；`scrollWidth > clientWidth` 的题注数在 en/zh 两种语言、桌面/移动两档下**全部为 0/40**，且 `container-type` 加上后 view/track/卡片尺寸与位置一字未变。
 - **预防**：① **"字号大一些"这种需求，先量"内宽 ÷ 最长那条文本"**，那才是真正的天花板；不要靠感觉加断点。② **`cqw` = 容器内容盒的 1%**，不是边框盒——扣掉 padding 后才是可用宽度，算比例时别算错（第一次按边框盒取了 11.8cqw，结果移动端反而变小了）。③ **组件尺寸与视口脱钩时（宽高由父级百分比/`aspect-ratio` 定），字号也应该用容器单位而不是 `vw`/`rem`**，否则必然在某些断点失配。④ 改字号前先查 `scrollWidth > clientWidth`，这是"有没有被省略号吃掉"的唯一可靠判据。
+
+### M83. 需要「中英同显、不跟随语言开关」的位置，裸 `.en` / `.zh` 会被 `!important` 吃掉 —— 用自定义类名
+- **现象**：给首页公告条加一个「Read the full announcement / 查看完整公告」链接按钮，按钮里按惯例写了 `<span class="en">` + `<span class="zh">`。英文态下中文行**整行消失**，按钮因此比同行另外两个单行按钮矮一截，视觉上"按钮行不齐"。截图里只表现为"矮了一点"，第一遍肉眼完全没看出是中文被隐藏。
+- **根因**：M49 的收尾补丁给翻译开关加了 `!important`——`styles.css` 约 1120 行「Bilingual default-hide leak fix」段里有 `.zh{display:none!important}` 与 `html.lang-zh .en{display:none!important}`。这两个是**全局 class 选择器 + important**，任何页面级的非 important 规则都压不过。公告条正文不受影响（用的是自定义类 `.sn-en` / `.sn-zh`，不在开关选择器里），但**新加的按钮标签用了裸 `.en` / `.zh`，直接被全局规则命中**。
+- **处理**：把按钮内两行改用自定义类 `.sn-link-en` / `.sn-link-zh`（仍在 `#site-notice` 作用域内，`html #site-notice .sn-link-* { display:block }` 与既有的 `.sn-en`/`.sn-zh` 写法一致）。同时把 `.sn-actions` 的 `align-items` 由 `center` 改 `stretch`：链接按钮是两行、比两个单行按钮高，`stretch` 让三个按钮统一取最高值、齐平成一行（`center` 会让双行那个明显高出一截）。实测桌面 60/60/60、移动 390 50/50/50，`clipped` 全 false。
+- **预防**：① **"中英同显"是横条/角标这类固定组件的常态需求，这类位置一律自定义类名**（`.sn-*`、`.countdown-label` 等），不要用裸 `.en`/`.zh`——它们是"跟随 translate.js 开关"的位置专用。② 若确实必须用裸 class，唯一的解法是**成对补 `!important`**（hide + show 都要补），且要算清特异性；能用自定义类绕过就别动 `!important`。③ 这类"某行内容莫名消失"的问题，**Playwright 探针断言 `getComputedStyle(el).display` 比截图快且可靠**——本次就是探针报 `linkZhShown: "none"` 一秒定位，截图只给出一个"按钮矮了"的模糊线索。④ flex 按钮行里有双行元素时记得 `align-items:stretch`。
+
+### M84. `visibility` 不在 `transition` 列表里 = 离场元素**第一帧就消失**，动画等于白做
+- **现象**：信件页翻页时看不到"纸被抽走"的动作，页面像直接切过去。截图（动画结束后）完全正常，肉眼看不出哪里错。
+- **根因**：`.letter-page-sheet[data-depth="-1"]` 上写了 `opacity:0; visibility:hidden`，而基类的 `transition` 只列了 `transform/opacity/filter`，**没有 `visibility`**。于是元素一旦切到该状态，`visibility` 立刻变 `hidden`——`transform` 其实一直在动，但整张纸根本不可见。用页面内 `requestAnimationFrame` 采样（避开 CDP 往返延迟）实测到铁证：首帧 `vis=hidden op=0`，而 `tx` 仍在 657→406 变化。
+- **处理**：离场不再靠"隐藏"，改成**真实滑出画面**：`translateX(170%)`（桌面/手机都足够滑出视口），由 `.letter-stage` 的 `overflow:hidden` 裁掉，同时 `opacity:1`、`pointer-events:none`。这样动画全程可见。
+- **预防**：① **凡"从可见到不可见"的过渡，要么把 `visibility` 写进 `transition`，要么干脆不用 `visibility`**（用位移出画/裁剪）。`visibility` 的过渡语义是"两端有一端 visible 则全程 visible"，写进 transition 列表就能自然实现"动画跑完才隐藏"。② 判断动画"到底跑没跑"，**必须用页面内 `rAF` 采样**（`playwright` 里 `await page.evaluate` 里自带 rAF 循环），外部 `sleep`+`evaluate` 的往返延迟会把时间轴打歪、甚至每次都采到终态。③ 只看"动画结束后"的截图无法发现这类问题——**要抓中间帧**：`document.getAnimations().forEach(a=>{a.pause(); a.currentTime=t})` 可以把 CSS transition 精确定格在任意时刻，截图不受截图自身延迟影响。
+
+### M85. 自己写的 reset 用 `body.x *` 会**反过来压掉**组件样式（特异性 0,1,1 > 0,1,0）
+- **现象**：信件页"页边距很难看"（文字贴着纸边）+ "按钮太小看不清"。实测纸的 `padding` 计算值是 `0px / 0px`，按钮明明写了 `padding:14px 24px`，实际高度只有 **17px**。
+- **根因**：该页自包含样式，开头写了 reset：`body.letter-page, body.letter-page * { margin:0; padding:0; box-sizing:border-box }`。其中 `body.letter-page *` 的特异性是 **body(0,0,1)+class(0,1,0)+*(0,0,0) = (0,1,1)**，而组件规则 `.letter-page-sheet` / `.letter-btn` 只有 **(0,1,0)**。reset 特异性更高 ⇒ 它写在前面也照样赢 ⇒ 所有 `padding` 被清零。**同一个 bug 同时造成两个表面症状（页边距 + 按钮尺寸），很容易被当成两个独立问题各自去打补丁。**
+- **处理**：用零特异性的 `:where()` 包住 reset：`:where(body.letter-page, body.letter-page *) { margin:0; padding:0; box-sizing:border-box }`。`:where()` 特异性恒为 0，组件规则就正常生效了。改后实测 `padding` 恢复 `41.4px / 62px`，按钮高度 45px（移动端 40px）。
+- **预防**：① **写 reset / base 层一律用 `:where()` 或 `@layer`**，不要用 `父选择器 *` 这种"看起来很低级、实际特异性不低"的写法。② 症状是"样式没生效"时，**先打印 `getComputedStyle` 的实际值，再猜**——本次一条 `sheetPad: "0px / 0px"` 直接指向 reset，比逐个翻 CSS 快得多。③ 一个改动引出多个"不相关"的视觉毛病时，**优先找共同根因**（这里就是一条 reset）。
+
+### M86. `document.fonts.ready` 会在"还没开始下载字体"时立刻 resolve ⇒ 用回退字体的行高去分页
+- **现象**：信件页分页不稳定——首次访问 11 页、刷新后 12 页（页数会变，且翻页处断句位置不同）。
+- **根因**：`document.fonts.ready` 只等**已经在下载中**的字体。首次访问时 DOM 里还没有任何元素用到手写体（纸页是 JS 之后才注入的），浏览器根本没开始下载该项字体 ⇒ `fonts.ready` 立即 resolve ⇒ 分页时量到的是**回退字体（霞鹜文楷）的行高**，等真字体换上，行数全变。第二次访问命中了 HTTP 缓存，才量对——所以表现为"刷新一次就变了"。
+- **处理**：分页前**主动**把字体拉下来：`document.fonts.load('1em "Hardpen Xingshu"')`（连同界面字体一起），等 `Promise.all` 之后再 `await document.fonts.ready`，然后才测量。改后连续 3 次新 context 实测页数 `[11,11,11]`，刷新前后 `3/11 → 3/11`。
+- **预防**：① **任何"按文字排版结果来决定布局"的逻辑（分页、截断、行数估算），都必须在字体真正加载完之后再测量**；只等 `fonts.ready` 不够，要先 `fonts.load()` 点名要用的字体。② 把"布局是否稳定"变成**可回归的断言**：QA 里用多个全新 context 各加载一次、比较关键数值（本次是页数），别只跑一次。③ 这类 bug 的典型表征是"**同一份内容，两次加载结果不同**"——一旦看到，先怀疑字体/资源加载时序。
+
+### M87. 给"写满型排版"预留固定空间，不能用 flex 兄弟节点去挤
+- **现象**：信件页末页只剩 **11 个字**（"然后现在，我选择离开。"），前面的收尾三行被拆到两页，页数还会在 11/12 之间跳。
+- **根因**：签名栏原本是 `.letter-body` 之后的 **flex 兄弟节点**。正文是"每页写满"排出来的，签名栏一旦加进末页，就把 `.letter-body` 的高度挤掉约 42px ⇒ 原本刚好填满的末页瞬间溢出 ⇒ 最后一段被顶到新页。给正文加 `padding-bottom` 预留也没用——**签名栏挤掉的是 body 的外框，padding 在 body 内部，抵不掉**。
+- **处理**：签名栏改 **绝对定位**（`position:absolute` 落在纸的页边距上），完全不参与 flex 计算；再只给**末页**加 `.has-sign`（`padding-bottom`）来预留那一条，其它页不预留、照常写满。加完若末页仍溢出，就把它的最后一段挪到新页并循环（`attachSign`）。
+- **预防**：① **"写满/填满"型布局里，任何后加的装饰元素都要绝对定位**，否则它会反过来改变已被测量的可用高度，导致内容重排——而且只在"刚好填满"的那一页暴露，极难复现。② `padding` 只能在自己盒内留白，**抵不过外部兄弟节点抢走的空间**；要"预留位置"就得让那个元素脱离常规流。③ 末页/收尾页的排版要单独 QA（本次就是 `fillRatio` 全 1 但末页只有 25 字，靠逐页 walk 才发现）。

@@ -8,6 +8,8 @@ _*.md
 *.pyc
 __pycache__/
 _http_audit.py
+# Session-local QA probes (Playwright one-offs; one-off scripts live in tools/archive/)
+tools/_qa_*.py
 tools/_qa_screenshots/
 
 # Official-site dead clone cache (3.9MB, never commit)
